@@ -21,6 +21,9 @@ python3 -m http.server 8080   # then open http://localhost:8080
 
 Publish free on GitHub Pages: the workflow in `.github/workflows/pages.yml` deploys on every push to `main`. One-time setup: repo **Settings → Pages → Source: GitHub Actions**.
 
+**Phones:** 44px touch targets, safe-area aware, live camera uses the rear lens.
+**TV:** auto-enabled on Tizen, webOS, Android TV, Fire TV and similar; otherwise add `?tv=1` or press the **TV mode** button. Large type, big focus rings, D-pad navigation and Back/Escape to stop the camera.
+
 Images never leave the browser. Models download once from public CDNs (jsDelivr, Google storage, TF Hub) and are cached by the browser.
 
 ---
