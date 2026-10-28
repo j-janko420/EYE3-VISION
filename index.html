@@ -4,8 +4,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#10100f">
-    <meta name="description" content="EYE3 Vision — a visual workspace concept for image inspection.">
-    <title>EYE3 Vision — Visual workspace</title>
+    <meta name="description" content="EYE3 Vision — a dark media hub concept with mobile controls and streaming shortcuts.">
+    <title>EYE3 Vision — Media hub concept</title>
     <style>
       :root {
         color-scheme: dark;
@@ -138,6 +138,47 @@
       .tool-description { margin-top: 5px; color: var(--muted); font-size: 10px; line-height: 1.55; }
       .tool-arrow { margin-top: auto; padding-top: 12px; color: #d18454; font-size: 10px; }
 
+      .media-section { margin-top: 34px; scroll-margin-top: 20px; }
+      .media-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px; }
+      .media-panel { min-width: 0; padding: 18px; border: 1px solid var(--line); border-radius: 11px; background: var(--surface); }
+      .media-panel h3 { margin: 0; font-size: 13px; font-weight: 650; }
+      .panel-description { margin: 6px 0 15px; color: var(--muted); font-size: 10px; line-height: 1.6; }
+      .pairing-code { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 11px 12px; border: 1px solid #49301f; border-radius: 8px; background: #211a15; }
+      .pairing-code output { color: #ffc094; font-size: 19px; font-weight: 700; letter-spacing: .18em; font-variant-numeric: tabular-nums; }
+      .small-button, .form-button { min-height: 34px; padding: 7px 10px; border: 1px solid #69412a; border-radius: 6px; background: #322116; color: #ffc094; font-size: 10px; font-weight: 650; cursor: pointer; }
+      .small-button:hover, .form-button:hover { background: #482b19; }
+      .remote-controls { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin-top: 12px; }
+      .remote-controls button { min-height: 36px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface-raised); color: #d7d3cb; font-size: 11px; cursor: pointer; }
+      .remote-controls button:hover { border-color: #75472c; color: var(--orange-soft); }
+      .remote-controls .play-control { border-color: #69412a; background: #322116; color: #ffc094; }
+      .volume-row { display: flex; align-items: center; gap: 10px; margin-top: 13px; color: var(--muted); font-size: 10px; }
+      .volume-row input { min-width: 0; flex: 1; accent-color: var(--orange); }
+      .form-row { display: grid; grid-template-columns: minmax(90px, .7fr) minmax(0, 1.3fr) auto; gap: 7px; }
+      .form-row input, .option-row select, .archive-form input {
+        min-width: 0;
+        min-height: 36px;
+        padding: 8px 10px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: #151514;
+        color: var(--text);
+        font: inherit;
+        font-size: 10px;
+      }
+      .channel-list, .service-list, .cloud-list { display: grid; gap: 7px; margin-top: 12px; }
+      .channel-row, .service-link, .cloud-option { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 10px; border: 1px solid var(--line); border-radius: 7px; background: #151514; font-size: 10px; }
+      .channel-row > a:first-child, .service-link .service-name, .cloud-option .cloud-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .channel-actions { display: flex; flex: 0 0 auto; align-items: center; gap: 8px; }
+      .channel-open, .service-link > a { color: var(--orange-soft); }
+      .remove-channel { padding: 2px 4px; border: 0; background: transparent; color: var(--muted); font-size: 10px; cursor: pointer; }
+      .remove-channel:hover { color: #ff8a75; }
+      .empty-list { margin: 12px 0 0; color: var(--muted); font-size: 10px; }
+      .cloud-state { color: var(--muted); font-size: 9px; }
+      .archive-form { display: flex; gap: 7px; }
+      .archive-form input { flex: 1; }
+      .option-row { display: grid; grid-template-columns: 1fr minmax(100px, .9fr); align-items: center; gap: 10px; margin-top: 10px; color: #c8c4bc; font-size: 10px; }
+      .prototype-note { margin: 11px 0 0; color: #77736b; font-size: 9px; line-height: 1.55; }
+
       .workspace { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(225px, .8fr); gap: 13px; margin-top: 30px; }
       .panel { min-width: 0; padding: 18px; border: 1px solid var(--line); border-radius: 11px; background: var(--surface); }
       .panel-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
@@ -189,7 +230,7 @@
         .brand-mark { width: 35px; height: 35px; }
         .brand-name { font-size: 13px; }
         .nav-label, .sidebar-bottom { display: none; }
-        .nav { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 3px; margin-top: 12px; }
+        .nav { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3px; margin-top: 12px; }
         .nav-link { min-height: 35px; justify-content: center; gap: 6px; padding: 0 4px; font-size: 10px; }
         .nav-icon { width: auto; }
         .main { margin-left: 0; }
@@ -199,11 +240,14 @@
         .eye-art { position: absolute; right: 9px; bottom: 8px; width: 170px; max-width: 45%; opacity: .36; }
         .hero-copy { max-width: 100%; }
         .workspace { grid-template-columns: 1fr; }
+        .media-grid { grid-template-columns: 1fr; }
       }
       @media (max-width: 390px) {
         .tool-grid { grid-template-columns: 1fr; }
         .tool-card { min-height: 145px; }
         .prototype-tag { font-size: 9px; }
+        .form-row { grid-template-columns: 1fr; }
+        .form-row .form-button { width: 100%; }
       }
       @media (prefers-reduced-motion: reduce) {
         *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
@@ -228,8 +272,10 @@
         <nav class="nav" aria-label="Workspace navigation">
           <a class="nav-link active" href="#overview" aria-current="page"><span class="nav-icon">⌂</span>Overview</a>
           <a class="nav-link" href="#tools"><span class="nav-icon">◈</span>Vision tools</a>
+          <a class="nav-link" href="#remote"><span class="nav-icon">⌘</span>Mobile remote</a>
+          <a class="nav-link" href="#channels"><span class="nav-icon">▤</span>Channels</a>
+          <a class="nav-link" href="#connections"><span class="nav-icon">◉</span>Connections</a>
           <a class="nav-link" href="#inspector"><span class="nav-icon">▧</span>Inspector</a>
-          <a class="nav-link" href="#activity"><span class="nav-icon">◷</span>Activity</a>
         </nav>
 
         <div class="sidebar-bottom">
@@ -250,13 +296,13 @@
         <div class="content">
           <div class="eyebrow">See beyond the surface</div>
           <h1>Welcome to EYE3.</h1>
-          <p class="intro">A focused visual workspace concept for inspecting images, comparing details, and organizing what you see.</p>
+          <p class="intro">A dark media hub concept with mobile-friendly controls, channel shortcuts, and places to connect the services you already use.</p>
 
           <section class="hero" aria-labelledby="hero-title">
             <div class="hero-copy">
-              <h2 id="hero-title">Three perspectives. One clear view.</h2>
-              <p>The three-eye symbol is an original abstract mark inspired by the idea of expanded vision. A warm orange signal cuts through a calm, dark workspace.</p>
-              <div class="hero-meta"><span class="meta-chip">01 &nbsp; Inspect</span><span class="meta-chip">02 &nbsp; Compare</span><span class="meta-chip">03 &nbsp; Organize</span></div>
+              <h2 id="hero-title">Your media, in one clear view.</h2>
+              <p>The three-eye symbol stands for a wider view across channels, media services, and your playback controls. A warm orange signal cuts through a calm, dark workspace.</p>
+              <div class="hero-meta"><span class="meta-chip">01 &nbsp; Browse</span><span class="meta-chip">02 &nbsp; Control</span><span class="meta-chip">03 &nbsp; Connect</span></div>
             </div>
             <svg class="eye-art" viewBox="0 0 300 180" role="img" aria-label="Abstract arrangement of three orange eyes">
               <defs>
@@ -296,6 +342,83 @@
             </div>
           </section>
 
+          <section class="media-section" id="remote" aria-labelledby="remote-title">
+            <div class="section-heading">
+              <div><h2 id="remote-title">Mobile remote</h2><p>Pairing and playback controls, shown as a local interface demo.</p></div>
+              <span class="prototype-tag">DEMO ONLY</span>
+            </div>
+            <div class="media-grid">
+              <div class="media-panel">
+                <h3>Pair a phone</h3>
+                <p class="panel-description">In a connected product, enter this code in the EYE3 mobile app. Pairing is visual-only here; no phone or server connection is active.</p>
+                <div class="pairing-code"><output id="pairing-code" aria-label="Demo pairing code">— — — — — —</output><button class="small-button" id="new-code" type="button">New code</button></div>
+                <div class="remote-controls" aria-label="Playback controls">
+                  <button type="button" data-remote="Previous">|◀</button>
+                  <button class="play-control" type="button" data-remote="Play / pause">▶ / ❚❚</button>
+                  <button type="button" data-remote="Next">▶|</button>
+                </div>
+                <label class="volume-row" for="volume-control">Volume <input id="volume-control" type="range" min="0" max="100" value="65"><output id="volume-value">65%</output></label>
+                <p class="prototype-note">Real cross-device control requires a companion mobile app, device discovery, and a secure backend.</p>
+              </div>
+
+              <div class="media-panel" id="channels">
+                <h3>Channel links</h3>
+                <p class="panel-description">Save your own channel or stream URLs in this browser. Only HTTP and HTTPS links are accepted.</p>
+                <form class="form-row" id="channel-form">
+                  <input id="channel-name" type="text" maxlength="60" placeholder="Channel name" aria-label="Channel name" required>
+                  <input id="channel-url" type="url" maxlength="2048" placeholder="https://…" aria-label="Channel URL" required>
+                  <button class="form-button" type="submit">Add link</button>
+                </form>
+                <div class="channel-list" id="channel-list" aria-live="polite"></div>
+              </div>
+
+              <div class="media-panel" id="connections">
+                <h3>Cloud connections</h3>
+                <p class="panel-description">Connect through official sign-in flows when integrations are built. No credentials are requested or stored in this demo.</p>
+                <div class="cloud-list">
+                  <div class="cloud-option"><span class="cloud-name">Google Drive</span><span class="cloud-state">Integration not connected</span></div>
+                  <div class="cloud-option"><span class="cloud-name">Dropbox</span><span class="cloud-state">Integration not connected</span></div>
+                  <div class="cloud-option"><span class="cloud-name">OneDrive</span><span class="cloud-state">Integration not connected</span></div>
+                </div>
+                <p class="prototype-note">Cloud sign-in and file access are not implemented; add official OAuth integrations before enabling connections.</p>
+              </div>
+
+              <div class="media-panel">
+                <h3>Internet Archive</h3>
+                <p class="panel-description">Search the Internet Archive’s public catalog. Availability and rights depend on each item.</p>
+                <form class="archive-form" id="archive-form">
+                  <input id="archive-query" type="search" maxlength="120" placeholder="Search public archive" aria-label="Search Internet Archive" required>
+                  <button class="form-button" type="submit">Search</button>
+                </form>
+                <p class="prototype-note">Search opens archive.org in a new tab; it does not play or download media here.</p>
+              </div>
+
+              <div class="media-panel">
+                <h3>Streaming services</h3>
+                <p class="panel-description">Open the official service sites. Sign-in, subscriptions, playback, and availability are managed by each provider.</p>
+                <div class="service-list">
+                  <div class="service-link"><span class="service-name">Netflix</span><a href="https://www.netflix.com/" target="_blank" rel="noopener noreferrer">Open official site ↗</a></div>
+                  <div class="service-link"><span class="service-name">Prime Video</span><a href="https://www.primevideo.com/" target="_blank" rel="noopener noreferrer">Open official site ↗</a></div>
+                  <div class="service-link"><span class="service-name">Disney+</span><a href="https://www.disneyplus.com/" target="_blank" rel="noopener noreferrer">Open official site ↗</a></div>
+                  <div class="service-link"><span class="service-name">YouTube</span><a href="https://www.youtube.com/" target="_blank" rel="noopener noreferrer">Open official site ↗</a></div>
+                </div>
+                <p class="prototype-note">These are links to independent services, not cloned apps or bundled streams.</p>
+              </div>
+
+              <div class="media-panel">
+                <h3>Playback options</h3>
+                <p class="panel-description">Local preference controls for the interface concept.</p>
+                <label class="option-row" for="quality-option">Preferred quality
+                  <select id="quality-option"><option>Auto</option><option>1080p</option><option>720p</option><option>480p</option></select>
+                </label>
+                <label class="option-row" for="captions-option">Captions
+                  <select id="captions-option"><option>System default</option><option>English</option><option>Português</option><option>Off</option></select>
+                </label>
+                <p class="prototype-note">These options only update the demo controls; they do not change playback on linked services.</p>
+              </div>
+            </div>
+          </section>
+
           <section class="workspace" id="inspector" aria-label="Image workspace">
             <div class="panel">
               <div class="panel-title"><h2 id="upload-title">Image inspector</h2><span>Local preview</span></div>
@@ -328,6 +451,9 @@
       const fileList = document.querySelector("#file-list");
       const toast = document.querySelector("#toast");
       const uploadTitle = document.querySelector("#upload-title");
+      const channelForm = document.querySelector("#channel-form");
+      const channelList = document.querySelector("#channel-list");
+      const channelStorageKey = "eye3-channel-links";
       let toastTimer;
 
       function showToast(message) {
@@ -342,6 +468,125 @@
         if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
         return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
       }
+
+      function loadChannels() {
+        try {
+          const channels = JSON.parse(localStorage.getItem(channelStorageKey) || "[]");
+          return Array.isArray(channels) ? channels.filter((channel) => (
+            channel && typeof channel.name === "string" && typeof channel.url === "string"
+            && isSafeWebUrl(channel.url)
+          )) : [];
+        } catch {
+          return [];
+        }
+      }
+
+      function isSafeWebUrl(value) {
+        try {
+          const url = new URL(value);
+          return url.protocol === "http:" || url.protocol === "https:";
+        } catch {
+          return false;
+        }
+      }
+
+      function saveChannels(channels) {
+        try {
+          localStorage.setItem(channelStorageKey, JSON.stringify(channels));
+          return true;
+        } catch {
+          showToast("Could not save links in this browser.");
+          return false;
+        }
+      }
+
+      function renderChannels() {
+        const channels = loadChannels();
+        channelList.replaceChildren();
+        if (!channels.length) {
+          const empty = document.createElement("p");
+          empty.className = "empty-list";
+          empty.textContent = "No channel links saved yet.";
+          channelList.append(empty);
+          return;
+        }
+        channels.forEach((channel, index) => {
+          const row = document.createElement("div");
+          row.className = "channel-row";
+          const link = document.createElement("a");
+          link.className = "channel-open";
+          link.href = channel.url;
+          link.target = "_blank";
+          link.rel = "noopener noreferrer";
+          link.textContent = channel.name;
+          const actions = document.createElement("span");
+          actions.className = "channel-actions";
+          const open = document.createElement("a");
+          open.className = "channel-open";
+          open.href = channel.url;
+          open.target = "_blank";
+          open.rel = "noopener noreferrer";
+          open.textContent = "Open ↗";
+          const remove = document.createElement("button");
+          remove.className = "remove-channel";
+          remove.type = "button";
+          remove.textContent = "Remove";
+          remove.setAttribute("aria-label", `Remove ${channel.name}`);
+          remove.addEventListener("click", () => {
+            const updated = loadChannels().filter((_, itemIndex) => itemIndex !== index);
+            saveChannels(updated);
+            renderChannels();
+          });
+          actions.append(open, remove);
+          row.append(link, actions);
+          channelList.append(row);
+        });
+      }
+
+      channelForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const name = document.querySelector("#channel-name").value.trim();
+        const url = document.querySelector("#channel-url").value.trim();
+        if (!name || !isSafeWebUrl(url)) {
+          showToast("Enter a name and a valid HTTP or HTTPS link.");
+          return;
+        }
+        const channels = loadChannels();
+        if (channels.length >= 50) {
+          showToast("This demo supports up to 50 saved links.");
+          return;
+        }
+        channels.push({ name, url: new URL(url).href });
+        if (saveChannels(channels)) {
+          channelForm.reset();
+          renderChannels();
+          showToast("Channel link saved in this browser.");
+        }
+      });
+
+      document.querySelector("#new-code").addEventListener("click", () => {
+        const code = String(Math.floor(100000 + Math.random() * 900000));
+        document.querySelector("#pairing-code").textContent = code;
+        showToast("Demo code only — no phone is paired.");
+      });
+      document.querySelectorAll("[data-remote]").forEach((button) => {
+        button.addEventListener("click", () => showToast(`${button.dataset.remote} selected in the demo; no player is connected.`));
+      });
+      document.querySelector("#volume-control").addEventListener("input", (event) => {
+        document.querySelector("#volume-value").textContent = `${event.target.value}%`;
+      });
+      document.querySelector("#archive-form").addEventListener("submit", (event) => {
+        event.preventDefault();
+        const query = document.querySelector("#archive-query").value.trim();
+        if (!query) return;
+        const searchUrl = new URL("https://archive.org/search");
+        searchUrl.searchParams.set("query", query);
+        window.open(searchUrl.href, "_blank", "noopener,noreferrer");
+      });
+      document.querySelectorAll(".option-row select").forEach((select) => {
+        select.addEventListener("change", () => showToast(`${select.value} selected for this interface demo.`));
+      });
+      renderChannels();
 
       function displayFiles(files) {
         const images = Array.from(files).filter((file) => file.type.startsWith("image/"));
