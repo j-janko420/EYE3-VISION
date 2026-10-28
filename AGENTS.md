@@ -11,11 +11,10 @@ A single static page (`index.html`): an on-device visual workspace. No backend, 
 ## Structure (all in `index.html`)
 - CSS tokens on `:root`; keep the dark/orange look.
 - One IIFE script. Engines load lazily through `useEngine()`: COCO-SSD (`getDetector`), MobileNet (`getClassifier`), Tesseract (`getOcr`), exifr. Versions are pinned in `LIBS`.
-- Views: Image inspector, Side-by-side compare, Visual library, Connect Apple TV (`setView`). The Connect view has casting (receiver overlay `#receiver`, sender `connectSender`, scanner) and an AirPlay helper for Apple TV (QR link plus presentation mode); there is no tvOS app.
+- Views: Image inspector, Side-by-side compare, Visual library, Connect Apple TV (`setView`). The Apple TV view is an AirPlay-mirroring helper (QR link plus presentation mode); there is no tvOS app.
 
 ## Rules
-- Images must never be uploaded to a server. Keep analysis in the browser. Casting sends frames only peer-to-peer over the LAN (`RTCPeerConnection` with `iceServers: []`, never add STUN/TURN); ntfy carries only AES-GCM ciphertext keyed by the pairing code.
-- Never auto-connect a sender from a `?join=` link; require a button press. The `?signal=` and `?pairTimeout=` overrides are honored on localhost only.
+- Images must never be uploaded. Keep analysis in the browser.
 - Pin CDN versions exactly; never use `@latest`.
 - Render untrusted text (file names, EXIF, OCR) with `textContent`, never `innerHTML`.
 - A failed engine load must degrade to an inline message, not break the page.
