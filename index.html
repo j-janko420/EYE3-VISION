@@ -324,7 +324,7 @@
       }
       @media (max-width: 390px) { .nav-link span.nav-icon { display: none; } }
 
-      /* Connect Apple TV */
+      /* Connect TV */
       .lead { margin: .95rem 0 0; color: var(--muted); font-size: .75rem; line-height: 1.7; }
       .steps { display: grid; gap: .75rem; margin: .9rem 0 0; padding: 0; list-style: none; }
       .step { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .9rem; padding: .9rem; border: 1px solid var(--line); border-radius: .65rem; background: #151514; }
@@ -453,9 +453,9 @@
                 <span class="tool-icon" aria-hidden="true">▤</span><span class="tool-name">Visual library</span>
                 <span class="tool-description">Save inspected images with their labels and keep them in this browser.</span><span class="tool-arrow">Select tool ↗</span>
               </button>
-              <button class="tool-card" type="button" data-tool="Connect Apple TV">
-                <span class="tool-icon" aria-hidden="true">▭</span><span class="tool-name">Connect Apple TV</span>
-                <span class="tool-description">Mirror EYE3 to the big screen with AirPlay, with a scannable link and a presentation mode.</span><span class="tool-arrow">Select tool ↗</span>
+              <button class="tool-card" type="button" data-tool="Connect TV">
+                <span class="tool-icon" aria-hidden="true">▭</span><span class="tool-name">Connect TV</span>
+                <span class="tool-description">Show EYE3 on a Philips Saphi or other smart TV: TV browser, Miracast or AirPlay.</span><span class="tool-arrow">Select tool ↗</span>
               </button>
             </div>
           </section>
@@ -519,17 +519,17 @@
               </div>
 
               <div id="view-appletv" hidden>
-                <p class="lead">Apple TV has no web browser, so EYE3 reaches the big screen through AirPlay: mirror it from your iPhone, iPad or Mac. It is free, built in, and needs no app.</p>
+                <p class="lead">Put EYE3 on a Philips Saphi or any smart TV. Mirror it from your phone or computer, or open it in the TV's own browser. Both are free and built in, with no app to install.</p>
                 <ol class="steps">
                   <li class="step">
                     <span class="step-n" aria-hidden="true">1</span>
-                    <div><strong>Join the same Wi-Fi</strong><p>Put your iPhone, iPad or Mac and your Apple TV on the same network.</p></div>
+                    <div><strong>Join the same Wi-Fi</strong><p>Put your phone or computer and your TV on the same network.</p></div>
                   </li>
                   <li class="step">
                     <span class="step-n" aria-hidden="true">2</span>
                     <div>
                       <strong>Open EYE3 on your device</strong>
-                      <p>Scan the code with your iPhone camera, or copy the link to your Mac.</p>
+                      <p>Scan the code with your phone camera, or copy the link to your computer. <b>TV with a web browser?</b> Open the same link on the TV itself. TV mode turns on automatically, or add <code>?tv=1</code> to the link.</p>
                       <div class="qr-row">
                         <div class="qr empty" id="qr" role="img" aria-label="QR code for the EYE3 link">Loading code…</div>
                         <div class="qr-side">
@@ -544,8 +544,10 @@
                   <li class="step">
                     <span class="step-n" aria-hidden="true">3</span>
                     <div>
-                      <strong>Mirror to your Apple TV</strong>
-                      <p><b>iPhone or iPad:</b> open Control Center, tap Screen Mirroring, choose your Apple TV. <b>Mac:</b> menu bar Control Center, Screen Mirroring, choose your Apple TV.</p>
+                      <strong>Mirror to your TV</strong>
+                      <p><b>Philips Saphi and most smart TVs (Miracast):</b> on the TV, turn on Screen Mirroring from the Home menu or Sources (the name varies by model). Then on an <b>Android phone</b> open Quick Settings and tap Cast, Smart View or Screen Cast, or on a <b>Windows PC</b> press Win + K, and choose your TV.</p>
+                      <p><b>Apple TV and AirPlay TVs:</b> on an iPhone or iPad open Control Center and tap Screen Mirroring; on a Mac use Control Center in the menu bar.</p>
+                      <p>iPhones can't mirror to a Miracast-only TV such as Philips Saphi. Open EYE3 in the TV's browser instead.</p>
                       <div class="toolbar"><button class="btn" id="btn-present" type="button">Start presentation</button></div>
                       <p>Presentation hides the menus, switches to the large TV layout and keeps the screen awake. Turn your phone sideways to fill the TV.</p>
                       <p id="atv-support"></p>
@@ -1255,7 +1257,7 @@
         }
 
         // ---------- Views ----------
-        const views = { "Image inspector": "inspector", "Side-by-side compare": "compare", "Visual library": "library", "Connect Apple TV": "appletv" };
+        const views = { "Image inspector": "inspector", "Side-by-side compare": "compare", "Visual library": "library", "Connect TV": "appletv" };
         function setView(tool) {
           const key = views[tool] || "inspector";
           Object.values(views).forEach((name) => { $(`#view-${name}`).hidden = name !== key; });
@@ -1321,7 +1323,7 @@
         });
         window.addEventListener("pagehide", () => { if (stream) stream.getTracks().forEach((track) => track.stop()); });
 
-        // ---------- Connect Apple TV: AirPlay mirroring helper and presentation mode ----------
+        // ---------- Connect TV: Miracast / AirPlay mirroring helper, TV-browser link, presentation mode ----------
         const qrBox = $("#qr");
         const urlField = $("#atv-url");
         const urlNote = $("#atv-url-note");
@@ -1383,11 +1385,14 @@
         }
         function openAppleTv() {
           if (!urlField.value) urlField.value = defaultShareUrl();
-          const airplay = "WebKitPlaybackTargetAvailabilityEvent" in window;
+          const agent = navigator.userAgent;
+          let hint = "Mirror from an Android phone or Windows PC (Miracast), or from an iPhone or Mac (AirPlay).";
+          if (root.hasAttribute("data-tv")) hint = "You're on a TV browser, so EYE3 already runs here. Use the tools above with your remote.";
+          else if (/Android/.test(agent)) hint = "This Android device can mirror to a Miracast TV: Quick Settings, then Cast, Smart View or Screen Cast.";
+          else if (/Windows/.test(agent)) hint = "On this PC, press Win + K to mirror to a Miracast TV.";
+          else if ("WebKitPlaybackTargetAvailabilityEvent" in window) hint = "This device can use AirPlay. For a Philips Saphi TV, open EYE3 in the TV's browser instead.";
           $("#atv-support").className = "muted";
-          $("#atv-support").textContent = airplay
-            ? "AirPlay is available on this device."
-            : "Tip: open this page in Safari on an iPhone, iPad or Mac to mirror it.";
+          $("#atv-support").textContent = hint;
           renderQr();
         }
         async function startPresentation() {
@@ -1414,7 +1419,7 @@
           root.removeAttribute("data-present");
           $("#btn-exit-present").hidden = true;
           setTv(tvBeforePresent, false);
-          setView("Connect Apple TV");
+          setView("Connect TV");
           log("Presentation ended");
           const lock = wakeLock;
           const leaveFullscreen = fullscreenEntered && document.fullscreenElement;
@@ -1441,7 +1446,7 @@
         // ---------- TV mode: large layout and remote-control (D-pad) navigation ----------
         const root = document.documentElement;
         const tvButton = $("#btn-tv");
-        const TV_AGENT = /Tizen|Web0S|WebOS|SMART-TV|SmartTV|AppleTV|GoogleTV|Android.+TV|AFT[A-Z]|CrKey|BRAVIA|HbbTV|VIDAA|NetCast/i;
+        const TV_AGENT = /Tizen|Web0S|WebOS|SMART-TV|SmartTV|AppleTV|GoogleTV|Android.+TV|AFT[A-Z]|CrKey|BRAVIA|HbbTV|VIDAA|NetCast|NETTV|Saphi|Philips/i;
         function setTv(on, remember) {
           root.toggleAttribute("data-tv", on);
           tvButton.setAttribute("aria-pressed", String(on));

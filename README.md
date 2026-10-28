@@ -25,7 +25,7 @@ Publish free on GitHub Pages: the workflow in `.github/workflows/pages.yml` depl
 **Phones:** 44px touch targets, safe-area aware, live camera uses the rear lens.
 **TV:** auto-enabled on Tizen, webOS, Android TV, Fire TV and similar; otherwise add `?tv=1` or press the **TV mode** button. Large type, big focus rings, D-pad navigation and Back/Escape to stop the camera.
 
-**Apple TV:** Apple TV has no web browser, so use the **Connect Apple TV** tool: scan its QR code (or copy the link) on an iPhone, iPad or Mac, then mirror with Control Center → Screen Mirroring. **Start presentation** hides the menus, switches to the large TV layout and keeps the screen awake.
+**Connect TV (Philips Saphi and others):** the **Connect TV** tool covers three routes. You can open the EYE3 link in the TV's own browser, where TV mode turns on automatically. You can mirror with Miracast from an Android phone (Cast / Smart View) or a Windows PC (`Win + K`). Or you can mirror with AirPlay from an iPhone or Mac to an Apple TV or AirPlay TV. **Start presentation** hides the menus, switches to the large TV layout and keeps the screen awake.
 
 Images never leave the browser. Models download once from public CDNs (jsDelivr, Google storage, TF Hub) and are cached by the browser.
 

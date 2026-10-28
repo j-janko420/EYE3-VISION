@@ -11,7 +11,7 @@ A single static page (`index.html`): an on-device visual workspace. No backend, 
 ## Structure (all in `index.html`)
 - CSS tokens on `:root`; keep the dark/orange look.
 - One IIFE script. Engines load lazily through `useEngine()`: COCO-SSD (`getDetector`), MobileNet (`getClassifier`), Tesseract (`getOcr`), exifr. Versions are pinned in `LIBS`.
-- Views: Image inspector, Side-by-side compare, Visual library, Connect Apple TV (`setView`). The Apple TV view is an AirPlay-mirroring helper (QR link plus presentation mode); there is no tvOS app.
+- Views: Image inspector, Side-by-side compare, Visual library, Connect TV (`setView`). Connect TV is a mirroring helper (Miracast for Philips Saphi and similar, AirPlay for Apple TV) with a QR link, a TV-browser route and presentation mode; no native TV app.
 
 ## Rules
 - Images must never be uploaded. Keep analysis in the browser.
