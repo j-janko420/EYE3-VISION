@@ -1,5 +1,53 @@
 # EYE3-VISION
 Designed by i3 Design
+
+## Welcome and personal theme
+
+EYE3 opens with a **Welcome to EYE3 Vision · Designed by i3 Design** screen. It shows once per session; press OK or tap to start, or add `?welcome=0` to skip it.
+
+**Personalize** (top bar) sets your own photo as the background. EYE3 finds the faces in it (TensorFlow.js BlazeFace, free, on-device) and uses them as round tool icons and as your profile picture, on an i3 navy theme. If no faces are found, or the face model can't load, the centre of the photo becomes the icon. The photo is stored only in this browser (localStorage) and is never uploaded or added to this repo. Switch the theme off or remove the photo from the same dialog.
+
+## Run it live
+
+EYE3 Vision is a static page (`index.html`) with real, free, on-device analysis. No API keys, no backend, no cost.
+
+| Capability | Free tool | Loaded |
+| --- | --- | --- |
+| Object detection (boxes, live camera) | TensorFlow.js + COCO-SSD | on demand |
+| Scene labels | MobileNet v2 | on demand |
+| Text extraction (OCR) | Tesseract.js | on click |
+| Camera data (EXIF, GPS) | exifr | on demand |
+| Palette, compare, difference heatmap, library | Canvas + localStorage | built in |
+| Apple TV link code (QR) | qrcode-generator | on demand |
+| Scan a pairing code | BarcodeDetector, else jsQR | on demand |
+| Device-to-device casting | WebRTC + ntfy (signalling only) | on click |
+
+Run locally (the camera needs `localhost` or HTTPS):
+
+```
+python3 -m http.server 8080   # then open http://localhost:8080
+```
+
+Publish free on GitHub Pages: the workflow in `.github/workflows/pages.yml` deploys on every push to `main`. One-time setup: repo **Settings → Pages → Source: GitHub Actions**.
+
+**Phones:** 44px touch targets, safe-area aware, live camera uses the rear lens.
+**TV:** auto-enabled on Tizen, webOS, Android TV, Fire TV and similar; otherwise add `?tv=1` or press the **TV mode** button. Large type, big focus rings, D-pad navigation and Back/Escape to stop the camera.
+
+**Connect TV:** the **Connect TV** tool lists every route.
+- **iPhone with a TV that has no browser or AirPlay (e.g. Philips Saphi):** use a USB-C/Lightning to HDMI adapter (most reliable), or a streaming stick (Apple TV for AirPlay; Fire TV or Google TV stick for a browser). Wi-Fi mirroring apps (DLNA) also exist; most are paid. IPTV player apps can only play video channels, so they can't run EYE3.
+- **Mirroring:** Miracast from an Android phone (Cast / Smart View) or a Windows PC (`Win + K`); AirPlay from an iPhone or Mac to an Apple TV or AirPlay TV.
+- **TV browsers:** where a TV or stick has a browser, open the EYE3 link there and TV mode turns on automatically.
+
+**Smart STB portal check (Philips Saphi with Smart STB):** add `https://<user>.github.io/EYE3-VISION/portal/c/` as a portal in Smart STB (at smart-stb.tv, using the code the app shows) and open it on the TV. The page lists what the TV's engine supports: MAG remote API, box MAC, modern JavaScript, WebGL, WebAssembly, WebRTC, HLS/MP4 video, internet access. It also shows every remote key code. It is plain ES5, so it runs on old TV engines, and it sends nothing anywhere. Its **Open EYE3 app** button opens the full app in TV mode.
+
+**Start presentation** hides the menus, switches to the large TV layout and keeps the screen awake.
+
+**Built-in casting to a screen with a browser (Fire TV / Google TV stick, browser TV, laptop):** open EYE3 on that screen, go to **Connect TV** and press **Show pairing code here**. On the iPhone, scan the code with the camera app (or **Scan the TV's code** in EYE3) or type the 8-character code, press **Connect**, and allow it on the TV. Your image or live camera, with detections, appears on the TV. Pictures travel directly between the two devices over the Wi-Fi (WebRTC with no relay). Only the connection details pass through ntfy.sh, encrypted with the pairing code. Add `?receive=1` to a TV bookmark to open straight into pairing. Guest Wi-Fi networks that isolate devices will block it.
+
+Images never leave the browser. Models download once from public CDNs (jsDelivr, Google storage, TF Hub) and are cached by the browser.
+
+---
+
 https://raw.githubusercontent.com/hasanbeder/M3Unator/main/M3Unator.user.js
 README.pt.md
 M3UPT

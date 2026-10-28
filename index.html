@@ -2,9 +2,9 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="theme-color" content="#10100f">
-    <meta name="description" content="EYE3 Vision — a visual workspace concept for image inspection.">
+    <meta name="description" content="EYE3 Vision — a live, on-device visual workspace: object detection, scene labels, OCR, EXIF, palette, compare and a camera mode.">
     <title>EYE3 Vision — Visual workspace</title>
     <style>
       :root {
@@ -18,18 +18,19 @@
         --orange: #ff762e;
         --orange-soft: #ff9a61;
         --green: #97d8a4;
-        --sidebar: 246px;
+        --sidebar: 15.375rem;
         font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       }
 
+      html { font-size: 16px; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
       * { box-sizing: border-box; }
-      body { margin: 0; min-width: 320px; background: var(--bg); color: var(--text); }
+      body { margin: 0; min-width: 20rem; background: var(--bg); color: var(--text); }
       button, a { font: inherit; }
       button { color: inherit; }
       a { color: inherit; text-decoration: none; }
       button:focus-visible, a:focus-visible, [tabindex]:focus-visible {
-        outline: 2px solid var(--orange-soft);
-        outline-offset: 3px;
+        outline: 0.125rem solid var(--orange-soft);
+        outline-offset: 0.1875rem;
       }
 
       .app { min-height: 100vh; }
@@ -40,174 +41,375 @@
         display: flex;
         width: var(--sidebar);
         flex-direction: column;
-        padding: 27px 18px 20px;
-        border-right: 1px solid var(--line);
+        padding: 1.6875rem 1.125rem 1.25rem;
+        border-right: 0.0625rem solid var(--line);
         background: #131312;
       }
-      .brand { display: flex; align-items: center; gap: 12px; padding: 0 8px; }
-      .brand-mark { width: 42px; height: 42px; flex: 0 0 auto; }
-      .brand-name { font-size: 15px; font-weight: 750; letter-spacing: .16em; }
-      .brand-subtitle { margin-top: 3px; color: var(--muted); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; }
-      .nav-label { margin: 43px 10px 12px; color: #77756e; font-size: 10px; font-weight: 700; letter-spacing: .15em; text-transform: uppercase; }
-      .nav { display: grid; gap: 5px; }
+      .brand { display: flex; align-items: center; gap: 0.75rem; padding: 0 0.5rem; }
+      .brand-mark { width: 2.625rem; height: 2.625rem; flex: 0 0 auto; }
+      .brand-name { font-size: 0.9375rem; font-weight: 750; letter-spacing: .16em; }
+      .brand-subtitle { margin-top: 0.1875rem; color: var(--muted); font-size: 0.625rem; letter-spacing: .12em; text-transform: uppercase; }
+      .nav-label { margin: 2.6875rem 0.625rem 0.75rem; color: #77756e; font-size: 0.625rem; font-weight: 700; letter-spacing: .15em; text-transform: uppercase; }
+      .nav { display: grid; gap: 0.3125rem; }
       .nav-link {
         display: flex;
-        min-height: 43px;
+        min-height: 2.6875rem;
         align-items: center;
-        gap: 12px;
-        padding: 0 12px;
-        border: 1px solid transparent;
-        border-radius: 9px;
+        gap: 0.75rem;
+        padding: 0 0.75rem;
+        border: 0.0625rem solid transparent;
+        border-radius: 0.5625rem;
         color: #aaa8a1;
-        font-size: 13px;
+        font-size: 0.8125rem;
         transition: .18s ease;
       }
       .nav-link:hover { background: #1c1c1a; color: var(--text); }
       .nav-link.active { border-color: #3a2a20; background: #261b15; color: #ffab7b; }
-      .nav-icon { display: grid; width: 18px; place-items: center; color: currentColor; }
+      .nav-icon { display: grid; width: 1.125rem; place-items: center; color: currentColor; }
       .sidebar-bottom { margin-top: auto; }
-      .status-card { padding: 14px; border: 1px solid var(--line); border-radius: 10px; background: #181817; }
-      .status-line { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 650; }
-      .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--orange); box-shadow: 0 0 12px #ff762e88; }
-      .status-card p { margin: 9px 0 0; color: var(--muted); font-size: 11px; line-height: 1.6; }
-      .version { padding: 15px 10px 0; color: #6f6d67; font-size: 10px; }
+      .status-card { padding: 0.875rem; border: 0.0625rem solid var(--line); border-radius: 0.625rem; background: #181817; }
+      .status-line { display: flex; align-items: center; gap: 0.5rem; font-size: 0.6875rem; font-weight: 650; }
+      .status-dot { width: 0.4375rem; height: 0.4375rem; border-radius: 50%; background: var(--orange); box-shadow: 0 0 0.75rem #ff762e88; }
+      .status-card p { margin: 0.5625rem 0 0; color: var(--muted); font-size: 0.6875rem; line-height: 1.6; }
+      .version { padding: 0.9375rem 0.625rem 0; color: #6f6d67; font-size: 0.625rem; }
 
       .main { min-height: 100vh; margin-left: var(--sidebar); }
       .topbar {
         display: flex;
-        min-height: 74px;
+        min-height: 4.625rem;
         align-items: center;
         justify-content: space-between;
-        padding: 0 42px;
-        border-bottom: 1px solid var(--line);
+        padding: 0 2.625rem;
+        border-bottom: 0.0625rem solid var(--line);
       }
-      .breadcrumb { color: var(--muted); font-size: 12px; }
+      .breadcrumb { color: var(--muted); font-size: 0.75rem; }
       .breadcrumb strong { color: var(--text); font-weight: 600; }
-      .topbar-right { display: flex; align-items: center; gap: 16px; }
-      .prototype-tag { padding: 6px 9px; border: 1px solid #433021; border-radius: 20px; color: #ffb078; font-size: 10px; font-weight: 650; letter-spacing: .04em; }
-      .avatar { display: grid; width: 30px; height: 30px; place-items: center; border: 1px solid #553720; border-radius: 50%; background: #302016; color: #ffc08e; font-size: 11px; font-weight: 700; }
-      .content { width: min(1120px, 100%); margin: 0 auto; padding: 42px; }
-      .eyebrow { display: flex; align-items: center; gap: 8px; color: var(--orange-soft); font-size: 10px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; }
-      .eyebrow::before { width: 18px; height: 1px; background: var(--orange); content: ""; }
-      h1 { margin: 14px 0 8px; font-size: clamp(30px, 4vw, 43px); font-weight: 650; letter-spacing: -.045em; }
-      .intro { max-width: 580px; margin: 0; color: var(--muted); font-size: 13px; line-height: 1.75; }
+      .topbar-right { display: flex; align-items: center; gap: 1rem; }
+      .prototype-tag { padding: 0.375rem 0.5625rem; border: 0.0625rem solid #433021; border-radius: 1.25rem; color: #ffb078; font-size: 0.625rem; font-weight: 650; letter-spacing: .04em; }
+      .avatar { display: grid; width: 1.875rem; height: 1.875rem; place-items: center; border: 0.0625rem solid #553720; border-radius: 50%; background: #302016; color: #ffc08e; font-size: 0.6875rem; font-weight: 700; }
+      .content { width: min(70rem, 100%); margin: 0 auto; padding: 2.625rem; }
+      .eyebrow { display: flex; align-items: center; gap: 0.5rem; color: var(--orange-soft); font-size: 0.625rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; }
+      .eyebrow::before { width: 1.125rem; height: 0.0625rem; background: var(--orange); content: ""; }
+      h1 { margin: 0.875rem 0 0.5rem; font-size: clamp(1.875rem, 4vw, 2.6875rem); font-weight: 650; letter-spacing: -.045em; }
+      .intro { max-width: 36.25rem; margin: 0; color: var(--muted); font-size: 0.8125rem; line-height: 1.75; }
       .hero {
         position: relative;
         display: flex;
-        min-height: 238px;
+        min-height: 14.875rem;
         align-items: center;
         justify-content: space-between;
-        gap: 30px;
+        gap: 1.875rem;
         overflow: hidden;
-        margin-top: 28px;
-        padding: 30px 34px;
-        border: 1px solid #3c2b20;
-        border-radius: 15px;
+        margin-top: 1.75rem;
+        padding: 1.875rem 2.125rem;
+        border: 0.0625rem solid #3c2b20;
+        border-radius: 0.9375rem;
         background:
           radial-gradient(ellipse at 87% 45%, #a6441825 0, transparent 39%),
           linear-gradient(115deg, #211a16, #181716 64%);
       }
-      .hero-copy { position: relative; z-index: 1; max-width: 510px; }
-      .hero h2 { margin: 0 0 8px; font-size: 20px; font-weight: 620; letter-spacing: -.02em; }
-      .hero p { margin: 0; color: #aaa69f; font-size: 12px; line-height: 1.7; }
-      .hero-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 19px; }
-      .meta-chip { padding: 6px 9px; border: 1px solid #44352a; border-radius: 6px; color: #c9b5a5; font-size: 10px; }
-      .eye-art { width: 250px; max-width: 35%; flex: 0 0 auto; opacity: .94; filter: drop-shadow(0 0 22px #ff762e28); }
+      .hero-copy { position: relative; z-index: 1; max-width: 31.875rem; }
+      .hero h2 { margin: 0 0 0.5rem; font-size: 1.25rem; font-weight: 620; letter-spacing: -.02em; }
+      .hero p { margin: 0; color: #aaa69f; font-size: 0.75rem; line-height: 1.7; }
+      .hero-meta { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1.1875rem; }
+      .meta-chip { padding: 0.375rem 0.5625rem; border: 0.0625rem solid #44352a; border-radius: 0.375rem; color: #c9b5a5; font-size: 0.625rem; }
+      .eye-art { width: 15.625rem; max-width: 35%; flex: 0 0 auto; opacity: .94; filter: drop-shadow(0 0 1.375rem #ff762e28); }
 
-      .section-heading { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin: 37px 0 15px; }
-      .section-heading h2 { margin: 0; font-size: 16px; font-weight: 650; letter-spacing: -.02em; }
-      .section-heading p { margin: 5px 0 0; color: var(--muted); font-size: 11px; }
-      .text-link { color: var(--orange-soft); font-size: 11px; }
-      .tool-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 13px; }
+      .section-heading { display: flex; align-items: end; justify-content: space-between; gap: 1rem; margin: 2.3125rem 0 0.9375rem; }
+      .section-heading h2 { margin: 0; font-size: 1rem; font-weight: 650; letter-spacing: -.02em; }
+      .section-heading p { margin: 0.3125rem 0 0; color: var(--muted); font-size: 0.6875rem; }
+      .text-link { color: var(--orange-soft); font-size: 0.6875rem; }
+      .tool-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 11.5rem), 1fr)); gap: 0.8125rem; }
       .tool-card {
         display: flex;
-        min-height: 168px;
+        min-height: 10.5rem;
         flex-direction: column;
         align-items: flex-start;
-        padding: 17px;
-        border: 1px solid var(--line);
-        border-radius: 11px;
+        padding: 1.0625rem;
+        border: 0.0625rem solid var(--line);
+        border-radius: 0.6875rem;
         background: var(--surface);
         text-align: left;
         cursor: pointer;
         transition: transform .18s ease, border-color .18s ease, background .18s ease;
       }
       .tool-card:hover, .tool-card.selected { transform: translateY(-2px); border-color: #75472c; background: #201b17; }
-      .tool-icon { display: grid; width: 34px; height: 34px; place-items: center; border: 1px solid #49301f; border-radius: 9px; background: #2a1d15; color: var(--orange-soft); }
-      .tool-name { margin-top: 13px; font-size: 12px; font-weight: 650; }
-      .tool-description { margin-top: 5px; color: var(--muted); font-size: 10px; line-height: 1.55; }
-      .tool-arrow { margin-top: auto; padding-top: 12px; color: #d18454; font-size: 10px; }
+      .tool-icon { display: grid; width: 2.125rem; height: 2.125rem; place-items: center; border: 0.0625rem solid #49301f; border-radius: 0.5625rem; background: #2a1d15; color: var(--orange-soft); }
+      .tool-name { margin-top: 0.8125rem; font-size: 0.75rem; font-weight: 650; }
+      .tool-description { margin-top: 0.3125rem; color: var(--muted); font-size: 0.625rem; line-height: 1.55; }
+      .tool-arrow { margin-top: auto; padding-top: 0.75rem; color: #d18454; font-size: 0.625rem; }
 
-      .workspace { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(225px, .8fr); gap: 13px; margin-top: 30px; }
-      .panel { min-width: 0; padding: 18px; border: 1px solid var(--line); border-radius: 11px; background: var(--surface); }
-      .panel-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-      .panel-title h2 { margin: 0; font-size: 13px; font-weight: 650; }
-      .panel-title span { color: var(--muted); font-size: 10px; }
+      .workspace { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(14.0625rem, .8fr); gap: 0.8125rem; margin-top: 1.875rem; }
+      .panel { min-width: 0; padding: 1.125rem; border: 0.0625rem solid var(--line); border-radius: 0.6875rem; background: var(--surface); }
+      .panel-title { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
+      .panel-title h2 { margin: 0; font-size: 0.8125rem; font-weight: 650; }
+      .panel-title span { color: var(--muted); font-size: 0.625rem; }
       .dropzone {
         display: flex;
-        min-height: 142px;
+        min-height: 8.875rem;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        margin-top: 15px;
-        padding: 18px;
-        border: 1px dashed #51463b;
-        border-radius: 9px;
+        margin-top: 0.9375rem;
+        padding: 1.125rem;
+        border: 0.0625rem dashed #51463b;
+        border-radius: 0.5625rem;
         background: #171615;
         text-align: center;
         transition: .18s ease;
       }
       .dropzone.drag-over { border-color: var(--orange); background: #241a14; }
-      .upload-icon { display: grid; width: 35px; height: 35px; place-items: center; border-radius: 10px; background: #2b1d15; color: var(--orange-soft); }
-      .dropzone strong { margin-top: 11px; font-size: 11px; font-weight: 600; }
-      .dropzone p { margin: 5px 0 11px; color: var(--muted); font-size: 10px; }
-      .upload-button { padding: 7px 11px; border: 1px solid #69412a; border-radius: 6px; background: #322116; color: #ffc094; font-size: 10px; font-weight: 650; cursor: pointer; }
+      .upload-icon { display: grid; width: 2.1875rem; height: 2.1875rem; place-items: center; border-radius: 0.625rem; background: #2b1d15; color: var(--orange-soft); }
+      .dropzone strong { margin-top: 0.6875rem; font-size: 0.6875rem; font-weight: 600; }
+      .dropzone p { margin: 0.3125rem 0 0.6875rem; color: var(--muted); font-size: 0.625rem; }
+      .upload-button { padding: 0.4375rem 0.6875rem; border: 0.0625rem solid #69412a; border-radius: 0.375rem; background: #322116; color: #ffc094; font-size: 0.625rem; font-weight: 650; cursor: pointer; }
       .upload-button:hover { background: #482b19; }
-      .file-input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; clip-path: inset(50%); }
-      .file-list { display: grid; gap: 7px; margin-top: 11px; }
-      .file-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 10px; border: 1px solid var(--line); border-radius: 7px; background: #151514; font-size: 10px; }
+      .file-input { position: absolute; width: 0.0625rem; height: 0.0625rem; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; clip-path: inset(50%); }
+      .file-list { display: grid; gap: 0.4375rem; margin-top: 0.6875rem; }
+      .file-row { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.5625rem 0.625rem; border: 0.0625rem solid var(--line); border-radius: 0.4375rem; background: #151514; font-size: 0.625rem; }
       .file-name { overflow: hidden; color: #d6d2ca; text-overflow: ellipsis; white-space: nowrap; }
       .file-size { flex: 0 0 auto; color: var(--muted); }
-      .activity-empty { display: grid; min-height: 169px; align-content: center; justify-items: center; text-align: center; }
-      .activity-symbol { color: #6f6d66; font-size: 23px; }
-      .activity-empty strong { margin-top: 8px; font-size: 11px; font-weight: 600; }
-      .activity-empty p { max-width: 180px; margin: 5px 0 0; color: var(--muted); font-size: 10px; line-height: 1.55; }
-      .footnote { margin: 18px 0 0; color: #74716a; font-size: 10px; line-height: 1.6; }
-      .toast { position: fixed; right: 24px; bottom: 24px; z-index: 5; max-width: min(380px, calc(100vw - 32px)); padding: 12px 15px; transform: translateY(12px); border: 1px solid #573b28; border-radius: 8px; background: #241b15; color: #f3c6a4; font-size: 11px; opacity: 0; pointer-events: none; transition: .2s ease; }
+      .activity-empty { display: grid; min-height: 10.5625rem; align-content: center; justify-items: center; text-align: center; }
+      .activity-symbol { color: #6f6d66; font-size: 1.4375rem; }
+      .activity-empty strong { margin-top: 0.5rem; font-size: 0.6875rem; font-weight: 600; }
+      .activity-empty p { max-width: 11.25rem; margin: 0.3125rem 0 0; color: var(--muted); font-size: 0.625rem; line-height: 1.55; }
+      .footnote { margin: 1.125rem 0 0; color: #74716a; font-size: 0.625rem; line-height: 1.6; }
+      .toast { position: fixed; right: 1.5rem; bottom: 1.5rem; z-index: 9; max-width: min(23.75rem, calc(100vw - 2rem)); padding: 0.75rem 0.9375rem; transform: translateY(0.75rem); border: 0.0625rem solid #573b28; border-radius: 0.5rem; background: #241b15; color: #f3c6a4; font-size: 0.6875rem; opacity: 0; pointer-events: none; transition: .2s ease; }
       .toast.visible { transform: translateY(0); opacity: 1; }
 
+      [hidden] { display: none !important; }
+      .status-dot.ok { background: var(--green); box-shadow: 0 0 0.75rem #97d8a488; }
+      .engines { display: grid; gap: 0.4375rem; margin-top: 0.6875rem; }
+      .engine { display: flex; align-items: center; justify-content: space-between; color: var(--muted); font-size: 0.625rem; }
+      .engine span { display: flex; align-items: center; gap: 0.5rem; }
+      .engine i { width: 0.375rem; height: 0.375rem; border-radius: 50%; background: #55534d; }
+      .engine em { color: #6f6d67; font-size: 0.5625rem; font-style: normal; text-transform: uppercase; letter-spacing: .08em; }
+      .engine[data-state="loading"] i { background: var(--orange); animation: pulse 1s ease-in-out infinite; }
+      .engine[data-state="ready"] i { background: var(--green); }
+      .engine[data-state="error"] i { background: #e5584f; }
+      @keyframes pulse { 50% { opacity: .35; } }
+
+      .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-top: 0.9375rem; }
+      .btn { padding: 0.5rem 0.75rem; border: 0.0625rem solid #69412a; border-radius: 0.4375rem; background: #322116; color: #ffc094; font-size: 0.6875rem; font-weight: 650; cursor: pointer; }
+      .btn:hover:not(:disabled) { background: #482b19; }
+      .btn:disabled { opacity: .4; cursor: not-allowed; }
+      .btn.ghost { border-color: var(--line); background: transparent; color: var(--muted); }
+      .btn.ghost:hover:not(:disabled) { background: #1c1c1a; color: var(--text); }
+      .btn.on { border-color: var(--orange); background: #482b19; }
+      .stage-wrap { margin-top: 0.75rem; overflow: hidden; border: 0.0625rem dashed #51463b; border-radius: 0.5625rem; background: #171615; transition: .18s ease; }
+      .stage-wrap.drag-over { border-color: var(--orange); background: #241a14; }
+      .stage-wrap.has-media { border-style: solid; border-color: var(--line); }
+      .dz-empty { display: flex; min-height: 11.875rem; flex-direction: column; align-items: center; justify-content: center; padding: 1.125rem; text-align: center; }
+      .dz-empty strong { margin-top: 0.6875rem; font-size: 0.6875rem; font-weight: 600; }
+      .dz-empty p { max-width: 17.5rem; margin: 0.3125rem 0 0; color: var(--muted); font-size: 0.625rem; line-height: 1.6; }
+      .stage { position: relative; line-height: 0; background: #0c0c0b; }
+      .stage > canvas#stage-canvas, .stage > video { display: block; width: 100%; height: auto; }
+      .stage > canvas#overlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+      .hud { position: absolute; right: 0.625rem; bottom: 0.625rem; padding: 0.3125rem 0.5rem; border: 0.0625rem solid #433021; border-radius: 0.375rem; background: #10100fd0; color: #ffb078; font-size: 0.625rem; font-weight: 650; line-height: 1.4; }
+
+      .results { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.625rem; margin-top: 0.75rem; }
+      .result { min-width: 0; min-height: 6rem; padding: 0.8125rem; border: 0.0625rem solid var(--line); border-radius: 0.5625rem; background: #151514; }
+      .result.wide { grid-column: 1 / -1; }
+      .result h3 { display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem; margin: 0 0 0.5625rem; font-size: 0.6875rem; font-weight: 650; }
+      .result h3 small { color: #77756e; font-size: 0.5625rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
+      .muted { margin: 0; color: var(--muted); font-size: 0.625rem; line-height: 1.6; }
+      .muted.busy { animation: pulse 1.2s ease-in-out infinite; }
+      .muted.bad { color: #e08a84; }
+      .kv { display: flex; justify-content: space-between; gap: 0.75rem; padding: 0.25rem 0; border-bottom: 0.0625rem solid #222220; font-size: 0.625rem; }
+      .kv:last-child { border-bottom: 0; }
+      .kv span:first-child { color: var(--muted); }
+      .kv span:last-child { min-width: 0; overflow-wrap: anywhere; text-align: right; color: #d6d2ca; }
+      .bars { display: grid; gap: 0.4375rem; }
+      .bar-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.1875rem 0.5rem; font-size: 0.625rem; }
+      .bar-row .pct { color: var(--orange-soft); }
+      .bar-track { grid-column: 1 / -1; height: 0.1875rem; border-radius: 0.125rem; background: #262624; }
+      .bar-fill { height: 100%; border-radius: 0.125rem; background: var(--orange); }
+      .swatches { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+      .swatch { display: grid; gap: 0.25rem; padding: 0; border: 0; background: none; color: var(--muted); font-size: 0.5625rem; cursor: pointer; text-align: center; }
+      .swatch b { display: block; width: 2.625rem; height: 2rem; border: 0.0625rem solid #ffffff22; border-radius: 0.375rem; }
+      .ocr-text { max-height: 9.375rem; margin: 0.5625rem 0 0; overflow: auto; padding: 0.5625rem; border: 0.0625rem solid var(--line); border-radius: 0.4375rem; background: #111110; color: #d6d2ca; font: inherit; font-size: 0.625rem; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+      .cmp-slots { display: grid; grid-template-columns: 1fr 1fr; gap: 0.625rem; margin-top: 0.9375rem; }
+      .slot { display: flex; align-items: center; gap: 0.625rem; min-width: 0; padding: 0.75rem; border: 0.0625rem dashed #51463b; border-radius: 0.5625rem; background: #171615; text-align: left; cursor: pointer; }
+      .slot:hover { border-color: #75472c; }
+      .slot.filled { border-style: solid; border-color: var(--line); }
+      .slot-tag { display: grid; width: 1.5rem; height: 1.5rem; flex: 0 0 auto; place-items: center; border-radius: 0.375rem; background: #2b1d15; color: var(--orange-soft); font-size: 0.6875rem; font-weight: 700; }
+      .slot-name { overflow: hidden; color: #d6d2ca; font-size: 0.625rem; text-overflow: ellipsis; white-space: nowrap; }
+      .cmp-stage { position: relative; margin-top: 0.75rem; overflow: hidden; border: 0.0625rem solid var(--line); border-radius: 0.5625rem; background: #0c0c0b; line-height: 0; }
+      .cmp-stage canvas { display: block; width: 100%; height: auto; }
+      .cmp-stage canvas + canvas { position: absolute; inset: 0; height: 100%; }
+      .cmp-stage canvas#cmp-d { position: static; height: auto; }
+      .range { flex: 1 1 8.75rem; accent-color: var(--orange); }
+
+      .lib-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(8.125rem, 1fr)); gap: 0.625rem; margin-top: 0.9375rem; }
+      .lib-item { overflow: hidden; border: 0.0625rem solid var(--line); border-radius: 0.5625rem; background: #151514; }
+      .lib-item img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; background: #0c0c0b; }
+      .lib-meta { padding: 0.5rem 0.5625rem 0.5625rem; font-size: 0.625rem; }
+      .lib-meta strong { display: block; overflow: hidden; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+      .lib-meta span { display: block; margin-top: 0.1875rem; overflow: hidden; color: var(--muted); text-overflow: ellipsis; white-space: nowrap; }
+      .lib-meta button { margin-top: 0.4375rem; padding: 0; border: 0; background: none; color: #d18454; font-size: 0.625rem; cursor: pointer; }
+
+      .log { display: grid; gap: 0.5625rem; margin: 0.875rem 0 0; padding: 0; list-style: none; }
+      .log li { display: grid; gap: 0.125rem; padding-left: 0.625rem; border-left: 0.125rem solid #3a2a20; font-size: 0.625rem; line-height: 1.5; }
+      .log time { color: #77756e; font-size: 0.5625rem; }
+
       @media (max-width: 900px) {
-        :root { --sidebar: 205px; }
-        .content { padding: 32px 26px; }
-        .topbar { padding: 0 26px; }
+        :root { --sidebar: 12.8125rem; }
+        .content { padding: 2rem 1.625rem; }
+        .topbar { padding: 0 1.625rem; }
         .tool-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       }
       @media (max-width: 640px) {
-        :root { --sidebar: 0px; }
-        .sidebar { position: sticky; inset: 0 0 auto; width: 100%; height: auto; padding: 12px 16px; border-right: 0; border-bottom: 1px solid var(--line); }
+        :root { --sidebar: 0; }
+        .sidebar { position: sticky; inset: 0 0 auto; width: 100%; height: auto; padding: 0.75rem 1rem; border-right: 0; border-bottom: 0.0625rem solid var(--line); }
         .brand { padding: 0; }
-        .brand-mark { width: 35px; height: 35px; }
-        .brand-name { font-size: 13px; }
+        .brand-mark { width: 2.1875rem; height: 2.1875rem; }
+        .brand-name { font-size: 0.8125rem; }
         .nav-label, .sidebar-bottom { display: none; }
-        .nav { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 3px; margin-top: 12px; }
-        .nav-link { min-height: 35px; justify-content: center; gap: 6px; padding: 0 4px; font-size: 10px; }
+        .nav { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.1875rem; margin-top: 0.75rem; }
+        .nav-link { min-height: 2.1875rem; justify-content: center; gap: 0.375rem; padding: 0 0.25rem; font-size: 0.625rem; }
         .nav-icon { width: auto; }
         .main { margin-left: 0; }
-        .topbar { min-height: 54px; padding: 0 18px; }
-        .content { padding: 27px 18px; }
-        .hero { min-height: 210px; padding: 23px; }
-        .eye-art { position: absolute; right: 9px; bottom: 8px; width: 170px; max-width: 45%; opacity: .36; }
+        .topbar { min-height: 3.375rem; padding: 0 1.125rem; }
+        .content { padding: 1.6875rem 1.125rem; }
+        .hero { min-height: 13.125rem; padding: 1.4375rem; }
+        .eye-art { position: absolute; right: 0.5625rem; bottom: 0.5rem; width: 10.625rem; max-width: 45%; opacity: .36; }
         .hero-copy { max-width: 100%; }
         .workspace { grid-template-columns: 1fr; }
+        .results, .cmp-slots { grid-template-columns: 1fr; }
       }
       @media (max-width: 390px) {
         .tool-grid { grid-template-columns: 1fr; }
-        .tool-card { min-height: 145px; }
-        .prototype-tag { font-size: 9px; }
+        .tool-card { min-height: 9.0625rem; }
+        .prototype-tag { font-size: 0.5625rem; }
       }
       @media (prefers-reduced-motion: reduce) {
         *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
       }
+    
+
+      /* Stage sizes itself from the media's aspect ratio so overlays always line up. */
+      .stage { width: min(100%, calc(70vh * var(--ar, 1.6))); width: min(100%, calc(70dvh * var(--ar, 1.6))); aspect-ratio: var(--ar, 1.6); margin: 0 auto; }
+      .stage > canvas#stage-canvas, .stage > video { height: 100%; }
+
+      .tv-toggle { padding: .4rem .7rem; border: 1px solid var(--line); border-radius: 1.25rem; background: transparent; color: var(--muted); font-size: .6875rem; font-weight: 650; letter-spacing: .04em; cursor: pointer; }
+      .tv-toggle { white-space: nowrap; }
+      .tv-toggle[aria-pressed="true"] { border-color: var(--orange); background: #261b15; color: #ffab7b; }
+      button { touch-action: manipulation; }
+
+      /* Phones and touch screens: bigger type, 44px targets, safe areas. */
+      @media (pointer: coarse) {
+        .btn, .tv-toggle, .upload-button { min-height: 44px; }
+        .nav-link { min-height: 44px; }
+        .slot { min-height: 56px; }
+        .swatch b { height: 2.5rem; }
+        .lib-meta button { min-height: 44px; padding: 0 .25rem; }
+        .tool-card { min-height: 0; }
+        .brand { min-height: 44px; }
+        .field { min-height: 44px; }
+        .text-link { display: inline-flex; min-height: 44px; align-items: center; }
+      }
+      @media (max-width: 640px) {
+        html { font-size: 17.5px; }
+        .sidebar { padding-top: calc(.75rem + env(safe-area-inset-top)); padding-left: calc(1rem + env(safe-area-inset-left)); padding-right: calc(1rem + env(safe-area-inset-right)); }
+        .topbar, .content { padding-left: calc(1.125rem + env(safe-area-inset-left)); padding-right: calc(1.125rem + env(safe-area-inset-right)); }
+        .content { padding-bottom: calc(1.7rem + env(safe-area-inset-bottom)); }
+        .toast { right: 1rem; bottom: calc(1rem + env(safe-area-inset-bottom)); left: 1rem; max-width: none; }
+        .brand-subtitle { display: none; }
+        .nav-link { flex-direction: column; gap: .1rem; padding: .35rem .15rem; font-size: .625rem; line-height: 1.2; }
+        .prototype-tag { display: none; }
+        .breadcrumb { display: none; }
+        .topbar { justify-content: flex-end; }
+        .toolbar .btn { flex: 1 1 calc(50% - .5rem); }
+        .tool-card { min-height: 0; padding: 1rem; }
+        .tool-arrow { padding-top: .6rem; }
+        .stage { width: min(100%, calc(60vh * var(--ar, 1.6))); width: min(100%, calc(60dvh * var(--ar, 1.6))); }
+      }
+      @media (max-width: 390px) { .nav-link span.nav-icon { display: none; } }
+
+      /* Connect TV */
+      .lead { margin: .95rem 0 0; color: var(--muted); font-size: .75rem; line-height: 1.7; }
+      .steps { display: grid; gap: .75rem; margin: .9rem 0 0; padding: 0; list-style: none; }
+      .step { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .9rem; padding: .9rem; border: 1px solid var(--line); border-radius: .65rem; background: #151514; }
+      .step-n { display: grid; width: 1.75rem; height: 1.75rem; place-items: center; border: 1px solid #49301f; border-radius: 50%; background: #2a1d15; color: var(--orange-soft); font-size: .75rem; font-weight: 700; }
+      .step strong { font-size: .75rem; font-weight: 650; }
+      .step p { margin: .3rem 0 0; color: var(--muted); font-size: .6875rem; line-height: 1.65; }
+      .step .toolbar { margin-top: .75rem; }
+      .qr-row { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 1rem; margin-top: .75rem; }
+      .qr { width: 9.5rem; height: 9.5rem; flex: 0 0 auto; padding: .6rem; border-radius: .65rem; background: #fff; line-height: 0; }
+      .qr svg { display: block; width: 100%; height: 100%; }
+      .qr.empty { display: grid; place-items: center; background: #151514; border: 1px dashed #51463b; color: var(--muted); font-size: .625rem; line-height: 1.5; text-align: center; }
+      .qr-side { min-width: 0; flex: 1 1 14rem; }
+      .qr-side .toolbar { margin-top: .6rem; }
+      .field-label { display: block; margin-bottom: .35rem; color: var(--muted); font-size: .625rem; }
+      .field { display: block; width: 100%; padding: .55rem .7rem; border: 1px solid var(--line); border-radius: .45rem; background: #111110; color: var(--text); font: inherit; font-size: .6875rem; }
+      .exit-present { position: fixed; top: calc(.75rem + env(safe-area-inset-top)); right: calc(.75rem + env(safe-area-inset-right)); z-index: 6; }
+      html[data-present] .sidebar, html[data-present] .topbar, html[data-present] .hero, html[data-present] .tool-grid,
+      html[data-present] .section-heading, html[data-present] .intro, html[data-present] .eyebrow, html[data-present] h1,
+      html[data-present] #activity, html[data-present] .footnote, html[data-present] #tools { display: none; }
+      html[data-present] .main { margin-left: 0; }
+      html[data-present] .content { padding-top: 1rem; }
+      html[data-present] .workspace { grid-template-columns: 1fr; margin-top: 0; }
+
+      /* Casting: pair two devices */
+      .cast-card { margin-top: .9rem; padding: .9rem; border: 1px solid var(--line); border-radius: .65rem; background: #151514; }
+      .cast-card h3 { margin: 0; font-size: .75rem; font-weight: 650; }
+      .cast-card p { margin: .3rem 0 0; color: var(--muted); font-size: .6875rem; line-height: 1.65; }
+      .cast-card .toolbar { margin-top: .75rem; }
+      .cast-card .field-label { margin-top: .9rem; }
+      .sub-title { margin: 1.5rem 0 0; font-size: .75rem; font-weight: 650; }
+      .code-field { max-width: 12rem; font-weight: 650; letter-spacing: .18em; text-transform: uppercase; }
+      .receiver { position: fixed; inset: 0; z-index: 8; display: flex; flex-direction: column; padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left)); background: var(--bg); }
+      .rx-top { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+      .rx-brand { font-size: .75rem; font-weight: 750; letter-spacing: .16em; }
+      .rx-hud { margin-right: auto; color: #ffb078; font-size: .6875rem; font-weight: 650; }
+      .rx-body { display: flex; flex: 1; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; text-align: center; }
+      .rx-body h2 { margin: 0; max-width: 34rem; font-size: 1.25rem; font-weight: 650; }
+      .rx-body .qr { width: min(46vh, 70vw, 20rem); height: min(46vh, 70vw, 20rem); }
+      .rx-code { color: var(--orange-soft); font-size: clamp(2rem, 7vw, 4rem); font-weight: 750; letter-spacing: .2em; }
+      .rx-line { max-width: 34rem; margin: 0; color: var(--muted); font-size: .8125rem; line-height: 1.7; }
+      .rx-stage { display: flex; flex: 1; min-height: 0; align-items: center; justify-content: center; padding-top: .75rem; }
+      .rx-stage canvas, .rx-stage video { max-width: 100%; max-height: 100%; border-radius: .5rem; background: #0c0c0b; }
+      .cast-pill { position: fixed; bottom: calc(1rem + env(safe-area-inset-bottom)); left: 1rem; z-index: 7; display: flex; align-items: center; gap: .75rem; padding: .3rem .4rem .3rem .9rem; border: 1px solid #433021; border-radius: 2rem; background: #241b15; color: #ffb078; font-size: .6875rem; font-weight: 650; }
+
+      /* Welcome screen and personal i3 theme */
+      .splash { position: fixed; inset: 0; z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; padding: 2rem; color: #efe9dc; text-align: center; background: radial-gradient(circle at 28% 18%, #1d3a7a 0, transparent 45%), radial-gradient(circle at 82% 86%, #16306a 0, transparent 40%), #08122b; transition: opacity .35s ease; }
+      .splash.leaving { opacity: 0; }
+      .splash svg { width: min(34vw, 9rem); height: auto; }
+      .splash h2 { margin: .4rem 0 0; font-size: clamp(1.6rem, 5vw, 2.6rem); font-weight: 700; letter-spacing: -.02em; }
+      .splash p { margin: 0; color: #b9c3dc; font-size: .9375rem; letter-spacing: .08em; }
+      .splash p.hint { margin-top: .5rem; color: #8a96b5; font-size: .6875rem; letter-spacing: .02em; }
+      .sheet { position: fixed; inset: 0; z-index: 8; display: flex; align-items: center; justify-content: center; padding: 1rem; background: rgba(5, 8, 16, .72); }
+      .sheet-card { width: min(100%, 32rem); max-height: 100%; overflow: auto; padding: 1.25rem; border: 1px solid var(--line); border-radius: .9rem; background: #151514; }
+      .sheet-card h2 { margin: 0; font-size: 1rem; font-weight: 650; }
+      .theme-faces { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: .9rem; }
+      .theme-faces img { width: 3.5rem; height: 3.5rem; border: 2px solid #efe9dc; border-radius: 50%; object-fit: cover; }
+      .tool-icon.face { width: 2.75rem; height: 2.75rem; overflow: hidden; padding: 0; border: 2px solid #efe9dc; border-radius: 50%; }
+      .avatar.face { overflow: hidden; padding: 0; border-color: #efe9dc; }
+      .tool-icon.face img, .avatar.face img { display: block; width: 100%; height: 100%; object-fit: cover; }
+      html[data-theme-i3] body { background: linear-gradient(180deg, rgba(6, 14, 34, .78), rgba(6, 14, 34, .92)), var(--i3-photo, none) center / cover fixed, radial-gradient(circle at 30% 20%, #1d3a7a 0, transparent 45%), #08122b; }
+      html[data-theme-i3] .sidebar, html[data-theme-i3] .topbar { border-color: rgba(239, 233, 220, .12); background: rgba(8, 18, 43, .72); }
+      html[data-theme-i3] .panel, html[data-theme-i3] .tool-card, html[data-theme-i3] .hero, html[data-theme-i3] .status-card,
+      html[data-theme-i3] .result, html[data-theme-i3] .step, html[data-theme-i3] .cast-card, html[data-theme-i3] .stage-wrap { border-color: rgba(239, 233, 220, .16); background: rgba(12, 24, 54, .76); }
+      html[data-theme-i3] .tool-card:hover, html[data-theme-i3] .tool-card.selected { border-color: #efe9dc; background: rgba(28, 48, 96, .84); }
+      html[data-theme-i3] .eyebrow, html[data-theme-i3] .text-link, html[data-theme-i3] .tool-arrow { color: #efe9dc; }
+      html[data-theme-i3] .eyebrow::before { background: #efe9dc; }
+
+      /* Big monitors reporting 4K CSS pixels. */
+      @media (min-width: 2400px) { html { font-size: 28px; } }
+
+      /* TV mode: 10-foot type, big focus rings, D-pad friendly. */
+      html[data-tv] { font-size: 26px; }
+      html[data-tv] :focus-visible { outline: .22rem solid var(--orange-soft); outline-offset: .22rem; }
+      html[data-tv] .tool-card:focus-visible, html[data-tv] .tool-card:hover { transform: scale(1.04); }
+      html[data-tv] .btn, html[data-tv] .tv-toggle { min-height: 2.6rem; font-size: .75rem; }
+      html[data-tv] .nav-link { min-height: 2.8rem; }
+      html[data-tv] .content { padding: 2.6rem 3.4rem; }
+      html[data-tv] .topbar { padding: 0 3.4rem; }
+      html[data-tv] .stage { width: min(100%, calc(62vh * var(--ar, 1.6))); width: min(100%, calc(62dvh * var(--ar, 1.6))); }
+      html[data-tv] { scroll-padding: 4rem; }
+      @media (min-width: 2400px) { html[data-tv] { font-size: 40px; } }
+      @media (max-width: 1280px) { html[data-tv] { font-size: 17px; } }
     </style>
   </head>
   <body>
@@ -234,23 +436,28 @@
 
         <div class="sidebar-bottom">
           <div class="status-card">
-            <div class="status-line"><span class="status-dot"></span>Prototype workspace</div>
-            <p>Your files stay in this browser demo. Image analysis is not connected yet.</p>
+            <div class="status-line"><span class="status-dot ok"></span>Live workspace</div>
+            <p>Analysis runs in this browser. Your images are never uploaded.</p>
+            <div class="engines" aria-label="Engine status">
+              <div class="engine" id="eng-detect"><span><i></i>Object detection</span><em>on demand</em></div>
+              <div class="engine" id="eng-classify"><span><i></i>Scene labels</span><em>on demand</em></div>
+              <div class="engine" id="eng-text"><span><i></i>Text (OCR)</span><em>on demand</em></div>
+            </div>
           </div>
-          <div class="version">EYE3 VISION · INTERFACE CONCEPT</div>
+          <div class="version">EYE3 VISION · v0.3 · BY i3 DESIGN</div>
         </div>
       </aside>
 
       <main class="main" id="overview">
         <header class="topbar">
           <div class="breadcrumb">Workspace <span aria-hidden="true">/</span> <strong>Overview</strong></div>
-          <div class="topbar-right"><span class="prototype-tag">DESIGN PREVIEW</span><div class="avatar" aria-label="Guest profile">G</div></div>
+          <div class="topbar-right"><button class="tv-toggle" id="btn-theme" type="button" title="Your photo as the background, with face icons">Personalize</button><button class="tv-toggle" id="btn-tv" type="button" aria-pressed="false" title="Large-screen layout with remote-control navigation">TV mode</button><span class="prototype-tag">LIVE · ON-DEVICE</span><div class="avatar" aria-label="Guest profile">G</div></div>
         </header>
 
         <div class="content">
           <div class="eyebrow">See beyond the surface</div>
           <h1>Welcome to EYE3.</h1>
-          <p class="intro">A focused visual workspace concept for inspecting images, comparing details, and organizing what you see.</p>
+          <p class="intro">A live visual workspace for inspecting images, comparing details, and organizing what you see — now with real on-device analysis and a camera mode.</p>
 
           <section class="hero" aria-labelledby="hero-title">
             <div class="hero-copy">
@@ -283,126 +490,1807 @@
             <div class="tool-grid">
               <button class="tool-card selected" type="button" data-tool="Image inspector">
                 <span class="tool-icon" aria-hidden="true">⌕</span><span class="tool-name">Image inspector</span>
-                <span class="tool-description">Review an image and its basic file details.</span><span class="tool-arrow">Select tool ↗</span>
+                <span class="tool-description">Detect objects, label scenes, read text, and inspect metadata — or go live with your camera.</span><span class="tool-arrow">Select tool ↗</span>
               </button>
               <button class="tool-card" type="button" data-tool="Side-by-side compare">
                 <span class="tool-icon" aria-hidden="true">◫</span><span class="tool-name">Side-by-side compare</span>
-                <span class="tool-description">Prepare two images for a visual comparison.</span><span class="tool-arrow">Select tool ↗</span>
+                <span class="tool-description">Compare two images with a split slider and a pixel-difference heatmap.</span><span class="tool-arrow">Select tool ↗</span>
               </button>
               <button class="tool-card" type="button" data-tool="Visual library">
                 <span class="tool-icon" aria-hidden="true">▤</span><span class="tool-name">Visual library</span>
-                <span class="tool-description">A starting point for keeping image work organized.</span><span class="tool-arrow">Select tool ↗</span>
+                <span class="tool-description">Save inspected images with their labels and keep them in this browser.</span><span class="tool-arrow">Select tool ↗</span>
+              </button>
+              <button class="tool-card" type="button" data-tool="Connect TV">
+                <span class="tool-icon" aria-hidden="true">▭</span><span class="tool-name">Connect TV</span>
+                <span class="tool-description">Show EYE3 on your TV: iPhone HDMI adapter, AirPlay, Miracast, or built-in casting to a TV browser or computer.</span><span class="tool-arrow">Select tool ↗</span>
               </button>
             </div>
           </section>
 
-          <section class="workspace" id="inspector" aria-label="Image workspace">
+          <section class="workspace" id="inspector" aria-label="Vision workspace">
             <div class="panel">
-              <div class="panel-title"><h2 id="upload-title">Image inspector</h2><span>Local preview</span></div>
-              <div class="dropzone" id="dropzone" tabindex="0" role="group" aria-label="Choose or drop image files">
-                <span class="upload-icon" aria-hidden="true">↑</span>
-                <strong>Drop an image here</strong>
-                <p>PNG, JPG, WEBP, or GIF · files are not uploaded</p>
-                <label class="upload-button" for="file-input">Choose image</label>
-                <input class="file-input" id="file-input" type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple>
+              <div class="panel-title"><h2 id="upload-title">Image inspector</h2><span>On-device</span></div>
+
+              <div id="view-inspector">
+                <div class="toolbar">
+                  <button class="btn" id="btn-choose" type="button">Choose image</button>
+                  <button class="btn" id="btn-camera" type="button" aria-pressed="false">Start live camera</button>
+                  <button class="btn" id="btn-capture" type="button" hidden>Capture frame</button>
+                  <button class="btn ghost" id="btn-save" type="button" disabled>Save to library</button>
+                  <button class="btn ghost" id="btn-clear" type="button" disabled>Clear</button>
+                  <input class="file-input" id="file-input" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/avif" aria-label="Choose an image">
+                </div>
+                <div class="stage-wrap" id="dropzone" tabindex="0" role="group" aria-label="Choose or drop an image">
+                  <div class="dz-empty" id="dz-empty">
+                    <span class="upload-icon" aria-hidden="true">↑</span>
+                    <strong>Drop, paste or choose an image</strong>
+                    <p>PNG, JPG, WEBP, GIF · or start the live camera. Analysis runs in your browser; images are never uploaded.</p>
+                  </div>
+                  <div class="stage" id="stage" hidden>
+                    <canvas id="stage-canvas"></canvas>
+                    <video id="cam" playsinline muted hidden></video>
+                    <canvas id="overlay"></canvas>
+                    <div class="hud" id="hud" hidden></div>
+                  </div>
+                </div>
+                <div class="results" id="results" aria-live="polite">
+                  <article class="result" id="r-file"><h3>File</h3><div class="body"><p class="muted">Waiting for an image.</p></div></article>
+                  <article class="result" id="r-palette"><h3>Palette</h3><div class="body"><p class="muted">Waiting for an image.</p></div></article>
+                  <article class="result" id="r-objects"><h3>Objects <small>COCO-SSD</small></h3><div class="body"><p class="muted">Waiting for an image.</p></div></article>
+                  <article class="result" id="r-labels"><h3>Scene labels <small>MobileNet</small></h3><div class="body"><p class="muted">Waiting for an image.</p></div></article>
+                  <article class="result" id="r-exif"><h3>Camera data <small>EXIF</small></h3><div class="body"><p class="muted">Waiting for an image.</p></div></article>
+                  <article class="result" id="r-text">
+                    <h3>Text <small>Tesseract OCR</small></h3>
+                    <div class="body"><p class="muted">Read printed text from the image.</p></div>
+                    <div class="toolbar"><button class="btn" id="btn-ocr" type="button" disabled>Extract text</button></div>
+                  </article>
+                </div>
               </div>
-              <div class="file-list" id="file-list" aria-live="polite"></div>
-              <p class="footnote">This interface is a design prototype. It does not run image recognition or send files to a server.</p>
+
+              <div id="view-compare" hidden>
+                <div class="cmp-slots">
+                  <button class="slot" id="slot-a" type="button"><span class="slot-tag">A</span><span class="slot-name">Choose first image</span></button>
+                  <button class="slot" id="slot-b" type="button"><span class="slot-tag">B</span><span class="slot-name">Choose second image</span></button>
+                  <input class="file-input" id="cmp-input-a" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/avif" aria-label="Choose first image">
+                  <input class="file-input" id="cmp-input-b" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/avif" aria-label="Choose second image">
+                </div>
+                <div class="toolbar" id="cmp-controls" hidden>
+                  <button class="btn on" id="cmp-split" type="button">Split</button>
+                  <button class="btn ghost" id="cmp-diff" type="button">Difference</button>
+                  <input class="range" id="cmp-range" type="range" min="0" max="100" value="50" aria-label="Split position">
+                </div>
+                <div class="cmp-stage" id="cmp-stage" hidden>
+                  <canvas id="cmp-a"></canvas><canvas id="cmp-b"></canvas><canvas id="cmp-d" hidden></canvas>
+                </div>
+                <p class="muted" id="cmp-stats" style="margin-top:12px">Pick two images to compare them side by side and highlight what changed.</p>
+              </div>
+
+              <div id="view-appletv" hidden>
+                <p class="lead">Put EYE3 on your TV. Pick the route your TV and phone support.</p>
+
+                <h3 class="sub-title">iPhone with a TV that has no browser or AirPlay (for example Philips Saphi)</h3>
+                <ol class="steps">
+                  <li class="step">
+                    <span class="step-n" aria-hidden="true">A</span>
+                    <div><strong>HDMI cable (most reliable, no Wi-Fi needed)</strong><p>Connect the iPhone to the TV's HDMI port with a USB-C to HDMI adapter (iPhone 15 and later) or Apple's Lightning Digital AV Adapter (older iPhones). Pick that HDMI input on the TV, open EYE3 on the iPhone and press <b>Start presentation</b> below. Turn the phone sideways to fill the screen.</p></div>
+                  </li>
+                  <li class="step">
+                    <span class="step-n" aria-hidden="true">B</span>
+                    <div><strong>Streaming stick</strong><p>Plug an Apple TV into the TV and use AirPlay (below). Or plug in a Fire TV or Google TV stick and open EYE3 in its browser. TV mode and the built-in casting then work.</p></div>
+                  </li>
+                  <li class="step">
+                    <span class="step-n" aria-hidden="true">C</span>
+                    <div><strong>Mirroring app</strong><p>Some iPhone apps mirror to Philips TVs over Wi-Fi (DLNA). Quality varies and most are paid. IPTV player apps can only play video channels, so they can't run EYE3.</p></div>
+                  </li>
+                </ol>
+
+                <h3 class="sub-title">Built-in casting to a TV browser, tablet or computer</h3>
+                <p class="lead" style="margin-top:.4rem">For screens that have a web browser. Both devices on the same Wi-Fi. EYE3 runs on the screen, and your iPhone sends its image or live camera to it.</p>
+                <section class="cast-card" aria-labelledby="cast-recv-title">
+                  <h3 id="cast-recv-title">1. On the TV: show a pairing code</h3>
+                  <p>Open EYE3 in the screen's browser (for example a Fire TV or Google TV stick, a smart TV with a browser, or a laptop connected to the TV), go to Connect TV and press the button.</p>
+                  <div class="toolbar"><button class="btn" id="btn-receive" type="button">Show pairing code here</button></div>
+                </section>
+                <section class="cast-card" aria-labelledby="cast-send-title">
+                  <h3 id="cast-send-title">2. On the iPhone: scan or type the code</h3>
+                  <p>Scan the TV's code with the iPhone camera app, or scan it here. Then pick an image or start the camera, and it appears on the TV with its detections. The picture goes straight to the TV over your Wi-Fi and never leaves your network.</p>
+                  <div class="toolbar"><button class="btn" id="btn-scan" type="button">Scan the TV's code</button></div>
+                  <label class="field-label" for="cast-code">Or type the code (same Wi-Fi)</label>
+                  <div class="toolbar">
+                    <input class="field code-field" id="cast-code" type="text" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="9" placeholder="ABCD-EFGH">
+                    <button class="btn" id="btn-cast-connect" type="button">Connect</button>
+                  </div>
+                  <p id="cast-status" aria-live="polite"></p>
+                </section>
+
+                <h3 class="sub-title">Or mirror the whole screen (Miracast or AirPlay)</h3>
+                <ol class="steps">
+                  <li class="step">
+                    <span class="step-n" aria-hidden="true">1</span>
+                    <div><strong>Join the same Wi-Fi</strong><p>Put your phone or computer and your TV on the same network.</p></div>
+                  </li>
+                  <li class="step">
+                    <span class="step-n" aria-hidden="true">2</span>
+                    <div>
+                      <strong>Open EYE3 on your device</strong>
+                      <p>Scan the code with your phone camera, or copy the link to your computer. <b>TV with a web browser?</b> Open the same link on the TV itself. TV mode turns on automatically, or add <code>?tv=1</code> to the link.</p>
+                      <div class="qr-row">
+                        <div class="qr empty" id="qr" role="img" aria-label="QR code for the EYE3 link">Loading code…</div>
+                        <div class="qr-side">
+                          <label class="field-label" for="atv-url">Link to open</label>
+                          <input class="field" id="atv-url" type="url" inputmode="url" autocomplete="off" spellcheck="false">
+                          <div class="toolbar"><button class="btn" id="btn-copy-link" type="button">Copy link</button></div>
+                          <p id="atv-url-note"></p>
+                        </div>
+                      </div>
+                    </div>
+                  </li>
+                  <li class="step">
+                    <span class="step-n" aria-hidden="true">3</span>
+                    <div>
+                      <strong>Mirror to your TV</strong>
+                      <p><b>Miracast TVs (many Philips Saphi models):</b> on the TV, turn on Screen Mirroring from the Home menu or Sources (the name varies by model). Then on an <b>Android phone</b> open Quick Settings and tap Cast, Smart View or Screen Cast, or on a <b>Windows PC</b> press Win + K, and choose your TV.</p>
+                      <p><b>Apple TV and AirPlay TVs:</b> on an iPhone or iPad open Control Center and tap Screen Mirroring; on a Mac use Control Center in the menu bar.</p>
+                      <p>iPhones can't use Miracast. With a Miracast-only TV such as Philips Saphi, use an HDMI adapter or a streaming stick (see above).</p>
+                      <div class="toolbar"><button class="btn" id="btn-present" type="button">Start presentation</button></div>
+                      <p>Presentation hides the menus, switches to the large TV layout and keeps the screen awake. Turn your phone sideways to fill the TV.</p>
+                      <p id="atv-support"></p>
+                    </div>
+                  </li>
+                </ol>
+              </div>
+
+              <div id="view-library" hidden>
+                <div class="toolbar">
+                  <button class="btn ghost" id="lib-clear" type="button" disabled>Clear library</button>
+                </div>
+                <div class="lib-grid" id="lib-grid"></div>
+                <p class="muted" id="lib-empty" style="margin-top:12px">Nothing saved yet. Inspect an image and choose “Save to library”.</p>
+              </div>
+
+              <p class="footnote">Everything runs in your browser. AI models download once from public CDNs and are cached; your images are never uploaded. The library lives in this browser's local storage.</p>
             </div>
             <div class="panel" id="activity">
               <div class="panel-title"><h2>Recent activity</h2><span>Session</span></div>
-              <div class="activity-empty">
+              <div class="activity-empty" id="activity-empty">
                 <div class="activity-symbol" aria-hidden="true">◷</div>
                 <strong>No activity yet</strong>
-                <p>Your selected files appear only in this browser demo.</p>
+                <p>Inspections, camera sessions and library changes appear here.</p>
               </div>
+              <ol class="log" id="log" aria-live="polite"></ol>
             </div>
           </section>
         </div>
       </main>
+      <div class="splash" id="splash" role="dialog" aria-modal="true" aria-labelledby="splash-title">
+          <svg viewBox="0 0 200 230" role="img" aria-label="i3 Design logo">
+            <rect x="8" y="8" width="184" height="214" fill="#0b1a3a" stroke="#efe9dc" stroke-width="12"/>
+            <text x="100" y="140" fill="#efe9dc" font-family="Arial, Helvetica, sans-serif" font-size="128" font-weight="700" text-anchor="middle" letter-spacing="-4">i3</text>
+            <text x="100" y="196" fill="#efe9dc" font-family="Arial, Helvetica, sans-serif" font-size="36" font-weight="700" text-anchor="middle" letter-spacing="2">DESIGN</text>
+          </svg>
+        <h2 id="splash-title">Welcome to EYE3 Vision</h2>
+        <p>Designed by i3 Design</p>
+        <p class="hint">See beyond the surface. Press OK or tap to start.</p>
+      </div>
+      <div class="sheet" id="personalize" role="dialog" aria-modal="true" aria-labelledby="theme-title" hidden>
+        <div class="sheet-card">
+          <div class="panel-title"><h2 id="theme-title">Personalize · i3 theme</h2><button class="btn ghost" id="theme-close" type="button">Close</button></div>
+          <p class="muted" style="margin-top:.6rem">Use your own photo as the background. Faces in it become your tool icons and profile picture. Everything stays on this device; nothing is uploaded.</p>
+          <div class="toolbar">
+            <button class="btn" id="theme-choose" type="button">Choose photo</button>
+            <button class="btn ghost" id="theme-toggle" type="button" aria-pressed="false" disabled>Turn i3 theme on</button>
+            <button class="btn ghost" id="theme-remove" type="button" disabled>Remove photo</button>
+            <input class="file-input" id="theme-input" type="file" accept="image/png,image/jpeg,image/webp,image/avif,image/heic" aria-label="Choose a background photo">
+          </div>
+          <div class="theme-faces" id="theme-faces" aria-label="Face icons"></div>
+          <p class="muted" id="theme-status" aria-live="polite" style="margin-top:.8rem"></p>
+        </div>
+      </div>
+      <div class="receiver" id="receiver" role="dialog" aria-modal="true" aria-labelledby="rx-title" hidden>
+        <div class="rx-top">
+          <span class="rx-brand" id="rx-title">EYE3 · SCREEN</span>
+          <span class="rx-hud" id="rx-hud"></span>
+          <button class="btn ghost" id="rx-close" type="button">Close</button>
+        </div>
+        <div class="rx-body" id="rx-wait">
+          <div class="qr empty" id="rx-qr" role="img" aria-label="QR code with the pairing link">Loading code…</div>
+          <div class="rx-code" id="rx-code" aria-label="Pairing code"></div>
+          <p class="rx-line">On the same Wi-Fi, scan this code with your phone camera, or open EYE3 on your phone, choose Connect TV, and type the code.</p>
+          <p class="muted" id="rx-note" aria-live="polite"></p>
+        </div>
+        <div class="rx-body" id="rx-ask" hidden>
+          <h2 id="rx-ask-title"></h2>
+          <div class="toolbar"><button class="btn" id="rx-allow" type="button">Allow</button><button class="btn ghost" id="rx-deny" type="button">Deny</button></div>
+        </div>
+        <div class="rx-stage" id="rx-live" hidden><canvas id="rx-canvas" aria-label="Screen shared from your device"></canvas></div>
+      </div>
+      <div class="receiver" id="scanner" role="dialog" aria-modal="true" aria-label="Scan a pairing code" hidden>
+        <div class="rx-top"><span class="rx-brand">SCAN THE CODE ON THE SCREEN</span><button class="btn ghost" id="scan-cancel" type="button">Cancel</button></div>
+        <div class="rx-stage"><video id="scan-video" playsinline muted></video></div>
+      </div>
+      <div class="cast-pill" id="cast-pill" role="status" hidden><span id="cast-pill-text"></span><button class="btn ghost" id="cast-pill-stop" type="button">Stop</button></div>
+      <button class="btn exit-present" id="btn-exit-present" type="button" hidden>Exit presentation</button>
       <div class="toast" id="toast" role="status" aria-live="polite"></div>
     </div>
     <script>
-      const fileInput = document.querySelector("#file-input");
-      const dropzone = document.querySelector("#dropzone");
-      const fileList = document.querySelector("#file-list");
-      const toast = document.querySelector("#toast");
-      const uploadTitle = document.querySelector("#upload-title");
-      let toastTimer;
+      (() => {
+        "use strict";
 
-      function showToast(message) {
-        toast.textContent = message;
-        toast.classList.add("visible");
-        window.clearTimeout(toastTimer);
-        toastTimer = window.setTimeout(() => toast.classList.remove("visible"), 2800);
-      }
+        // Free, open-source engines. Loaded on demand so the page itself stays light.
+        const CDN = "https://cdn.jsdelivr.net/npm/";
+        const LIBS = {
+          tf: `${CDN}@tensorflow/tfjs@4.22.0/dist/tf.min.js`,
+          coco: `${CDN}@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js`,
+          mobilenet: `${CDN}@tensorflow-models/mobilenet@2.1.1/dist/mobilenet.min.js`,
+          tesseract: `${CDN}tesseract.js@5.1.1/dist/tesseract.min.js`,
+          exifr: `${CDN}exifr@7.1.3/dist/lite.umd.js`,
+          blazeface: `${CDN}@tensorflow-models/blazeface@0.1.0/dist/blazeface.min.js`,
+          qr: `${CDN}qrcode-generator@1.4.4/qrcode.js`,
+          jsqr: `${CDN}jsqr@1.4.0/dist/jsQR.js`,
+        };
+        const MAX_SIDE = 1600;
+        const LIBRARY_KEY = "eye3.library.v1";
+        const LIBRARY_MAX = 24;
 
-      function formatSize(bytes) {
-        if (bytes < 1024) return `${bytes} B`;
-        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-        return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-      }
+        const $ = (selector, root = document) => root.querySelector(selector);
+        const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        const toast = $("#toast");
+        let toastTimer;
 
-      function displayFiles(files) {
-        const images = Array.from(files).filter((file) => file.type.startsWith("image/"));
-        if (!images.length) {
-          showToast("Choose an image file to preview it here.");
-          return;
+        function showToast(message) {
+          toast.textContent = message;
+          toast.classList.add("visible");
+          window.clearTimeout(toastTimer);
+          toastTimer = window.setTimeout(() => toast.classList.remove("visible"), 3200);
         }
-        fileList.replaceChildren();
-        images.slice(0, 5).forEach((file) => {
-          const row = document.createElement("div");
-          row.className = "file-row";
-          const name = document.createElement("span");
-          name.className = "file-name";
-          name.textContent = file.name;
-          const size = document.createElement("span");
-          size.className = "file-size";
-          size.textContent = formatSize(file.size);
-          row.append(name, size);
-          fileList.append(row);
-        });
-        if (images.length > 5) showToast(`Showing 5 of ${images.length} selected images.`);
-      }
 
-      fileInput.addEventListener("change", (event) => displayFiles(event.target.files));
-      ["dragenter", "dragover"].forEach((eventName) => {
-        dropzone.addEventListener(eventName, (event) => {
-          event.preventDefault();
-          dropzone.classList.add("drag-over");
-        });
-      });
-      ["dragleave", "drop"].forEach((eventName) => {
-        dropzone.addEventListener(eventName, (event) => {
-          event.preventDefault();
-          dropzone.classList.remove("drag-over");
-        });
-      });
-      dropzone.addEventListener("drop", (event) => displayFiles(event.dataTransfer.files));
-      dropzone.addEventListener("keydown", (event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          fileInput.click();
+        function make(tag, className, text) {
+          const node = document.createElement(tag);
+          if (className) node.className = className;
+          if (text != null) node.textContent = text;
+          return node;
         }
-      });
-      document.querySelectorAll(".tool-card").forEach((card) => {
-        card.addEventListener("click", () => {
-          document.querySelectorAll(".tool-card").forEach((item) => item.classList.remove("selected"));
-          card.classList.add("selected");
-          uploadTitle.textContent = card.dataset.tool;
-          showToast(`${card.dataset.tool} selected. Tools are visual concepts in this prototype.`);
+
+        function formatSize(bytes) {
+          if (bytes == null) return "—";
+          if (bytes < 1024) return `${bytes} B`;
+          if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+          return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+        }
+
+        // ---------- Activity log ----------
+        const logList = $("#log");
+        const logEmpty = $("#activity-empty");
+        function log(message) {
+          logEmpty.hidden = true;
+          const item = make("li");
+          const time = make("time", "", new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
+          item.append(time, make("span", "", message));
+          logList.prepend(item);
+          while (logList.children.length > 30) logList.lastElementChild.remove();
+        }
+
+        // ---------- Engines (lazy-loaded, cached) ----------
+        const scriptCache = new Map();
+        function loadScript(src) {
+          if (!scriptCache.has(src)) {
+            scriptCache.set(src, new Promise((resolve, reject) => {
+              const script = document.createElement("script");
+              script.src = src;
+              script.async = true;
+              script.crossOrigin = "anonymous";
+              script.onload = resolve;
+              script.onerror = () => {
+                scriptCache.delete(src);
+                script.remove();
+                reject(new Error(`Could not load ${src}`));
+              };
+              document.head.append(script);
+            }));
+          }
+          return scriptCache.get(src);
+        }
+
+        const engineCache = {};
+        function setEngine(name, state) {
+          const row = $(`#eng-${name}`);
+          if (row) {
+            row.dataset.state = state;
+            $("em", row).textContent = state === "idle" ? "on demand" : state;
+          }
+        }
+        function useEngine(name, load) {
+          if (!engineCache[name]) {
+            setEngine(name, "loading");
+            engineCache[name] = load().then((engine) => {
+              setEngine(name, "ready");
+              return engine;
+            }).catch((error) => {
+              delete engineCache[name];
+              setEngine(name, "error");
+              throw error;
+            });
+          }
+          return engineCache[name];
+        }
+        const getDetector = () => useEngine("detect", async () => {
+          await loadScript(LIBS.tf);
+          await loadScript(LIBS.coco);
+          return window.cocoSsd.load({ base: "lite_mobilenet_v2" });
         });
-      });
-      document.querySelectorAll(".nav-link").forEach((link) => {
-        link.addEventListener("click", () => {
-          document.querySelectorAll(".nav-link").forEach((item) => {
-            item.classList.remove("active");
-            item.removeAttribute("aria-current");
+        const getClassifier = () => useEngine("classify", async () => {
+          await loadScript(LIBS.tf);
+          await loadScript(LIBS.mobilenet);
+          return window.mobilenet.load({ version: 2, alpha: 1.0 });
+        });
+        let ocrProgress = () => {};
+        const getOcr = () => useEngine("text", async () => {
+          await loadScript(LIBS.tesseract);
+          return window.Tesseract.createWorker("eng", 1, { logger: (message) => ocrProgress(message) });
+        });
+
+        // ---------- Result cards ----------
+        const cardBody = (id) => $(`#r-${id} .body`);
+        function setCard(id, ...nodes) { cardBody(id).replaceChildren(...nodes); }
+        function setNote(id, text, tone = "") { setCard(id, make("p", `muted ${tone}`.trim(), text)); }
+        function kvRows(rows) {
+          return rows.map(([key, value]) => {
+            const row = make("div", "kv");
+            row.append(make("span", "", key), make("span", "", String(value)));
+            return row;
           });
-          link.classList.add("active");
-          link.setAttribute("aria-current", "page");
+        }
+        function barRows(items) {
+          const wrap = make("div", "bars");
+          items.forEach(({ label, score }) => {
+            const row = make("div", "bar-row");
+            const track = make("div", "bar-track");
+            const fill = make("div", "bar-fill");
+            fill.style.width = `${Math.round(score * 100)}%`;
+            track.append(fill);
+            row.append(make("span", "", label), make("span", "pct", `${Math.round(score * 100)}%`), track);
+            wrap.append(row);
+          });
+          return wrap;
+        }
+        function resetResults() {
+          ["file", "palette", "objects", "labels", "exif"].forEach((id) => setNote(id, "Waiting for an image."));
+          setNote("text", "Read printed text from the image.");
+          $("#btn-ocr").disabled = true;
+        }
+
+        // ---------- Stage ----------
+        const dropzone = $("#dropzone");
+        const dzEmpty = $("#dz-empty");
+        const stage = $("#stage");
+        const stageCanvas = $("#stage-canvas");
+        const stageCtx = stageCanvas.getContext("2d", { willReadFrequently: true });
+        const overlay = $("#overlay");
+        const overlayCtx = overlay.getContext("2d");
+        const video = $("#cam");
+        const hud = $("#hud");
+        const fileInput = $("#file-input");
+        const btnCamera = $("#btn-camera");
+        const btnCapture = $("#btn-capture");
+        const btnSave = $("#btn-save");
+        const btnClear = $("#btn-clear");
+        const btnOcr = $("#btn-ocr");
+
+        let runId = 0;
+        let current = null; // { name, size, width, height, labels, objects }
+        let stream = null;
+        let live = false;
+
+        function showStage(mode) {
+          const hasMedia = mode !== "empty";
+          dzEmpty.hidden = hasMedia;
+          stage.hidden = !hasMedia;
+          dropzone.classList.toggle("has-media", hasMedia);
+          stageCanvas.hidden = mode === "live";
+          video.hidden = mode !== "live";
+          hud.hidden = mode !== "live";
+        }
+        function clearOverlay() { overlayCtx.clearRect(0, 0, overlay.width, overlay.height); }
+
+        function sourceSize(source) {
+          return { width: source.naturalWidth || source.videoWidth || source.width, height: source.naturalHeight || source.videoHeight || source.height };
+        }
+
+        async function decodeFile(file) {
+          if ("createImageBitmap" in window) {
+            try { return await createImageBitmap(file); } catch { /* fall back to <img> */ }
+          }
+          const url = URL.createObjectURL(file);
+          try {
+            const image = new Image();
+            image.src = url;
+            await image.decode();
+            return image;
+          } finally {
+            URL.revokeObjectURL(url);
+          }
+        }
+
+        function setStageRatio(width, height) {
+          stage.style.setProperty("--ar", (width / height).toFixed(4));
+        }
+
+        function drawToStage(source) {
+          const { width, height } = sourceSize(source);
+          const scale = Math.min(1, MAX_SIDE / Math.max(width, height));
+          stageCanvas.width = overlay.width = Math.max(1, Math.round(width * scale));
+          stageCanvas.height = overlay.height = Math.max(1, Math.round(height * scale));
+          setStageRatio(stageCanvas.width, stageCanvas.height);
+          stageCtx.drawImage(source, 0, 0, stageCanvas.width, stageCanvas.height);
+          return { width, height };
+        }
+
+        function drawBoxes(predictions) {
+          const { width, height } = overlay;
+          overlayCtx.clearRect(0, 0, width, height);
+          const lineWidth = Math.max(2, Math.round(width / 300));
+          const fontSize = Math.max(12, Math.round(width / 44));
+          overlayCtx.lineWidth = lineWidth;
+          overlayCtx.font = `600 ${fontSize}px system-ui, sans-serif`;
+          overlayCtx.textBaseline = "top";
+          predictions.forEach(({ bbox: [x, y, w, h], class: name, score }) => {
+            overlayCtx.strokeStyle = "#ff762e";
+            overlayCtx.strokeRect(x, y, w, h);
+            const label = `${name} ${Math.round(score * 100)}%`;
+            const labelWidth = overlayCtx.measureText(label).width + 10;
+            const labelY = y - fontSize - 6 >= 0 ? y - fontSize - 6 : y;
+            overlayCtx.fillStyle = "#ff762e";
+            overlayCtx.fillRect(x, labelY, labelWidth, fontSize + 6);
+            overlayCtx.fillStyle = "#10100f";
+            overlayCtx.fillText(label, x + 5, labelY + 3);
+          });
+        }
+
+        function renderObjects(predictions) {
+          if (!predictions.length) { setNote("objects", "No objects found above 50% confidence."); return; }
+          const counts = new Map();
+          predictions.forEach(({ class: name }) => counts.set(name, (counts.get(name) || 0) + 1));
+          const best = new Map();
+          predictions.forEach(({ class: name, score }) => best.set(name, Math.max(best.get(name) || 0, score)));
+          setCard("objects", barRows([...counts].map(([name, count]) => ({
+            label: count > 1 ? `${name} ×${count}` : name,
+            score: best.get(name),
+          }))));
+        }
+
+        // ---------- Image analysis ----------
+        function rgbToHex([r, g, b]) {
+          return `#${[r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("")}`;
+        }
+
+        function dominantColors(canvas, count = 5) {
+          const sample = make("canvas");
+          const ratio = canvas.width / canvas.height;
+          sample.width = ratio >= 1 ? 64 : Math.max(1, Math.round(64 * ratio));
+          sample.height = ratio >= 1 ? Math.max(1, Math.round(64 / ratio)) : 64;
+          const ctx = sample.getContext("2d", { willReadFrequently: true });
+          ctx.drawImage(canvas, 0, 0, sample.width, sample.height);
+          const { data } = ctx.getImageData(0, 0, sample.width, sample.height);
+          const bins = new Map();
+          let total = 0;
+          for (let i = 0; i < data.length; i += 4) {
+            if (data[i + 3] < 128) continue;
+            const key = ((data[i] >> 4) << 8) | ((data[i + 1] >> 4) << 4) | (data[i + 2] >> 4);
+            const bin = bins.get(key) || { r: 0, g: 0, b: 0, n: 0 };
+            bin.r += data[i]; bin.g += data[i + 1]; bin.b += data[i + 2]; bin.n += 1;
+            bins.set(key, bin);
+            total += 1;
+          }
+          const ranked = [...bins.values()]
+            .sort((a, b) => b.n - a.n)
+            .map((bin) => ({ rgb: [Math.round(bin.r / bin.n), Math.round(bin.g / bin.n), Math.round(bin.b / bin.n)], share: bin.n / total }));
+          const picked = [];
+          for (const color of ranked) {
+            const distinct = picked.every((p) => Math.hypot(p.rgb[0] - color.rgb[0], p.rgb[1] - color.rgb[1], p.rgb[2] - color.rgb[2]) > 48);
+            if (distinct) picked.push(color);
+            if (picked.length === count) break;
+          }
+          return picked;
+        }
+
+        function renderPalette(canvas) {
+          const colors = dominantColors(canvas);
+          if (!colors.length) { setNote("palette", "No opaque pixels to sample."); return; }
+          const wrap = make("div", "swatches");
+          colors.forEach(({ rgb, share }) => {
+            const hex = rgbToHex(rgb);
+            const swatch = make("button", "swatch");
+            swatch.type = "button";
+            swatch.title = `Copy ${hex}`;
+            const chip = make("b");
+            chip.style.background = hex;
+            swatch.append(chip, make("span", "", hex), make("span", "", `${Math.round(share * 100)}%`));
+            swatch.addEventListener("click", async () => {
+              try { await navigator.clipboard.writeText(hex); showToast(`Copied ${hex}`); } catch { showToast(hex); }
+            });
+            wrap.append(swatch);
+          });
+          setCard("palette", wrap);
+        }
+
+        function renderFile() {
+          setCard("file", ...kvRows([
+            ["Name", current.name],
+            ["Size", formatSize(current.size)],
+            ["Dimensions", `${current.width} × ${current.height}px`],
+            ["Megapixels", (current.width * current.height / 1e6).toFixed(2)],
+            ["Aspect", (current.width / current.height).toFixed(2)],
+          ]));
+        }
+
+        async function runExif(file, id) {
+          if (!file) { setNote("exif", "Camera frames carry no EXIF data."); return; }
+          setNote("exif", "Reading metadata…", "busy");
+          try {
+            await loadScript(LIBS.exifr);
+            const tags = await window.exifr.parse(file, { gps: true });
+            if (id !== runId) return;
+            if (!tags) { setNote("exif", "No EXIF data in this file."); return; }
+            const rows = [];
+            const camera = [tags.Make, tags.Model].filter(Boolean).join(" ");
+            if (camera) rows.push(["Camera", camera]);
+            if (tags.LensModel) rows.push(["Lens", tags.LensModel]);
+            const taken = tags.DateTimeOriginal || tags.CreateDate;
+            if (taken) rows.push(["Taken", taken instanceof Date ? taken.toLocaleString() : taken]);
+            if (tags.FNumber) rows.push(["Aperture", `f/${tags.FNumber}`]);
+            if (tags.ExposureTime) rows.push(["Shutter", tags.ExposureTime >= 1 ? `${tags.ExposureTime}s` : `1/${Math.round(1 / tags.ExposureTime)}s`]);
+            if (tags.ISO) rows.push(["ISO", tags.ISO]);
+            if (tags.FocalLength) rows.push(["Focal length", `${tags.FocalLength} mm`]);
+            if (typeof tags.latitude === "number" && typeof tags.longitude === "number") {
+              rows.push(["GPS", `${tags.latitude.toFixed(5)}, ${tags.longitude.toFixed(5)}`]);
+            }
+            if (rows.length) setCard("exif", ...kvRows(rows));
+            else setNote("exif", "No camera settings in this file.");
+          } catch {
+            if (id === runId) setNote("exif", "No readable EXIF data (or the metadata reader is offline).");
+          }
+        }
+
+        async function runDetect(id) {
+          setNote("objects", "Loading detector (first run downloads the model)…", "busy");
+          try {
+            const detector = await getDetector();
+            if (id !== runId) return;
+            const predictions = await detector.detect(stageCanvas, 20, 0.5);
+            if (id !== runId) return;
+            drawBoxes(predictions);
+            renderObjects(predictions);
+            current.objects = [...new Set(predictions.map((p) => p.class))];
+            log(`Detected ${predictions.length} object${predictions.length === 1 ? "" : "s"} in ${current.name}`);
+          } catch {
+            if (id === runId) setNote("objects", "Detector unavailable — check your connection and try again.", "bad");
+          }
+        }
+
+        async function runClassify(id) {
+          setNote("labels", "Loading classifier (first run downloads the model)…", "busy");
+          try {
+            const classifier = await getClassifier();
+            if (id !== runId) return;
+            const results = await classifier.classify(stageCanvas, 3);
+            if (id !== runId) return;
+            const items = results.map(({ className, probability }) => ({ label: className.split(",")[0], score: probability }));
+            current.labels = items.map((item) => item.label);
+            setCard("labels", barRows(items));
+          } catch {
+            if (id === runId) setNote("labels", "Classifier unavailable — check your connection and try again.", "bad");
+          }
+        }
+
+        async function inspect({ source, name, size, file }) {
+          const id = ++runId;
+          const { width, height } = drawToStage(source);
+          clearOverlay();
+          showStage("still");
+          current = { name, size, width, height, labels: [], objects: [] };
+          btnSave.disabled = false;
+          btnClear.disabled = false;
+          btnOcr.disabled = false;
+          setNote("text", "Read printed text from the image.");
+          renderFile();
+          renderPalette(stageCanvas);
+          log(`Inspecting ${name}`);
+          runExif(file, id);
+          await runDetect(id);
+          if (id === runId) await runClassify(id);
+        }
+
+        async function inspectFile(file) {
+          if (!file || !file.type.startsWith("image/")) { showToast("Choose an image file to inspect it."); return; }
+          await stopCamera();
+          try {
+            const source = await decodeFile(file);
+            await inspect({ source, name: file.name, size: file.size, file });
+          } catch {
+            showToast("That image could not be decoded.");
+          }
+        }
+
+        function clearAll() {
+          runId += 1;
+          current = null;
+          clearOverlay();
+          showStage("empty");
+          resetResults();
+          btnSave.disabled = true;
+          btnClear.disabled = true;
+        }
+
+        // ---------- Live camera ----------
+        async function stopCamera() {
+          if (!live && !stream) return;
+          live = false;
+          if (stream) stream.getTracks().forEach((track) => track.stop());
+          stream = null;
+          video.srcObject = null;
+          btnCamera.textContent = "Start live camera";
+          btnCamera.setAttribute("aria-pressed", "false");
+          btnCamera.classList.remove("on");
+          btnCapture.hidden = true;
+          clearOverlay();
+          showStage(current ? "still" : "empty");
+          if (current) {
+            overlay.width = stageCanvas.width;
+            overlay.height = stageCanvas.height;
+            setStageRatio(stageCanvas.width, stageCanvas.height);
+          }
+          log("Camera stopped");
+        }
+
+        async function startCamera() {
+          if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            showToast("Live camera needs a secure (HTTPS or localhost) page.");
+            return;
+          }
+          runId += 1;
+          let media;
+          try {
+            media = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 } }, audio: false });
+          } catch (error) {
+            showToast(error && error.name === "NotAllowedError" ? "Camera permission was denied." : "No camera is available.");
+            return;
+          }
+          stream = media;
+          live = true;
+          video.srcObject = media;
+          try { await video.play(); } catch { /* autoplay already allowed for muted video */ }
+          overlay.width = video.videoWidth || 1280;
+          overlay.height = video.videoHeight || 720;
+          setStageRatio(overlay.width, overlay.height);
+          clearOverlay();
+          showStage("live");
+          current = null;
+          btnSave.disabled = true;
+          btnClear.disabled = false;
+          btnCamera.textContent = "Stop camera";
+          btnCamera.setAttribute("aria-pressed", "true");
+          btnCamera.classList.add("on");
+          btnCapture.hidden = false;
+          resetResults();
+          setNote("file", "Live camera feed.");
+          setNote("objects", "Loading detector (first run downloads the model)…", "busy");
+          hud.textContent = "LIVE · loading detector…";
+          log("Camera started");
+          const mine = media;
+          let detector;
+          try {
+            detector = await getDetector();
+          } catch {
+            if (stream === mine) {
+              showToast("Detector could not load — check your connection.");
+              setNote("objects", "Detector unavailable — check your connection and try again.", "bad");
+              hud.textContent = "LIVE · detector offline";
+            }
+            return;
+          }
+          if (stream !== mine) return;
+          liveLoop(detector, mine);
+        }
+
+        async function liveLoop(detector, mine) {
+          let last = performance.now();
+          let fps = 0;
+          let lastPanel = 0;
+          while (live && stream === mine) {
+            if (video.readyState >= 2) {
+              let predictions;
+              try { predictions = await detector.detect(video, 20, 0.5); } catch { break; }
+              if (!live || stream !== mine) break;
+              drawBoxes(predictions);
+              const now = performance.now();
+              const instant = 1000 / Math.max(1, now - last);
+              fps = fps ? fps * 0.8 + instant * 0.2 : instant;
+              last = now;
+              hud.textContent = `LIVE · ${fps.toFixed(0)} fps · ${predictions.length} object${predictions.length === 1 ? "" : "s"}`;
+              if (now - lastPanel > 400) { renderObjects(predictions); lastPanel = now; }
+            }
+            await new Promise((resolve) => requestAnimationFrame(resolve));
+          }
+        }
+
+        async function captureFrame() {
+          if (!live || !video.videoWidth) return;
+          const stamp = new Date().toLocaleTimeString([], { hour12: false }).replace(/:/g, "");
+          const frame = make("canvas");
+          frame.width = video.videoWidth;
+          frame.height = video.videoHeight;
+          frame.getContext("2d").drawImage(video, 0, 0);
+          await stopCamera();
+          await inspect({ source: frame, name: `camera-${stamp}.jpg`, size: null, file: null });
+        }
+
+        // ---------- OCR ----------
+        async function runOcr() {
+          if (!current) return;
+          const id = runId;
+          btnOcr.disabled = true;
+          setNote("text", "Loading text engine (first run downloads language data)…", "busy");
+          try {
+            const worker = await getOcr();
+            ocrProgress = (message) => {
+              if (id === runId && message.status === "recognizing text") {
+                setNote("text", `Reading… ${Math.round(message.progress * 100)}%`, "busy");
+              }
+            };
+            const { data } = await worker.recognize(stageCanvas);
+            if (id !== runId) return;
+            const text = (data.text || "").trim();
+            if (!text) { setNote("text", "No readable text found."); }
+            else {
+              const pre = make("pre", "ocr-text", text);
+              setCard("text", make("p", "muted", `Confidence ${Math.round(data.confidence)}%`), pre);
+            }
+            log(`Extracted ${text ? text.split(/\s+/).length : 0} words from ${current.name}`);
+          } catch {
+            if (id === runId) setNote("text", "Text engine unavailable — check your connection and try again.", "bad");
+          } finally {
+            if (id === runId) btnOcr.disabled = false;
+          }
+        }
+
+        // ---------- Compare ----------
+        const cmp = { a: null, b: null, mode: "split" };
+        const cmpCanvas = { a: $("#cmp-a"), b: $("#cmp-b"), d: $("#cmp-d") };
+        const cmpStage = $("#cmp-stage");
+        const cmpStats = $("#cmp-stats");
+        const cmpControls = $("#cmp-controls");
+        const cmpRange = $("#cmp-range");
+
+        async function setCompareSlot(slot, file) {
+          if (!file || !file.type.startsWith("image/")) { showToast("Choose an image file to compare."); return; }
+          try {
+            cmp[slot] = { source: await decodeFile(file), name: file.name };
+          } catch {
+            showToast("That image could not be decoded.");
+            return;
+          }
+          const button = $(`#slot-${slot}`);
+          button.classList.add("filled");
+          $(".slot-name", button).textContent = file.name;
+          log(`Compare ${slot.toUpperCase()}: ${file.name}`);
+          renderCompare();
+        }
+
+        function renderCompare() {
+          if (!cmp.a || !cmp.b) return;
+          const base = sourceSize(cmp.a.source);
+          const width = Math.min(900, base.width);
+          const height = Math.max(1, Math.round(width * base.height / base.width));
+          Object.values(cmpCanvas).forEach((canvas) => { canvas.width = width; canvas.height = height; });
+          const ctxA = cmpCanvas.a.getContext("2d", { willReadFrequently: true });
+          const ctxB = cmpCanvas.b.getContext("2d", { willReadFrequently: true });
+          ctxA.drawImage(cmp.a.source, 0, 0, width, height);
+          ctxB.drawImage(cmp.b.source, 0, 0, width, height);
+          const pixelsA = ctxA.getImageData(0, 0, width, height);
+          const pixelsB = ctxB.getImageData(0, 0, width, height).data;
+          const ctxD = cmpCanvas.d.getContext("2d");
+          const diff = ctxD.createImageData(width, height);
+          let changed = 0;
+          for (let i = 0; i < pixelsA.data.length; i += 4) {
+            const delta = Math.abs(pixelsA.data[i] - pixelsB[i]) + Math.abs(pixelsA.data[i + 1] - pixelsB[i + 1]) + Math.abs(pixelsA.data[i + 2] - pixelsB[i + 2]);
+            if (delta > 60) {
+              changed += 1;
+              diff.data[i] = 255; diff.data[i + 1] = 118; diff.data[i + 2] = 46;
+            } else {
+              const luma = (pixelsA.data[i] * 0.3 + pixelsA.data[i + 1] * 0.59 + pixelsA.data[i + 2] * 0.11) * 0.35;
+              diff.data[i] = diff.data[i + 1] = diff.data[i + 2] = luma;
+            }
+            diff.data[i + 3] = 255;
+          }
+          ctxD.putImageData(diff, 0, 0);
+          const share = changed / (width * height) * 100;
+          const sizeB = sourceSize(cmp.b.source);
+          const mismatch = Math.abs(base.width / base.height - sizeB.width / sizeB.height) > 0.02;
+          cmpStats.textContent = `${share.toFixed(share < 10 ? 2 : 1)}% of pixels differ.` + (mismatch ? " Aspect ratios differ, so B was stretched to match A." : "");
+          cmpStage.hidden = false;
+          cmpControls.hidden = false;
+          applyCompareMode();
+          log(`Compared ${cmp.a.name} and ${cmp.b.name}: ${share.toFixed(1)}% differ`);
+        }
+
+        function applyCompareMode() {
+          const split = cmp.mode === "split";
+          cmpCanvas.a.hidden = !split;
+          cmpCanvas.b.hidden = !split;
+          cmpCanvas.d.hidden = split;
+          cmpRange.hidden = !split;
+          $("#cmp-split").classList.toggle("on", split);
+          $("#cmp-split").classList.toggle("ghost", !split);
+          $("#cmp-diff").classList.toggle("on", !split);
+          $("#cmp-diff").classList.toggle("ghost", split);
+          updateSplit();
+        }
+        function updateSplit() {
+          cmpCanvas.b.style.clipPath = `inset(0 ${100 - Number(cmpRange.value)}% 0 0)`;
+        }
+
+        // ---------- Library ----------
+        const libGrid = $("#lib-grid");
+        const libEmpty = $("#lib-empty");
+        const libClear = $("#lib-clear");
+
+        function readLibrary() {
+          try { return JSON.parse(localStorage.getItem(LIBRARY_KEY)) || []; } catch { return []; }
+        }
+        function writeLibrary(items) {
+          try { localStorage.setItem(LIBRARY_KEY, JSON.stringify(items)); return true; } catch { return false; }
+        }
+        function thumbnail(canvas) {
+          const thumb = make("canvas");
+          const scale = 200 / Math.max(canvas.width, canvas.height);
+          thumb.width = Math.max(1, Math.round(canvas.width * scale));
+          thumb.height = Math.max(1, Math.round(canvas.height * scale));
+          thumb.getContext("2d").drawImage(canvas, 0, 0, thumb.width, thumb.height);
+          return thumb.toDataURL("image/jpeg", 0.72);
+        }
+        function renderLibrary() {
+          const items = readLibrary();
+          libGrid.replaceChildren(...items.map((item) => {
+            const card = make("div", "lib-item");
+            const image = make("img");
+            image.src = item.thumb;
+            image.alt = item.name;
+            const meta = make("div", "lib-meta");
+            const remove = make("button", "", "Remove");
+            remove.type = "button";
+            remove.addEventListener("click", () => {
+              writeLibrary(readLibrary().filter((entry) => entry.id !== item.id));
+              renderLibrary();
+              log(`Removed ${item.name} from library`);
+            });
+            const tags = [...item.labels, ...item.objects].slice(0, 3).join(", ") || "no labels";
+            meta.append(make("strong", "", item.name), make("span", "", `${item.width} × ${item.height}`), make("span", "", tags), remove);
+            card.append(image, meta);
+            return card;
+          }));
+          libEmpty.hidden = items.length > 0;
+          libClear.disabled = items.length === 0;
+        }
+        function saveToLibrary() {
+          if (!current) return;
+          const items = readLibrary();
+          items.unshift({
+            id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            name: current.name,
+            width: current.width,
+            height: current.height,
+            labels: current.labels,
+            objects: current.objects,
+            thumb: thumbnail(stageCanvas),
+          });
+          if (!writeLibrary(items.slice(0, LIBRARY_MAX))) { showToast("Browser storage is full or blocked — could not save."); return; }
+          renderLibrary();
+          log(`Saved ${current.name} to library`);
+          showToast("Saved to the visual library.");
+        }
+
+        // ---------- Views ----------
+        const views = { "Image inspector": "inspector", "Side-by-side compare": "compare", "Visual library": "library", "Connect TV": "appletv" };
+        function setView(tool) {
+          const key = views[tool] || "inspector";
+          Object.values(views).forEach((name) => { $(`#view-${name}`).hidden = name !== key; });
+          document.querySelectorAll(".tool-card").forEach((card) => card.classList.toggle("selected", card.dataset.tool === tool));
+          $("#upload-title").textContent = tool;
+          if (key !== "inspector") stopCamera();
+          if (key === "library") renderLibrary();
+          if (key === "appletv") openAppleTv();
+        }
+
+        // ---------- Wiring ----------
+        $("#btn-choose").addEventListener("click", () => fileInput.click());
+        fileInput.addEventListener("change", () => { inspectFile(fileInput.files[0]); fileInput.value = ""; });
+        btnCamera.addEventListener("click", () => (live ? stopCamera() : startCamera()));
+        btnCapture.addEventListener("click", captureFrame);
+        btnSave.addEventListener("click", saveToLibrary);
+        btnClear.addEventListener("click", async () => { await stopCamera(); clearAll(); });
+        btnOcr.addEventListener("click", runOcr);
+        ["dragenter", "dragover"].forEach((name) => dropzone.addEventListener(name, (event) => { event.preventDefault(); dropzone.classList.add("drag-over"); }));
+        ["dragleave", "drop"].forEach((name) => dropzone.addEventListener(name, (event) => { event.preventDefault(); dropzone.classList.remove("drag-over"); }));
+        dropzone.addEventListener("drop", (event) => inspectFile(event.dataTransfer.files[0]));
+        dropzone.addEventListener("keydown", (event) => {
+          if (event.target === dropzone && (event.key === "Enter" || event.key === " ")) { event.preventDefault(); fileInput.click(); }
         });
-      });
+        document.addEventListener("paste", (event) => {
+          const item = [...(event.clipboardData ? event.clipboardData.items : [])].find((entry) => entry.type.startsWith("image/"));
+          if (!item || $("#view-inspector").hidden) return;
+          inspectFile(item.getAsFile());
+        });
+
+        ["a", "b"].forEach((slot) => {
+          const input = $(`#cmp-input-${slot}`);
+          $(`#slot-${slot}`).addEventListener("click", () => input.click());
+          input.addEventListener("change", () => { setCompareSlot(slot, input.files[0]); input.value = ""; });
+        });
+        $("#cmp-split").addEventListener("click", () => { cmp.mode = "split"; applyCompareMode(); });
+        $("#cmp-diff").addEventListener("click", () => { cmp.mode = "diff"; applyCompareMode(); });
+        cmpRange.addEventListener("input", updateSplit);
+
+        libClear.addEventListener("click", () => {
+          if (!readLibrary().length) return;
+          if (!window.confirm("Remove every saved image from this browser's library?")) return;
+          writeLibrary([]);
+          renderLibrary();
+          log("Cleared library");
+        });
+
+        document.querySelectorAll(".tool-card").forEach((card) => {
+          card.addEventListener("click", () => {
+            setView(card.dataset.tool);
+            $("#inspector").scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+          });
+        });
+        document.querySelectorAll(".nav-link").forEach((link) => {
+          link.addEventListener("click", () => {
+            document.querySelectorAll(".nav-link").forEach((item) => {
+              item.classList.remove("active");
+              item.removeAttribute("aria-current");
+            });
+            link.classList.add("active");
+            link.setAttribute("aria-current", "page");
+          });
+        });
+        window.addEventListener("pagehide", () => { if (stream) stream.getTracks().forEach((track) => track.stop()); });
+
+        // ---------- Connect TV: Miracast / AirPlay mirroring helper, TV-browser link, presentation mode ----------
+        const qrBox = $("#qr");
+        const urlField = $("#atv-url");
+        const urlNote = $("#atv-url-note");
+        let presenting = false;
+        let fullscreenEntered = false;
+        let wakeLock = null;
+        let tvBeforePresent = false;
+        let qrTimer;
+
+        function defaultShareUrl() {
+          return /^https?:$/.test(location.protocol) ? `${location.origin}${location.pathname}` : "";
+        }
+        function describeUrl(value) {
+          let parsed;
+          try { parsed = new URL(value); } catch { return value ? "That doesn't look like a web link." : "Open EYE3 from a published link (for example GitHub Pages) so your phone can reach it."; }
+          if (/^(localhost|127\.|\[?::1)/.test(parsed.hostname)) return "localhost only works on this computer. Use your computer's network address or the published link.";
+          return "";
+        }
+        function drawQr(value, box = qrBox) {
+          box.replaceChildren();
+          box.classList.remove("empty");
+          const code = window.qrcode(0, "M");
+          code.addData(value);
+          code.make();
+          const count = code.getModuleCount();
+          const ns = "http://www.w3.org/2000/svg";
+          const svg = document.createElementNS(ns, "svg");
+          svg.setAttribute("viewBox", `0 0 ${count} ${count}`);
+          svg.setAttribute("shape-rendering", "crispEdges");
+          svg.setAttribute("aria-hidden", "true");
+          const path = [];
+          for (let row = 0; row < count; row += 1) {
+            for (let col = 0; col < count; col += 1) if (code.isDark(row, col)) path.push(`M${col} ${row}h1v1h-1z`);
+          }
+          const shape = document.createElementNS(ns, "path");
+          shape.setAttribute("d", path.join(""));
+          shape.setAttribute("fill", "#10100f");
+          svg.append(shape);
+          box.append(svg);
+        }
+        function shareBase() {
+          const typed = urlField.value.trim();
+          if (/^https?:\/\//i.test(typed)) { try { const u = new URL(typed); return `${u.origin}${u.pathname}`; } catch { /* fall through */ } }
+          return defaultShareUrl() || `${location.origin}${location.pathname}`;
+        }
+        async function drawLinkQr(box, value) {
+          try {
+            await loadScript(LIBS.qr);
+            drawQr(value, box);
+          } catch {
+            box.replaceChildren(document.createTextNode("Code unavailable offline"));
+            box.classList.add("empty");
+          }
+        }
+        async function renderQr() {
+          const value = urlField.value.trim();
+          urlNote.className = "muted";
+          urlNote.textContent = describeUrl(value);
+          const usable = /^https?:\/\//i.test(value);
+          if (!usable) {
+            qrBox.replaceChildren(document.createTextNode("Add a link to see its code"));
+            qrBox.classList.add("empty");
+            return;
+          }
+          try {
+            await loadScript(LIBS.qr);
+            if (urlField.value.trim() !== value) return;
+            drawQr(value);
+          } catch {
+            qrBox.replaceChildren(document.createTextNode("Code unavailable offline — copy the link instead"));
+            qrBox.classList.add("empty");
+          }
+        }
+        function openAppleTv() {
+          if (!urlField.value) urlField.value = defaultShareUrl();
+          const agent = navigator.userAgent;
+          let hint = "Mirror from an Android phone or Windows PC (Miracast), or from an iPhone or Mac (AirPlay).";
+          if (root.hasAttribute("data-tv")) hint = "You're on a TV browser, so EYE3 already runs here. Use the tools above with your remote.";
+          else if (/Android/.test(agent)) hint = "This Android device can mirror to a Miracast TV: Quick Settings, then Cast, Smart View or Screen Cast.";
+          else if (/Windows/.test(agent)) hint = "On this PC, press Win + K to mirror to a Miracast TV.";
+          else if ("WebKitPlaybackTargetAvailabilityEvent" in window) hint = "This device can use AirPlay. For a TV without AirPlay, such as Philips Saphi, use an HDMI adapter (see above).";
+          $("#atv-support").className = "muted";
+          $("#atv-support").textContent = hint;
+          renderQr();
+        }
+        async function startPresentation() {
+          if (presenting) return;
+          tvBeforePresent = root.hasAttribute("data-tv");
+          presenting = true;
+          setView("Image inspector");
+          setTv(true, false);
+          root.setAttribute("data-present", "");
+          $("#btn-exit-present").hidden = false;
+          window.scrollTo(0, 0);
+          try {
+            if (root.requestFullscreen) { await root.requestFullscreen(); fullscreenEntered = true; }
+          } catch { /* fullscreen not allowed here; presentation still works */ }
+          try {
+            if (navigator.wakeLock) wakeLock = await navigator.wakeLock.request("screen");
+          } catch { /* wake lock denied */ }
+          $("#btn-exit-present").focus({ preventScroll: true });
+          log("Presentation started");
+        }
+        async function stopPresentation() {
+          if (!presenting) return;
+          presenting = false;
+          root.removeAttribute("data-present");
+          $("#btn-exit-present").hidden = true;
+          setTv(tvBeforePresent, false);
+          setView("Connect TV");
+          log("Presentation ended");
+          const lock = wakeLock;
+          const leaveFullscreen = fullscreenEntered && document.fullscreenElement;
+          wakeLock = null;
+          fullscreenEntered = false;
+          if (lock) { try { await lock.release(); } catch { /* already released */ } }
+          if (leaveFullscreen) { try { await document.exitFullscreen(); } catch { /* ignore */ } }
+        }
+        $("#btn-present").addEventListener("click", startPresentation);
+        $("#btn-exit-present").addEventListener("click", stopPresentation);
+        urlField.addEventListener("input", () => { window.clearTimeout(qrTimer); qrTimer = window.setTimeout(renderQr, 300); });
+        $("#btn-copy-link").addEventListener("click", async () => {
+          const value = urlField.value.trim();
+          if (!value) { showToast("Add a link first."); return; }
+          try { await navigator.clipboard.writeText(value); showToast("Link copied."); } catch { urlField.select(); showToast("Press copy on the selected link."); }
+        });
+        document.addEventListener("fullscreenchange", () => { if (presenting && fullscreenEntered && !document.fullscreenElement) stopPresentation(); });
+        document.addEventListener("visibilitychange", async () => {
+          if (presenting && !wakeLock && document.visibilityState === "visible" && navigator.wakeLock) {
+            try { wakeLock = await navigator.wakeLock.request("screen"); } catch { /* denied */ }
+          }
+        });
+
+        // ---------- Cast: pair two devices on the same Wi-Fi by scanning a code or typing it ----------
+        // Signalling goes through ntfy (free, open source) as AES-GCM ciphertext keyed by the pairing code.
+        // Media then flows peer-to-peer over the LAN (WebRTC with no STUN/TURN, so it never leaves the Wi-Fi).
+        const PARAMS = new URLSearchParams(location.search);
+        const LOCAL_HOST = ["localhost", "127.0.0.1"].includes(location.hostname);
+        const SIGNAL_BASE = (LOCAL_HOST && PARAMS.get("signal")) || "https://ntfy.sh";
+        const PAIR_TIMEOUT = (LOCAL_HOST && Number(PARAMS.get("pairTimeout"))) || 60000;
+        const CODE_ALPHABET = "ABCDEFGHJKMNPQRSTVWXYZ23456789";
+        const CODE_PATTERN = /^[ABCDEFGHJKMNPQRSTVWXYZ2-9]{8}$/;
+        const textEncoder = new TextEncoder();
+        const textDecoder = new TextDecoder();
+        const receiverEl = $("#receiver");
+        const scannerEl = $("#scanner");
+        const castPill = $("#cast-pill");
+        const castStatus = $("#cast-status");
+        const castCodeField = $("#cast-code");
+
+        const prettyCode = (code) => `${code.slice(0, 4)}-${code.slice(4)}`;
+        function newCode() {
+          let code = "";
+          while (code.length < 8) {
+            const bytes = crypto.getRandomValues(new Uint8Array(16));
+            for (const byte of bytes) if (byte < 240 && code.length < 8) code += CODE_ALPHABET[byte % CODE_ALPHABET.length];
+          }
+          return code;
+        }
+        function normalizeCode(text) {
+          const raw = String(text || "");
+          const fromLink = raw.match(/[?&]join=([^&#\s]+)/i);
+          const cleaned = (fromLink ? decodeURIComponent(fromLink[1]) : raw).toUpperCase().replace(/[^A-Z0-9]/g, "");
+          return CODE_PATTERN.test(cleaned) ? cleaned : "";
+        }
+        function bytesToBase64(bytes) {
+          let binary = "";
+          bytes.forEach((byte) => { binary += String.fromCharCode(byte); });
+          return btoa(binary);
+        }
+        async function pairingKeys(code) {
+          if (!(window.crypto && crypto.subtle)) throw new Error("secure-context");
+          const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", textEncoder.encode(`eye3-topic:${code}`)));
+          const topic = `eye3-${[...digest.slice(0, 12)].map((b) => b.toString(16).padStart(2, "0")).join("")}`;
+          const material = await crypto.subtle.importKey("raw", textEncoder.encode(code), "PBKDF2", false, ["deriveKey"]);
+          const key = await crypto.subtle.deriveKey(
+            { name: "PBKDF2", hash: "SHA-256", salt: textEncoder.encode("eye3-pair-v1"), iterations: 100000 },
+            material, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
+          return { topic, key };
+        }
+        async function seal(key, payload) {
+          const iv = crypto.getRandomValues(new Uint8Array(12));
+          const cipher = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, textEncoder.encode(JSON.stringify(payload))));
+          const out = new Uint8Array(12 + cipher.length);
+          out.set(iv);
+          out.set(cipher, 12);
+          const text = bytesToBase64(out);
+          if (text.length > 3800) throw new Error("too-large");
+          return text;
+        }
+        async function unseal(key, text) {
+          try {
+            const raw = Uint8Array.from(atob(text), (c) => c.charCodeAt(0));
+            const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: raw.slice(0, 12) }, key, raw.slice(12));
+            return JSON.parse(textDecoder.decode(plain));
+          } catch { return null; }
+        }
+        function openSignal(topic, onText, onFail) {
+          const seen = new Set();
+          const source = new EventSource(`${SIGNAL_BASE}/${topic}/sse?since=2m`);
+          let opened = false;
+          source.onopen = () => { opened = true; };
+          source.onerror = () => { if (!opened && source.readyState === 2) onFail(); };
+          source.onmessage = (event) => {
+            let data;
+            try { data = JSON.parse(event.data); } catch { return; }
+            if (data.event !== "message" || seen.has(data.id)) return;
+            seen.add(data.id);
+            onText(data.message);
+          };
+          return {
+            async send(text) {
+              const response = await fetch(`${SIGNAL_BASE}/${topic}`, { method: "POST", body: text });
+              if (!response.ok) throw new Error("signal");
+            },
+            close() { source.close(); },
+          };
+        }
+        function waitForIce(pc) {
+          return new Promise((resolve) => {
+            if (pc.iceGatheringState === "complete") { resolve(); return; }
+            const check = () => {
+              if (pc.iceGatheringState === "complete") { pc.removeEventListener("icegatheringstatechange", check); resolve(); }
+            };
+            pc.addEventListener("icegatheringstatechange", check);
+            window.setTimeout(resolve, 2500);
+          });
+        }
+        function trimSdp(sdp) {
+          let kept = 0;
+          return sdp.split("\r\n").filter((line) => {
+            if (!line.startsWith("a=candidate")) return true;
+            if (/ tcp /i.test(line)) return false;
+            kept += 1;
+            return kept <= 6;
+          }).join("\r\n");
+        }
+        function overlayOpen() { return !receiverEl.hidden || !scannerEl.hidden || !$("#personalize").hidden; }
+        function setBackgroundInert(on) {
+          [".sidebar", ".main"].forEach((selector) => { const node = $(selector); if (node) node.inert = on; });
+        }
+        async function keepAwake(on) {
+          if (!on) { if (wakeLock) { const lock = wakeLock; wakeLock = null; try { await lock.release(); } catch { /* already released */ } } return; }
+          try { if (navigator.wakeLock && !wakeLock) wakeLock = await navigator.wakeLock.request("screen"); } catch { /* denied */ }
+        }
+        function deviceName() {
+          const agent = navigator.userAgent;
+          if (/iPhone/.test(agent)) return "iPhone";
+          if (/iPad/.test(agent)) return "iPad";
+          if (/Android/.test(agent)) return "Android phone";
+          if (/Mac/.test(agent)) return "Mac";
+          return "Device";
+        }
+
+        // --- Receiver: this device is the screen ---
+        const rx = { state: "idle", code: "", keys: null, signal: null, pc: null, channel: null, offer: null, frames: 0, drawing: false, fpsTimer: null, expiry: null, linkTimer: null };
+        const rxCanvas = $("#rx-canvas");
+        const rxCtx = rxCanvas.getContext("2d");
+        function rxShow(panel) {
+          ["wait", "ask", "live"].forEach((name) => { $(`#rx-${name}`).hidden = name !== panel; });
+        }
+        function rxNote(text, tone = "") { const node = $("#rx-note"); node.className = `muted ${tone}`.trim(); node.textContent = text; }
+        function rxTeardown() {
+          window.clearTimeout(rx.expiry); window.clearTimeout(rx.linkTimer); window.clearInterval(rx.fpsTimer);
+          if (rx.signal) rx.signal.close();
+          if (rx.channel) { rx.channel.onclose = null; try { rx.channel.close(); } catch { /* closed */ } }
+          if (rx.pc) { rx.pc.onconnectionstatechange = null; try { rx.pc.close(); } catch { /* closed */ } }
+          Object.assign(rx, { signal: null, pc: null, channel: null, offer: null, keys: null, expiry: null, linkTimer: null, fpsTimer: null, frames: 0, drawing: false });
+        }
+        async function rxWait(message) {
+          rxTeardown();
+          rx.state = "waiting";
+          rxShow("wait");
+          $("#rx-hud").textContent = "";
+          $("#rx-code").textContent = "";
+          rxNote(message || "");
+          try {
+            rx.code = newCode();
+            rx.keys = await pairingKeys(rx.code);
+          } catch {
+            rx.state = "error";
+            rxNote("Pairing needs a secure page. Open EYE3 from its https:// link on this screen.", "bad");
+            return;
+          }
+          rx.signal = openSignal(rx.keys.topic, onReceiverText, () => rxNote("Can't reach the pairing service. Check this screen's internet connection.", "bad"));
+          $("#rx-code").textContent = prettyCode(rx.code);
+          await drawLinkQr($("#rx-qr"), `${shareBase()}?join=${rx.code}`);
+          rx.expiry = window.setTimeout(() => rxWait("The code expired, so here is a new one."), 10 * 60 * 1000);
+          $("#rx-close").focus({ preventScroll: true });
+        }
+        function castSupportGap() {
+          if (!window.RTCPeerConnection) return "live connections (WebRTC)";
+          if (!window.EventSource) return "server events";
+          if (!(window.crypto && crypto.subtle)) return "a secure (https://) page";
+          return "";
+        }
+        async function startReceiver() {
+          if (rx.state !== "idle") return;
+          await stopCamera();
+          receiverEl.hidden = false;
+          setBackgroundInert(true);
+          const gap = castSupportGap();
+          if (gap) {
+            rx.state = "error";
+            rxShow("wait");
+            $("#rx-qr").hidden = true;
+            $("#rx-code").textContent = "";
+            rxNote(`This browser can't receive a cast because it lacks ${gap}. Use EYE3 here directly with the remote, or mirror with AirPlay or Miracast.`, "bad");
+            $("#rx-close").focus({ preventScroll: true });
+            log("This browser can't receive a cast");
+            return;
+          }
+          $("#rx-qr").hidden = false;
+          try { if (root.requestFullscreen && !document.fullscreenElement) await root.requestFullscreen(); } catch { /* optional */ }
+          keepAwake(true);
+          log("Screen ready for pairing");
+          await rxWait("");
+        }
+        async function stopReceiver() {
+          if (rx.state === "idle") return;
+          rxTeardown();
+          rx.state = "idle";
+          receiverEl.hidden = true;
+          setBackgroundInert(false);
+          keepAwake(false);
+          if (document.fullscreenElement && !presenting) { try { await document.exitFullscreen(); } catch { /* ignore */ } }
+          log("Screen pairing closed");
+        }
+        async function onReceiverText(text) {
+          if (rx.state !== "waiting" || !rx.keys) return;
+          const message = await unseal(rx.keys.key, text);
+          if (!message || message.from !== "s" || message.t !== "offer" || typeof message.sdp !== "string" || rx.state !== "waiting") return;
+          rx.offer = message;
+          rx.state = "asking";
+          $("#rx-ask-title").textContent = `Allow “${String(message.name || "Device").slice(0, 40)}” to show its screen here?`;
+          rxShow("ask");
+          $("#rx-allow").focus({ preventScroll: true });
+        }
+        async function rxAnswer(allow) {
+          const offer = rx.offer;
+          if (rx.state !== "asking" || !offer) return;
+          const { signal, keys } = rx;
+          if (!allow) {
+            try { await signal.send(await seal(keys.key, { from: "r", t: "deny", to: offer.id })); } catch { /* ignore */ }
+            rx.offer = null; rx.state = "waiting"; rxShow("wait"); rxNote("Request declined.");
+            return;
+          }
+          rx.state = "connecting";
+          rxShow("wait");
+          rxNote("Connecting…");
+          try {
+            const pc = new RTCPeerConnection({ iceServers: [] });
+            rx.pc = pc;
+            pc.ondatachannel = (event) => rxChannel(event.channel);
+            pc.onconnectionstatechange = () => { if (["failed", "closed"].includes(pc.connectionState) && rx.state !== "idle") rxWait("The connection dropped. Show the new code to pair again."); };
+            await pc.setRemoteDescription({ type: "offer", sdp: offer.sdp });
+            await pc.setLocalDescription(await pc.createAnswer());
+            await waitForIce(pc);
+            await signal.send(await seal(keys.key, { from: "r", t: "answer", sdp: trimSdp(pc.localDescription.sdp), to: offer.id }));
+            rx.linkTimer = window.setTimeout(() => { if (rx.state === "connecting") rxWait("Couldn't connect. Both devices need the same Wi-Fi, and guest networks often block this."); }, PAIR_TIMEOUT);
+          } catch {
+            rxWait("Couldn't connect. Show the new code to try again.");
+          }
+        }
+        function rxChannel(channel) {
+          rx.channel = channel;
+          channel.binaryType = "arraybuffer";
+          channel.onopen = () => {
+            window.clearTimeout(rx.linkTimer);
+            rx.state = "connected";
+            if (rx.signal) rx.signal.close();
+            rxShow("live");
+            log("A device is casting to this screen");
+            rx.fpsTimer = window.setInterval(() => {
+              $("#rx-hud").textContent = rx.frames > 1 ? `${rx.peerName || "Device"} · ${rx.frames} fps` : (rx.peerName || "Device");
+              rx.frames = 0;
+            }, 1000);
+          };
+          channel.onclose = () => { if (rx.state === "connected") rxWait("The device disconnected. Show the new code to pair again."); };
+          channel.onmessage = async (event) => {
+            if (typeof event.data === "string") {
+              try { const hello = JSON.parse(event.data); if (hello.k === "hello") rx.peerName = String(hello.name || "Device").slice(0, 40); } catch { /* ignore */ }
+              return;
+            }
+            if (rx.drawing) return;
+            rx.drawing = true;
+            try {
+              const bitmap = await createImageBitmap(new Blob([event.data], { type: "image/jpeg" }));
+              rxCanvas.width = bitmap.width;
+              rxCanvas.height = bitmap.height;
+              rxCtx.drawImage(bitmap, 0, 0);
+              if (bitmap.close) bitmap.close();
+              rx.frames += 1;
+            } catch { /* skip a bad frame */ } finally { rx.drawing = false; }
+          };
+        }
+
+        // --- Sender: this device is the camera ---
+        const tx = { state: "idle", signal: null, pc: null, channel: null, id: "", timer: null, pump: null, busy: false };
+        const castCanvas = make("canvas");
+        function castMessage(text, tone = "") { castStatus.className = `muted ${tone}`.trim(); castStatus.textContent = text; }
+        function txTeardown() {
+          window.clearTimeout(tx.timer); window.clearTimeout(tx.pump);
+          if (tx.signal) tx.signal.close();
+          if (tx.channel) { tx.channel.onclose = null; try { tx.channel.close(); } catch { /* closed */ } }
+          if (tx.pc) { tx.pc.onconnectionstatechange = null; try { tx.pc.close(); } catch { /* closed */ } }
+          Object.assign(tx, { signal: null, pc: null, channel: null, timer: null, pump: null, busy: false });
+          castPill.hidden = true;
+          $("#btn-cast-connect").disabled = false;
+          $("#btn-cast-connect").textContent = "Connect";
+        }
+        function txFail(message) {
+          txTeardown();
+          tx.state = "idle";
+          castMessage(message, "bad");
+          showToast(message);
+        }
+        function stopSender(message) {
+          if (tx.state === "idle") return;
+          const wasConnected = tx.state === "connected";
+          if (wasConnected && tx.channel && tx.channel.readyState === "open") { try { tx.channel.send(JSON.stringify({ k: "bye" })); } catch { /* ignore */ } }
+          txTeardown();
+          tx.state = "idle";
+          castMessage(message || "Stopped casting.");
+          if (wasConnected) log("Stopped casting");
+        }
+        async function connectSender(code) {
+          if (tx.state !== "idle") return;
+          if (!window.RTCPeerConnection) { castMessage("This browser can't cast. Use Safari or Chrome.", "bad"); return; }
+          tx.state = "connecting";
+          tx.id = Math.random().toString(36).slice(2, 10);
+          $("#btn-cast-connect").disabled = true;
+          castMessage(`Connecting to ${prettyCode(code)}…`);
+          try {
+            const keys = await pairingKeys(code);
+            tx.signal = openSignal(keys.topic, async (text) => {
+              const message = await unseal(keys.key, text);
+              if (!message || message.from !== "r" || message.to !== tx.id || tx.state !== "connecting") return;
+              if (message.t === "deny") { txFail("The screen declined the request."); return; }
+              if (message.t === "answer" && typeof message.sdp === "string") {
+                try { await tx.pc.setRemoteDescription({ type: "answer", sdp: message.sdp }); } catch { txFail("Couldn't complete the connection."); }
+              }
+            }, () => txFail("Can't reach the pairing service. Check your internet connection."));
+            const pc = new RTCPeerConnection({ iceServers: [] });
+            tx.pc = pc;
+            const channel = pc.createDataChannel("eye3", { ordered: true });
+            channel.binaryType = "arraybuffer";
+            tx.channel = channel;
+            channel.onopen = () => {
+              window.clearTimeout(tx.timer);
+              tx.state = "connected";
+              if (tx.signal) tx.signal.close();
+              channel.send(JSON.stringify({ k: "hello", name: deviceName() }));
+              castMessage("Connected. Pick an image or start the camera to show it on the screen.");
+              $("#cast-pill-text").textContent = "Casting to a screen";
+              castPill.hidden = false;
+              $("#btn-cast-connect").disabled = false;
+              $("#btn-cast-connect").textContent = "Stop casting";
+              log("Casting to a screen");
+              pumpFrames();
+            };
+            channel.onclose = () => { if (tx.state === "connected") { txTeardown(); tx.state = "idle"; castMessage("The screen disconnected."); } };
+            pc.onconnectionstatechange = () => { if (pc.connectionState === "failed" && tx.state !== "idle") txFail("The connection failed. Check both devices are on the same Wi-Fi."); };
+            await pc.setLocalDescription(await pc.createOffer());
+            await waitForIce(pc);
+            await tx.signal.send(await seal(keys.key, { from: "s", t: "offer", sdp: trimSdp(pc.localDescription.sdp), name: deviceName(), id: tx.id }));
+            castMessage("Waiting for the screen to accept…");
+            tx.timer = window.setTimeout(() => { if (tx.state === "connecting") txFail("No answer. Is the code still on the screen, and are you on the same Wi-Fi? Guest networks often block this."); }, PAIR_TIMEOUT);
+          } catch (error) {
+            txFail(error && error.message === "secure-context" ? "Casting needs a secure page. Open EYE3 from its https:// link." : "Couldn't start the connection.");
+          }
+        }
+        function composeFrame() {
+          let source;
+          let width;
+          let height;
+          if (live && video.videoWidth) { source = video; width = video.videoWidth; height = video.videoHeight; }
+          else if (current) { source = stageCanvas; width = stageCanvas.width; height = stageCanvas.height; }
+          else return null;
+          const scale = Math.min(1, 1280 / Math.max(width, height));
+          castCanvas.width = Math.max(1, Math.round(width * scale));
+          castCanvas.height = Math.max(1, Math.round(height * scale));
+          const ctx = castCanvas.getContext("2d");
+          ctx.drawImage(source, 0, 0, castCanvas.width, castCanvas.height);
+          ctx.drawImage(overlay, 0, 0, castCanvas.width, castCanvas.height);
+          return castCanvas;
+        }
+        async function pumpFrames() {
+          if (tx.state !== "connected") return;
+          const channel = tx.channel;
+          if (channel && channel.readyState === "open" && channel.bufferedAmount < 1000000 && !tx.busy) {
+            const canvas = composeFrame();
+            if (canvas) {
+              tx.busy = true;
+              try {
+                const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.72));
+                if (blob && channel.readyState === "open") channel.send(await blob.arrayBuffer());
+              } catch { /* skip a frame */ } finally { tx.busy = false; }
+            }
+          }
+          tx.pump = window.setTimeout(pumpFrames, live ? 150 : 1000);
+        }
+
+        // --- Scan a screen's code with this device's camera ---
+        const scanVideo = $("#scan-video");
+        let scanStream = null;
+        let scanTimer = null;
+        function stopScan() {
+          window.clearTimeout(scanTimer);
+          scanTimer = null;
+          if (scanStream) scanStream.getTracks().forEach((track) => track.stop());
+          scanStream = null;
+          scanVideo.srcObject = null;
+          scannerEl.hidden = true;
+          if (receiverEl.hidden) setBackgroundInert(false);
+        }
+        async function startScan() {
+          if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { showToast("Scanning needs a secure (HTTPS) page and a camera."); return; }
+          await stopCamera();
+          let media;
+          try { media = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } }, audio: false }); }
+          catch (error) { showToast(error && error.name === "NotAllowedError" ? "Camera permission was denied." : "No camera is available."); return; }
+          scanStream = media;
+          scanVideo.srcObject = media;
+          try { await scanVideo.play(); } catch { /* muted autoplay */ }
+          scannerEl.hidden = false;
+          setBackgroundInert(true);
+          $("#scan-cancel").focus({ preventScroll: true });
+          let detector = null;
+          if ("BarcodeDetector" in window) { try { detector = new window.BarcodeDetector({ formats: ["qr_code"] }); } catch { detector = null; } }
+          if (!detector) {
+            try { await loadScript(LIBS.jsqr); } catch { stopScan(); showToast("The scanner couldn't load. Type the code instead."); return; }
+          }
+          const frame = make("canvas");
+          const frameCtx = frame.getContext("2d", { willReadFrequently: true });
+          const tick = async () => {
+            if (!scanStream) return;
+            if (scanVideo.readyState >= 2 && scanVideo.videoWidth) {
+              let text = "";
+              if (detector) {
+                try { const found = await detector.detect(scanVideo); text = found[0] ? found[0].rawValue : ""; } catch { text = ""; }
+              } else {
+                const scale = Math.min(1, 640 / scanVideo.videoWidth);
+                frame.width = Math.round(scanVideo.videoWidth * scale);
+                frame.height = Math.round(scanVideo.videoHeight * scale);
+                frameCtx.drawImage(scanVideo, 0, 0, frame.width, frame.height);
+                const pixels = frameCtx.getImageData(0, 0, frame.width, frame.height);
+                const hit = window.jsQR(pixels.data, pixels.width, pixels.height, { inversionAttempts: "dontInvert" });
+                text = hit ? hit.data : "";
+              }
+              const code = normalizeCode(text);
+              if (code) { stopScan(); castCodeField.value = prettyCode(code); connectSender(code); return; }
+            }
+            if (scanStream) scanTimer = window.setTimeout(tick, 200);
+          };
+          tick();
+        }
+
+        // --- Wiring ---
+        $("#btn-receive").addEventListener("click", startReceiver);
+        $("#rx-close").addEventListener("click", stopReceiver);
+        $("#rx-allow").addEventListener("click", () => rxAnswer(true));
+        $("#rx-deny").addEventListener("click", () => rxAnswer(false));
+        $("#btn-scan").addEventListener("click", startScan);
+        $("#scan-cancel").addEventListener("click", stopScan);
+        $("#cast-pill-stop").addEventListener("click", () => stopSender("Stopped casting."));
+        $("#btn-cast-connect").addEventListener("click", () => {
+          if (tx.state === "connected") { stopSender("Stopped casting."); return; }
+          const code = normalizeCode(castCodeField.value);
+          if (!code) { castMessage("Enter the 8-character code shown on the screen.", "bad"); castCodeField.focus(); return; }
+          connectSender(code);
+        });
+        castCodeField.addEventListener("keydown", (event) => { if (event.key === "Enter") $("#btn-cast-connect").click(); });
+        document.addEventListener("keydown", (event) => {
+          const back = event.key === "Escape" || event.key === "GoBack" || event.keyCode === 10009 || event.keyCode === 461;
+          if (!back || !overlayOpen()) return;
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          if (!$("#personalize").hidden) closePersonalize(); else if (!scannerEl.hidden) stopScan(); else stopReceiver();
+        });
+        window.addEventListener("pagehide", () => { rxTeardown(); txTeardown(); });
+        if (PARAMS.get("join")) {
+          const code = normalizeCode(PARAMS.get("join"));
+          window.setTimeout(() => {
+            setView("Connect TV");
+            if (code) {
+              castCodeField.value = prettyCode(code);
+              castMessage(`This link carries the code ${prettyCode(code)}. Press Connect to show this device on that screen.`);
+              $("#btn-cast-connect").focus({ preventScroll: true });
+            } else {
+              castMessage("That link's code isn't valid. Type the code shown on the screen.", "bad");
+            }
+          }, 0);
+        }
+        if (PARAMS.get("receive") === "1") window.setTimeout(startReceiver, 0);
+
+        // ---------- TV mode: large layout and remote-control (D-pad) navigation ----------
+        const root = document.documentElement;
+        const tvButton = $("#btn-tv");
+        const TV_AGENT = /Tizen|Web0S|WebOS|SMART-TV|SmartTV|AppleTV|GoogleTV|Android.+TV|AFT[A-Z]|CrKey|BRAVIA|HbbTV|VIDAA|NetCast|NETTV|Saphi|Philips/i;
+        function setTv(on, remember) {
+          root.toggleAttribute("data-tv", on);
+          tvButton.setAttribute("aria-pressed", String(on));
+          if (remember) { try { localStorage.setItem("eye3.tv", on ? "1" : "0"); } catch { /* storage blocked */ } }
+          if (on && (!document.activeElement || document.activeElement === document.body)) focusFirst();
+        }
+        function initialTv() {
+          const query = new URLSearchParams(location.search).get("tv");
+          if (query === "1") return true;
+          if (query === "0") return false;
+          try {
+            const saved = localStorage.getItem("eye3.tv");
+            if (saved) return saved === "1";
+          } catch { /* storage blocked */ }
+          return TV_AGENT.test(navigator.userAgent);
+        }
+        const FOCUSABLE = 'button:not([disabled]), a[href], input[type="range"], [tabindex="0"]';
+        function focusables() {
+          const scope = !receiverEl.hidden ? receiverEl : !scannerEl.hidden ? scannerEl : !$("#personalize").hidden ? $("#personalize") : document;
+          return [...scope.querySelectorAll(FOCUSABLE)].filter((node) => {
+            if (node.classList.contains("file-input")) return false;
+            const box = node.getBoundingClientRect();
+            return box.width > 0 && box.height > 0 && getComputedStyle(node).visibility !== "hidden";
+          });
+        }
+        function focusFirst() {
+          const target = overlayOpen() ? focusables()[0] : ($(".tool-card.selected") || focusables()[0]);
+          if (target) target.focus({ preventScroll: true });
+        }
+        function moveFocus(key) {
+          const from = document.activeElement;
+          const nodes = focusables();
+          if (!from || from === document.body || !nodes.includes(from)) { focusFirst(); return; }
+          const a = from.getBoundingClientRect();
+          const ax = a.left + a.width / 2;
+          const ay = a.top + a.height / 2;
+          let best = null;
+          let bestScore = Infinity;
+          nodes.forEach((node) => {
+            if (node === from) return;
+            const b = node.getBoundingClientRect();
+            const dx = b.left + b.width / 2 - ax;
+            const dy = b.top + b.height / 2 - ay;
+            const primary = key === "ArrowRight" ? dx : key === "ArrowLeft" ? -dx : key === "ArrowDown" ? dy : -dy;
+            const cross = key === "ArrowRight" || key === "ArrowLeft" ? Math.abs(dy) : Math.abs(dx);
+            if (primary <= 1) return;
+            const score = primary + cross * 2.5;
+            if (score < bestScore) { best = node; bestScore = score; }
+          });
+          if (best) {
+            best.focus({ preventScroll: true });
+            best.scrollIntoView({ block: "center", behavior: reduceMotion ? "auto" : "smooth" });
+          }
+        }
+        document.addEventListener("keydown", (event) => {
+          if ((!root.hasAttribute("data-tv") && !overlayOpen()) || event.altKey || event.ctrlKey || event.metaKey) return;
+          const onSlider = document.activeElement && document.activeElement.type === "range";
+          if (event.key.startsWith("Arrow") && !(onSlider && event.key.match(/Left|Right/))) {
+            event.preventDefault();
+            moveFocus(event.key);
+            return;
+          }
+          // Back keys: Escape, Tizen (10009), webOS (461), Android TV "GoBack"
+          if (event.key === "Escape" || event.key === "GoBack" || event.keyCode === 10009 || event.keyCode === 461) {
+            event.preventDefault();
+            if (presenting) stopPresentation();
+            else if (live) stopCamera();
+            else { window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" }); focusFirst(); }
+          }
+        });
+        tvButton.addEventListener("click", () => setTv(!root.hasAttribute("data-tv"), true));
+        setTv(initialTv(), false);
+
+        // ---------- Personal i3 theme: background photo and face icons, kept only in this browser ----------
+        const THEME_KEY = "eye3.theme.v1";
+        const personalizeEl = $("#personalize");
+        const themeStatus = $("#theme-status");
+        const themeFaces = $("#theme-faces");
+        const themeToggle = $("#theme-toggle");
+        const toolIconGlyphs = [...document.querySelectorAll(".tool-icon")].map((node) => node.textContent);
+        const avatarEl = $(".avatar");
+        const avatarText = avatarEl.textContent;
+
+        function readTheme() {
+          try { return JSON.parse(localStorage.getItem(THEME_KEY)) || null; } catch { return null; }
+        }
+        function writeTheme(theme) {
+          try {
+            if (theme) localStorage.setItem(THEME_KEY, JSON.stringify(theme)); else localStorage.removeItem(THEME_KEY);
+            return true;
+          } catch { return false; }
+        }
+        function themeNote(text, tone = "") { themeStatus.className = `muted ${tone}`.trim(); themeStatus.textContent = text; }
+        function faceImage(src, alt) {
+          const image = make("img");
+          image.src = src;
+          image.alt = alt;
+          image.decoding = "async";
+          return image;
+        }
+        function applyTheme() {
+          const theme = readTheme();
+          const on = !!(theme && theme.on);
+          root.toggleAttribute("data-theme-i3", on);
+          if (on && theme.bg) root.style.setProperty("--i3-photo", `url("${theme.bg}")`);
+          else root.style.removeProperty("--i3-photo");
+          const faces = on && theme.faces ? theme.faces : [];
+          document.querySelectorAll(".tool-icon").forEach((node, index) => {
+            if (faces.length) { node.replaceChildren(faceImage(faces[index % faces.length], "")); node.classList.add("face"); }
+            else { node.textContent = toolIconGlyphs[index]; node.classList.remove("face"); }
+          });
+          if (faces.length) { avatarEl.replaceChildren(faceImage(faces[0], "Your profile")); avatarEl.classList.add("face"); }
+          else { avatarEl.textContent = avatarText; avatarEl.classList.remove("face"); }
+          themeToggle.disabled = !theme;
+          themeToggle.textContent = on ? "Turn i3 theme off" : "Turn i3 theme on";
+          themeToggle.setAttribute("aria-pressed", String(on));
+          $("#theme-remove").disabled = !theme;
+          themeFaces.replaceChildren(...(theme && theme.faces ? theme.faces : []).map((src, index) => faceImage(src, `Face ${index + 1}`)));
+        }
+        function squareCrop(source, cx, cy, size, out = 160) {
+          const canvas = make("canvas");
+          canvas.width = canvas.height = out;
+          const { width, height } = sourceSize(source);
+          const half = Math.min(size / 2, cx, cy, width - cx, height - cy);
+          canvas.getContext("2d").drawImage(source, cx - half, cy - half, half * 2, half * 2, 0, 0, out, out);
+          return canvas.toDataURL("image/jpeg", 0.85);
+        }
+        const getFaceFinder = () => useEngine("faces", async () => {
+          await loadScript(LIBS.tf);
+          await loadScript(LIBS.blazeface);
+          return window.blazeface.load();
+        });
+        async function findFaces(canvas) {
+          try {
+            const finder = await getFaceFinder();
+            const found = await finder.estimateFaces(canvas, false);
+            return found
+              .filter((face) => (face.probability === undefined ? 1 : Number(face.probability)) > 0.8)
+              .sort((a, b) => a.topLeft[0] - b.topLeft[0])
+              .slice(0, 6)
+              .map((face) => {
+                const [x1, y1] = face.topLeft;
+                const [x2, y2] = face.bottomRight;
+                return { cx: (x1 + x2) / 2, cy: (y1 + y2) / 2, size: Math.max(x2 - x1, y2 - y1) * 1.7 };
+              });
+          } catch { return null; }
+        }
+        async function setThemePhoto(file) {
+          if (!file || !file.type.startsWith("image/")) { themeNote("Choose an image file.", "bad"); return; }
+          themeNote("Preparing your photo…", "busy");
+          let source;
+          try { source = await decodeFile(file); } catch { themeNote("That photo could not be opened.", "bad"); return; }
+          const { width, height } = sourceSize(source);
+          const scale = Math.min(1, 1600 / Math.max(width, height));
+          const background = make("canvas");
+          background.width = Math.round(width * scale);
+          background.height = Math.round(height * scale);
+          background.getContext("2d").drawImage(source, 0, 0, background.width, background.height);
+          themeNote("Finding faces (first run downloads a small model)…", "busy");
+          const faces = await findFaces(background);
+          let crops;
+          if (faces && faces.length) {
+            crops = faces.map((face) => squareCrop(background, face.cx, face.cy, face.size));
+          } else {
+            crops = [squareCrop(background, background.width / 2, background.height / 2, Math.min(background.width, background.height))];
+          }
+          const theme = { on: true, bg: background.toDataURL("image/jpeg", 0.8), faces: crops };
+          if (!writeTheme(theme)) {
+            theme.bg = background.toDataURL("image/jpeg", 0.55);
+            if (!writeTheme(theme)) { themeNote("This browser's storage is full or blocked, so the photo can't be saved.", "bad"); return; }
+          }
+          applyTheme();
+          if (faces && faces.length) themeNote(`Found ${faces.length} face${faces.length === 1 ? "" : "s"}. They're now your tool icons. Saved on this device only.`);
+          else if (faces) themeNote("No faces found, so the centre of the photo is your icon. Saved on this device only.");
+          else themeNote("Face finder unavailable offline, so the centre of the photo is your icon. Saved on this device only.");
+          log("Personal i3 theme applied");
+        }
+        function openPersonalize() {
+          personalizeEl.hidden = false;
+          setBackgroundInert(true);
+          applyTheme();
+          if (!themeStatus.textContent) themeNote(readTheme() ? "Your photo is saved on this device only." : "Pick a photo with faces. It never leaves this device.");
+          $("#theme-choose").focus({ preventScroll: true });
+        }
+        function closePersonalize() {
+          personalizeEl.hidden = true;
+          if (receiverEl.hidden && scannerEl.hidden) setBackgroundInert(false);
+          $("#btn-theme").focus({ preventScroll: true });
+        }
+        $("#btn-theme").addEventListener("click", openPersonalize);
+        $("#theme-close").addEventListener("click", closePersonalize);
+        $("#theme-choose").addEventListener("click", () => $("#theme-input").click());
+        $("#theme-input").addEventListener("change", (event) => { setThemePhoto(event.target.files[0]); event.target.value = ""; });
+        themeToggle.addEventListener("click", () => {
+          const theme = readTheme();
+          if (!theme) return;
+          theme.on = !theme.on;
+          writeTheme(theme);
+          applyTheme();
+        });
+        $("#theme-remove").addEventListener("click", () => {
+          writeTheme(null);
+          applyTheme();
+          themeNote("Photo removed from this device.");
+          log("Personal theme removed");
+        });
+
+        // ---------- Welcome screen ----------
+        const splash = $("#splash");
+        function hideSplash() {
+          if (splash.hidden) return;
+          splash.classList.add("leaving");
+          window.setTimeout(() => { splash.hidden = true; }, reduceMotion ? 0 : 350);
+          try { sessionStorage.setItem("eye3.welcomed", "1"); } catch { /* storage blocked */ }
+        }
+        let welcomed = false;
+        try { welcomed = sessionStorage.getItem("eye3.welcomed") === "1"; } catch { /* storage blocked */ }
+        if (welcomed || PARAMS.get("welcome") === "0") splash.hidden = true;
+        else {
+          splash.addEventListener("click", hideSplash);
+          document.addEventListener("keydown", (event) => {
+            if (splash.hidden) return;
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            hideSplash();
+          }, true);
+          window.setTimeout(hideSplash, 3200);
+        }
+        applyTheme();
+
+        ["detect", "classify", "text"].forEach((name) => setEngine(name, "idle"));
+        renderLibrary();
+        log("Workspace ready");
+      })();
     </script>
   </body>
 </html>
