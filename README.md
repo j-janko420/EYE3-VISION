@@ -12,6 +12,7 @@ EYE3 Vision is a static page (`index.html`) with real, free, on-device analysis.
 | Text extraction (OCR) | Tesseract.js | on click |
 | Camera data (EXIF, GPS) | exifr | on demand |
 | Palette, compare, difference heatmap, library | Canvas + localStorage | built in |
+| Apple TV link code (QR) | qrcode-generator | on demand |
 
 Run locally (the camera needs `localhost` or HTTPS):
 
@@ -23,6 +24,8 @@ Publish free on GitHub Pages: the workflow in `.github/workflows/pages.yml` depl
 
 **Phones:** 44px touch targets, safe-area aware, live camera uses the rear lens.
 **TV:** auto-enabled on Tizen, webOS, Android TV, Fire TV and similar; otherwise add `?tv=1` or press the **TV mode** button. Large type, big focus rings, D-pad navigation and Back/Escape to stop the camera.
+
+**Apple TV:** Apple TV has no web browser, so use the **Connect Apple TV** tool: scan its QR code (or copy the link) on an iPhone, iPad or Mac, then mirror with Control Center → Screen Mirroring. **Start presentation** hides the menus, switches to the large TV layout and keeps the screen awake.
 
 Images never leave the browser. Models download once from public CDNs (jsDelivr, Google storage, TF Hub) and are cached by the browser.
 

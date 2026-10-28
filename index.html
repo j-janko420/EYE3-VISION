@@ -119,7 +119,7 @@
       .section-heading h2 { margin: 0; font-size: 1rem; font-weight: 650; letter-spacing: -.02em; }
       .section-heading p { margin: 0.3125rem 0 0; color: var(--muted); font-size: 0.6875rem; }
       .text-link { color: var(--orange-soft); font-size: 0.6875rem; }
-      .tool-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.8125rem; }
+      .tool-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 11.5rem), 1fr)); gap: 0.8125rem; }
       .tool-card {
         display: flex;
         min-height: 10.5rem;
@@ -305,6 +305,7 @@
         .lib-meta button { min-height: 44px; padding: 0 .25rem; }
         .tool-card { min-height: 0; }
         .brand { min-height: 44px; }
+        .field { min-height: 44px; }
         .text-link { display: inline-flex; min-height: 44px; align-items: center; }
       }
       @media (max-width: 640px) {
@@ -322,6 +323,30 @@
         .stage { width: min(100%, calc(60vh * var(--ar, 1.6))); width: min(100%, calc(60dvh * var(--ar, 1.6))); }
       }
       @media (max-width: 390px) { .nav-link span.nav-icon { display: none; } }
+
+      /* Connect Apple TV */
+      .lead { margin: .95rem 0 0; color: var(--muted); font-size: .75rem; line-height: 1.7; }
+      .steps { display: grid; gap: .75rem; margin: .9rem 0 0; padding: 0; list-style: none; }
+      .step { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .9rem; padding: .9rem; border: 1px solid var(--line); border-radius: .65rem; background: #151514; }
+      .step-n { display: grid; width: 1.75rem; height: 1.75rem; place-items: center; border: 1px solid #49301f; border-radius: 50%; background: #2a1d15; color: var(--orange-soft); font-size: .75rem; font-weight: 700; }
+      .step strong { font-size: .75rem; font-weight: 650; }
+      .step p { margin: .3rem 0 0; color: var(--muted); font-size: .6875rem; line-height: 1.65; }
+      .step .toolbar { margin-top: .75rem; }
+      .qr-row { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 1rem; margin-top: .75rem; }
+      .qr { width: 9.5rem; height: 9.5rem; flex: 0 0 auto; padding: .6rem; border-radius: .65rem; background: #fff; line-height: 0; }
+      .qr svg { display: block; width: 100%; height: 100%; }
+      .qr.empty { display: grid; place-items: center; background: #151514; border: 1px dashed #51463b; color: var(--muted); font-size: .625rem; line-height: 1.5; text-align: center; }
+      .qr-side { min-width: 0; flex: 1 1 14rem; }
+      .qr-side .toolbar { margin-top: .6rem; }
+      .field-label { display: block; margin-bottom: .35rem; color: var(--muted); font-size: .625rem; }
+      .field { display: block; width: 100%; padding: .55rem .7rem; border: 1px solid var(--line); border-radius: .45rem; background: #111110; color: var(--text); font: inherit; font-size: .6875rem; }
+      .exit-present { position: fixed; top: calc(.75rem + env(safe-area-inset-top)); right: calc(.75rem + env(safe-area-inset-right)); z-index: 6; }
+      html[data-present] .sidebar, html[data-present] .topbar, html[data-present] .hero, html[data-present] .tool-grid,
+      html[data-present] .section-heading, html[data-present] .intro, html[data-present] .eyebrow, html[data-present] h1,
+      html[data-present] #activity, html[data-present] .footnote, html[data-present] #tools { display: none; }
+      html[data-present] .main { margin-left: 0; }
+      html[data-present] .content { padding-top: 1rem; }
+      html[data-present] .workspace { grid-template-columns: 1fr; margin-top: 0; }
 
       /* Big monitors reporting 4K CSS pixels. */
       @media (min-width: 2400px) { html { font-size: 28px; } }
@@ -428,6 +453,10 @@
                 <span class="tool-icon" aria-hidden="true">▤</span><span class="tool-name">Visual library</span>
                 <span class="tool-description">Save inspected images with their labels and keep them in this browser.</span><span class="tool-arrow">Select tool ↗</span>
               </button>
+              <button class="tool-card" type="button" data-tool="Connect Apple TV">
+                <span class="tool-icon" aria-hidden="true">▭</span><span class="tool-name">Connect Apple TV</span>
+                <span class="tool-description">Mirror EYE3 to the big screen with AirPlay, with a scannable link and a presentation mode.</span><span class="tool-arrow">Select tool ↗</span>
+              </button>
             </div>
           </section>
 
@@ -489,6 +518,42 @@
                 <p class="muted" id="cmp-stats" style="margin-top:12px">Pick two images to compare them side by side and highlight what changed.</p>
               </div>
 
+              <div id="view-appletv" hidden>
+                <p class="lead">Apple TV has no web browser, so EYE3 reaches the big screen through AirPlay: mirror it from your iPhone, iPad or Mac. It is free, built in, and needs no app.</p>
+                <ol class="steps">
+                  <li class="step">
+                    <span class="step-n" aria-hidden="true">1</span>
+                    <div><strong>Join the same Wi-Fi</strong><p>Put your iPhone, iPad or Mac and your Apple TV on the same network.</p></div>
+                  </li>
+                  <li class="step">
+                    <span class="step-n" aria-hidden="true">2</span>
+                    <div>
+                      <strong>Open EYE3 on your device</strong>
+                      <p>Scan the code with your iPhone camera, or copy the link to your Mac.</p>
+                      <div class="qr-row">
+                        <div class="qr empty" id="qr" role="img" aria-label="QR code for the EYE3 link">Loading code…</div>
+                        <div class="qr-side">
+                          <label class="field-label" for="atv-url">Link to open</label>
+                          <input class="field" id="atv-url" type="url" inputmode="url" autocomplete="off" spellcheck="false">
+                          <div class="toolbar"><button class="btn" id="btn-copy-link" type="button">Copy link</button></div>
+                          <p id="atv-url-note"></p>
+                        </div>
+                      </div>
+                    </div>
+                  </li>
+                  <li class="step">
+                    <span class="step-n" aria-hidden="true">3</span>
+                    <div>
+                      <strong>Mirror to your Apple TV</strong>
+                      <p><b>iPhone or iPad:</b> open Control Center, tap Screen Mirroring, choose your Apple TV. <b>Mac:</b> menu bar Control Center, Screen Mirroring, choose your Apple TV.</p>
+                      <div class="toolbar"><button class="btn" id="btn-present" type="button">Start presentation</button></div>
+                      <p>Presentation hides the menus, switches to the large TV layout and keeps the screen awake. Turn your phone sideways to fill the TV.</p>
+                      <p id="atv-support"></p>
+                    </div>
+                  </li>
+                </ol>
+              </div>
+
               <div id="view-library" hidden>
                 <div class="toolbar">
                   <button class="btn ghost" id="lib-clear" type="button" disabled>Clear library</button>
@@ -511,6 +576,7 @@
           </section>
         </div>
       </main>
+      <button class="btn exit-present" id="btn-exit-present" type="button" hidden>Exit presentation</button>
       <div class="toast" id="toast" role="status" aria-live="polite"></div>
     </div>
     <script>
@@ -525,6 +591,7 @@
           mobilenet: `${CDN}@tensorflow-models/mobilenet@2.1.1/dist/mobilenet.min.js`,
           tesseract: `${CDN}tesseract.js@5.1.1/dist/tesseract.min.js`,
           exifr: `${CDN}exifr@7.1.3/dist/lite.umd.js`,
+          qr: `${CDN}qrcode-generator@1.4.4/qrcode.js`,
         };
         const MAX_SIDE = 1600;
         const LIBRARY_KEY = "eye3.library.v1";
@@ -1188,7 +1255,7 @@
         }
 
         // ---------- Views ----------
-        const views = { "Image inspector": "inspector", "Side-by-side compare": "compare", "Visual library": "library" };
+        const views = { "Image inspector": "inspector", "Side-by-side compare": "compare", "Visual library": "library", "Connect Apple TV": "appletv" };
         function setView(tool) {
           const key = views[tool] || "inspector";
           Object.values(views).forEach((name) => { $(`#view-${name}`).hidden = name !== key; });
@@ -1196,6 +1263,7 @@
           $("#upload-title").textContent = tool;
           if (key !== "inspector") stopCamera();
           if (key === "library") renderLibrary();
+          if (key === "appletv") openAppleTv();
         }
 
         // ---------- Wiring ----------
@@ -1252,6 +1320,123 @@
           });
         });
         window.addEventListener("pagehide", () => { if (stream) stream.getTracks().forEach((track) => track.stop()); });
+
+        // ---------- Connect Apple TV: AirPlay mirroring helper and presentation mode ----------
+        const qrBox = $("#qr");
+        const urlField = $("#atv-url");
+        const urlNote = $("#atv-url-note");
+        let presenting = false;
+        let fullscreenEntered = false;
+        let wakeLock = null;
+        let tvBeforePresent = false;
+        let qrTimer;
+
+        function defaultShareUrl() {
+          return /^https?:$/.test(location.protocol) ? `${location.origin}${location.pathname}` : "";
+        }
+        function describeUrl(value) {
+          let parsed;
+          try { parsed = new URL(value); } catch { return value ? "That doesn't look like a web link." : "Open EYE3 from a published link (for example GitHub Pages) so your phone can reach it."; }
+          if (/^(localhost|127\.|\[?::1)/.test(parsed.hostname)) return "localhost only works on this computer. Use your computer's network address or the published link.";
+          return "";
+        }
+        function drawQr(value) {
+          qrBox.replaceChildren();
+          qrBox.classList.remove("empty");
+          const code = window.qrcode(0, "M");
+          code.addData(value);
+          code.make();
+          const count = code.getModuleCount();
+          const ns = "http://www.w3.org/2000/svg";
+          const svg = document.createElementNS(ns, "svg");
+          svg.setAttribute("viewBox", `0 0 ${count} ${count}`);
+          svg.setAttribute("shape-rendering", "crispEdges");
+          svg.setAttribute("aria-hidden", "true");
+          const path = [];
+          for (let row = 0; row < count; row += 1) {
+            for (let col = 0; col < count; col += 1) if (code.isDark(row, col)) path.push(`M${col} ${row}h1v1h-1z`);
+          }
+          const shape = document.createElementNS(ns, "path");
+          shape.setAttribute("d", path.join(""));
+          shape.setAttribute("fill", "#10100f");
+          svg.append(shape);
+          qrBox.append(svg);
+        }
+        async function renderQr() {
+          const value = urlField.value.trim();
+          urlNote.className = "muted";
+          urlNote.textContent = describeUrl(value);
+          const usable = /^https?:\/\//i.test(value);
+          if (!usable) {
+            qrBox.replaceChildren(document.createTextNode("Add a link to see its code"));
+            qrBox.classList.add("empty");
+            return;
+          }
+          try {
+            await loadScript(LIBS.qr);
+            if (urlField.value.trim() !== value) return;
+            drawQr(value);
+          } catch {
+            qrBox.replaceChildren(document.createTextNode("Code unavailable offline — copy the link instead"));
+            qrBox.classList.add("empty");
+          }
+        }
+        function openAppleTv() {
+          if (!urlField.value) urlField.value = defaultShareUrl();
+          const airplay = "WebKitPlaybackTargetAvailabilityEvent" in window;
+          $("#atv-support").className = "muted";
+          $("#atv-support").textContent = airplay
+            ? "AirPlay is available on this device."
+            : "Tip: open this page in Safari on an iPhone, iPad or Mac to mirror it.";
+          renderQr();
+        }
+        async function startPresentation() {
+          if (presenting) return;
+          tvBeforePresent = root.hasAttribute("data-tv");
+          presenting = true;
+          setView("Image inspector");
+          setTv(true, false);
+          root.setAttribute("data-present", "");
+          $("#btn-exit-present").hidden = false;
+          window.scrollTo(0, 0);
+          try {
+            if (root.requestFullscreen) { await root.requestFullscreen(); fullscreenEntered = true; }
+          } catch { /* fullscreen not allowed here; presentation still works */ }
+          try {
+            if (navigator.wakeLock) wakeLock = await navigator.wakeLock.request("screen");
+          } catch { /* wake lock denied */ }
+          $("#btn-exit-present").focus({ preventScroll: true });
+          log("Presentation started");
+        }
+        async function stopPresentation() {
+          if (!presenting) return;
+          presenting = false;
+          root.removeAttribute("data-present");
+          $("#btn-exit-present").hidden = true;
+          setTv(tvBeforePresent, false);
+          setView("Connect Apple TV");
+          log("Presentation ended");
+          const lock = wakeLock;
+          const leaveFullscreen = fullscreenEntered && document.fullscreenElement;
+          wakeLock = null;
+          fullscreenEntered = false;
+          if (lock) { try { await lock.release(); } catch { /* already released */ } }
+          if (leaveFullscreen) { try { await document.exitFullscreen(); } catch { /* ignore */ } }
+        }
+        $("#btn-present").addEventListener("click", startPresentation);
+        $("#btn-exit-present").addEventListener("click", stopPresentation);
+        urlField.addEventListener("input", () => { window.clearTimeout(qrTimer); qrTimer = window.setTimeout(renderQr, 300); });
+        $("#btn-copy-link").addEventListener("click", async () => {
+          const value = urlField.value.trim();
+          if (!value) { showToast("Add a link first."); return; }
+          try { await navigator.clipboard.writeText(value); showToast("Link copied."); } catch { urlField.select(); showToast("Press copy on the selected link."); }
+        });
+        document.addEventListener("fullscreenchange", () => { if (presenting && fullscreenEntered && !document.fullscreenElement) stopPresentation(); });
+        document.addEventListener("visibilitychange", async () => {
+          if (presenting && !wakeLock && document.visibilityState === "visible" && navigator.wakeLock) {
+            try { wakeLock = await navigator.wakeLock.request("screen"); } catch { /* denied */ }
+          }
+        });
 
         // ---------- TV mode: large layout and remote-control (D-pad) navigation ----------
         const root = document.documentElement;
@@ -1321,7 +1506,8 @@
           // Back keys: Escape, Tizen (10009), webOS (461), Android TV "GoBack"
           if (event.key === "Escape" || event.key === "GoBack" || event.keyCode === 10009 || event.keyCode === 461) {
             event.preventDefault();
-            if (live) stopCamera();
+            if (presenting) stopPresentation();
+            else if (live) stopCamera();
             else { window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" }); focusFirst(); }
           }
         });
