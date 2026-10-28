@@ -13,4 +13,6 @@ npm start   # http://127.0.0.1:8080  (HOST/PORT env vars to change; set HOST=0.0
 Use only with portals/streams you are authorised to access.
 
 ## Connectors (plugins)
-Each file in `plugins/` is a connector: `{id, name, description, fields, list(params, ctx), resolve?(item, ctx)}`; it is auto-loaded and shown in the **Connectors** tab. Included: `stalker` (MAG portal + virtual MAC), `m3u`, `local` (your files in `media/`, or `MEDIA_DIR`). Tick **Transcode** to stream through `ffmpeg` (must be installed) to H.264/AAC MP4 for TV browsers.
+Each file in `plugins/` is a connector: `{id, name, description, fields, list(params, ctx), resolve?(item, ctx)}`; it is auto-loaded and shown in the **Connectors** tab. Included: `url` (paste stream links), `stalker` (MAG portal + virtual MAC), `m3u`, `local` (your files in `media/`, or `MEDIA_DIR`). Tick **Transcode** to stream through `ffmpeg` (must be installed) to H.264/AAC MP4 for TV browsers.
+
+Run tests with `npm test` (Node built-in runner, no dependencies).
