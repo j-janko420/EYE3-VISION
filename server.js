@@ -1,7 +1,13 @@
 // EYE3-VISION: zero-dependency server. Serves the UI and proxies Stalker/MAG portal + M3U requests (avoids CORS).
 const http = require('http'), fs = require('fs'), path = require('path'), { spawn } = require('child_process');
 const MEDIA_DIR = path.resolve(process.env.MEDIA_DIR || path.join(__dirname, 'media'));
+const crypto = require('crypto'), { parse: parseXmltv, nowNext } = require('./lib/xmltv'), { srtToVtt } = require('./lib/subtitles');
 const PORT = process.env.PORT || 8080, HOST = process.env.HOST || '127.0.0.1';
+// Access token: required whenever the server is reachable beyond loopback.
+const LOOPBACK = ['127.0.0.1', 'localhost', '::1'].includes(HOST);
+const TOKEN = process.env.EYE3_TOKEN || (LOOPBACK ? '' : crypto.randomBytes(12).toString('hex'));
+const sameTok = (a, b) => { const x = Buffer.from(String(a)), y = Buffer.from(String(b)); return x.length === y.length && crypto.timingSafeEqual(x, y); };
+const cookieTok = (req) => (/(?:^|;\s*)eye3=([^;]+)/.exec(req.headers.cookie || '') || [])[1];
 const DEFAULT_MAC = '00:1A:79:EC:5F:08'; // virtual MAC (normalised from 00:1A:79:EC5F:08)
 const MAC_RE = /^([0-9A-F]{2}:){5}[0-9A-F]{2}$/;
 const normMac = (m) => { const h = String(m || '').replace(/[^0-9a-f]/gi, '').toUpperCase(); return h.length === 12 ? h.match(/../g).join(':') : null; };
@@ -54,7 +60,7 @@ for (const f of fs.readdirSync(path.join(__dirname, 'plugins')).filter((x) => x.
 }
 function inMedia(rel) { const f = path.resolve(MEDIA_DIR, rel); return f.startsWith(MEDIA_DIR + path.sep) ? f : null; }
 async function pluginApi(u, res) {
-  if (u.pathname === '/plugins') return send(res, 200, Object.values(plugins).map(({ id, name, description, fields }) => ({ id, name, description, fields })));
+  if (u.pathname === '/plugins') return send(res, 200, Object.values(plugins).map(({ id, name, description, fields, category }) => ({ id, name, description, fields, category })));
   const q = u.searchParams, p = plugins[q.get('id')]; if (!p) return send(res, 404, { error: 'Unknown plugin' });
   const params = JSON.parse(q.get('params') || '{}');
   if (u.pathname === '/plugin/list') return send(res, 200, await p.list(params, ctx));
@@ -82,16 +88,33 @@ function transcode(req, res, q) {
   res.on('close', () => ff.kill('SIGKILL'));
 }
 
+async function epg(res, q) {
+  const text = await ctx.fetchText(q.get('url'));
+  send(res, 200, nowNext(parseXmltv(text)));
+}
+async function subtitle(res, q) {
+  let text; const lf = q.get('file');
+  if (lf) { const f = inMedia(lf); if (!f || !/\.(srt|vtt)$/i.test(f) || !fs.existsSync(f)) return send(res, 404, 'Not found', 'text/plain'); text = fs.readFileSync(f, 'utf8'); } else text = await ctx.fetchText(q.get('src'));
+  send(res, 200, /^\uFEFF?WEBVTT/.test(text) ? text : srtToVtt(text), 'text/vtt');
+}
+
 http.createServer(async (req, res) => {
   const u = new URL(req.url, 'http://x');
   try {
+    if (TOKEN) {
+      const qt = u.searchParams.get('token');
+      if (qt && sameTok(qt, TOKEN)) { res.setHeader('Set-Cookie', `eye3=${TOKEN}; HttpOnly; SameSite=Strict; Path=/`); req.headers.cookie = `eye3=${TOKEN}`; }
+      if (!sameTok(cookieTok(req) || '', TOKEN)) return send(res, 401, 'Access token required (open /?token=...)', 'text/plain');
+    }
     if (u.pathname === '/api') return await api(req, res, u.searchParams);
     if (u.pathname.startsWith('/plugin')) return await pluginApi(u, res);
     if (u.pathname.startsWith('/media/')) return serveMedia(req, res, decodeURIComponent(u.pathname.slice(7)));
+    if (u.pathname === '/epg') return await epg(res, u.searchParams);
+    if (u.pathname === '/subtitle') return await subtitle(res, u.searchParams);
     if (u.pathname === '/transcode') return transcode(req, res, u.searchParams);
     if (u.pathname === '/config') return send(res, 200, { mac: DEFAULT_MAC });
     const file = path.join(__dirname, 'public', u.pathname === '/' ? 'index.html' : path.normalize(u.pathname).replace(/^(\.\.[\/\\])+/, ''));
     if (!file.startsWith(path.join(__dirname, 'public'))) return send(res, 403, 'Forbidden', 'text/plain');
     fs.readFile(file, (e, d) => e ? send(res, 404, 'Not found', 'text/plain') : send(res, 200, d, TYPES[path.extname(file)] || 'application/octet-stream'));
   } catch (e) { send(res, 502, { error: e.message }); }
-}).listen(PORT, HOST, () => console.log(`EYE3-VISION on http://${HOST}:${PORT}`));
+}).listen(PORT, HOST, () => console.log(`EYE3-VISION on http://${HOST}:${PORT}` + (TOKEN && !LOOPBACK ? `/?token=${TOKEN}` : '')));

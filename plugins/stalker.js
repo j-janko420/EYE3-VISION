@@ -1,5 +1,6 @@
 // Connector: MAG/Stalker portal. Uses ctx.portalCall (see server.js).
 module.exports = {
+  category: 'live',
   id: 'stalker', name: 'MAG / Stalker portal', description: 'Channels from a Stalker middleware portal using a virtual MAC',
   fields: [{ name: 'portal', label: 'Portal URL', placeholder: 'http://host/c/' }, { name: 'mac', label: 'Virtual MAC', default: '00:1A:79:EC:5F:08' }],
   async list(p, ctx) {

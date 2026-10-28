@@ -10,11 +10,15 @@ function walk(dir, base, out) {
   return out;
 }
 module.exports = {
+  category: 'library',
   id: 'local', name: 'Local library', description: 'Play your own downloaded files from the media folder',
   fields: [{ name: 'filter', label: 'Filter', placeholder: 'optional text' }],
   async list(p, ctx) {
     const f = (p.filter || '').toLowerCase();
     return walk(ctx.mediaDir, ctx.mediaDir, []).filter((n) => n.toLowerCase().includes(f))
-      .map((n) => ({ name: n, url: '/media/' + n.split('/').map(encodeURIComponent).join('/'), transcodeSrc: n }));
+      .map((n) => {
+        const base = n.replace(/\.[^.]+$/, ''), sub = ['.vtt', '.srt'].find((x) => fs.existsSync(path.join(ctx.mediaDir, base + x)));
+        return { name: n, url: '/media/' + n.split('/').map(encodeURIComponent).join('/'), transcodeSrc: n, ...(sub ? { subtitle: '/subtitle?file=' + encodeURIComponent(base + sub) } : {}) };
+      });
   },
 };
