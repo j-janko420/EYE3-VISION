@@ -1,5 +1,30 @@
 # EYE3-VISION
 Designed by i3 Design
+
+## Run it live
+
+EYE3 Vision is a static page (`index.html`) with real, free, on-device analysis. No API keys, no backend, no cost.
+
+| Capability | Free tool | Loaded |
+| --- | --- | --- |
+| Object detection (boxes, live camera) | TensorFlow.js + COCO-SSD | on demand |
+| Scene labels | MobileNet v2 | on demand |
+| Text extraction (OCR) | Tesseract.js | on click |
+| Camera data (EXIF, GPS) | exifr | on demand |
+| Palette, compare, difference heatmap, library | Canvas + localStorage | built in |
+
+Run locally (the camera needs `localhost` or HTTPS):
+
+```
+python3 -m http.server 8080   # then open http://localhost:8080
+```
+
+Publish free on GitHub Pages: the workflow in `.github/workflows/pages.yml` deploys on every push to `main`. One-time setup: repo **Settings → Pages → Source: GitHub Actions**.
+
+Images never leave the browser. Models download once from public CDNs (jsDelivr, Google storage, TF Hub) and are cached by the browser.
+
+---
+
 https://raw.githubusercontent.com/hasanbeder/M3Unator/main/M3Unator.user.js
 README.pt.md
 M3UPT

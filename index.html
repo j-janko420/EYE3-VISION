@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#10100f">
-    <meta name="description" content="EYE3 Vision — a visual workspace concept for image inspection.">
+    <meta name="description" content="EYE3 Vision — a live, on-device visual workspace: object detection, scene labels, OCR, EXIF, palette, compare and a camera mode.">
     <title>EYE3 Vision — Visual workspace</title>
     <style>
       :root {
@@ -176,6 +176,82 @@
       .toast { position: fixed; right: 24px; bottom: 24px; z-index: 5; max-width: min(380px, calc(100vw - 32px)); padding: 12px 15px; transform: translateY(12px); border: 1px solid #573b28; border-radius: 8px; background: #241b15; color: #f3c6a4; font-size: 11px; opacity: 0; pointer-events: none; transition: .2s ease; }
       .toast.visible { transform: translateY(0); opacity: 1; }
 
+      [hidden] { display: none !important; }
+      .status-dot.ok { background: var(--green); box-shadow: 0 0 12px #97d8a488; }
+      .engines { display: grid; gap: 7px; margin-top: 11px; }
+      .engine { display: flex; align-items: center; justify-content: space-between; color: var(--muted); font-size: 10px; }
+      .engine span { display: flex; align-items: center; gap: 8px; }
+      .engine i { width: 6px; height: 6px; border-radius: 50%; background: #55534d; }
+      .engine em { color: #6f6d67; font-size: 9px; font-style: normal; text-transform: uppercase; letter-spacing: .08em; }
+      .engine[data-state="loading"] i { background: var(--orange); animation: pulse 1s ease-in-out infinite; }
+      .engine[data-state="ready"] i { background: var(--green); }
+      .engine[data-state="error"] i { background: #e5584f; }
+      @keyframes pulse { 50% { opacity: .35; } }
+
+      .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 15px; }
+      .btn { padding: 8px 12px; border: 1px solid #69412a; border-radius: 7px; background: #322116; color: #ffc094; font-size: 11px; font-weight: 650; cursor: pointer; }
+      .btn:hover:not(:disabled) { background: #482b19; }
+      .btn:disabled { opacity: .4; cursor: not-allowed; }
+      .btn.ghost { border-color: var(--line); background: transparent; color: var(--muted); }
+      .btn.ghost:hover:not(:disabled) { background: #1c1c1a; color: var(--text); }
+      .btn.on { border-color: var(--orange); background: #482b19; }
+      .stage-wrap { margin-top: 12px; overflow: hidden; border: 1px dashed #51463b; border-radius: 9px; background: #171615; transition: .18s ease; }
+      .stage-wrap.drag-over { border-color: var(--orange); background: #241a14; }
+      .stage-wrap.has-media { border-style: solid; border-color: var(--line); }
+      .dz-empty { display: flex; min-height: 190px; flex-direction: column; align-items: center; justify-content: center; padding: 18px; text-align: center; }
+      .dz-empty strong { margin-top: 11px; font-size: 11px; font-weight: 600; }
+      .dz-empty p { max-width: 280px; margin: 5px 0 0; color: var(--muted); font-size: 10px; line-height: 1.6; }
+      .stage { position: relative; line-height: 0; background: #0c0c0b; }
+      .stage > canvas#stage-canvas, .stage > video { display: block; width: 100%; height: auto; }
+      .stage > canvas#overlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+      .hud { position: absolute; right: 10px; bottom: 10px; padding: 5px 8px; border: 1px solid #433021; border-radius: 6px; background: #10100fd0; color: #ffb078; font-size: 10px; font-weight: 650; line-height: 1.4; }
+
+      .results { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+      .result { min-width: 0; min-height: 96px; padding: 13px; border: 1px solid var(--line); border-radius: 9px; background: #151514; }
+      .result.wide { grid-column: 1 / -1; }
+      .result h3 { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin: 0 0 9px; font-size: 11px; font-weight: 650; }
+      .result h3 small { color: #77756e; font-size: 9px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
+      .muted { margin: 0; color: var(--muted); font-size: 10px; line-height: 1.6; }
+      .muted.busy { animation: pulse 1.2s ease-in-out infinite; }
+      .muted.bad { color: #e08a84; }
+      .kv { display: flex; justify-content: space-between; gap: 12px; padding: 4px 0; border-bottom: 1px solid #222220; font-size: 10px; }
+      .kv:last-child { border-bottom: 0; }
+      .kv span:first-child { color: var(--muted); }
+      .kv span:last-child { min-width: 0; overflow-wrap: anywhere; text-align: right; color: #d6d2ca; }
+      .bars { display: grid; gap: 7px; }
+      .bar-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 3px 8px; font-size: 10px; }
+      .bar-row .pct { color: var(--orange-soft); }
+      .bar-track { grid-column: 1 / -1; height: 3px; border-radius: 2px; background: #262624; }
+      .bar-fill { height: 100%; border-radius: 2px; background: var(--orange); }
+      .swatches { display: flex; flex-wrap: wrap; gap: 8px; }
+      .swatch { display: grid; gap: 4px; padding: 0; border: 0; background: none; color: var(--muted); font-size: 9px; cursor: pointer; text-align: center; }
+      .swatch b { display: block; width: 42px; height: 32px; border: 1px solid #ffffff22; border-radius: 6px; }
+      .ocr-text { max-height: 150px; margin: 9px 0 0; overflow: auto; padding: 9px; border: 1px solid var(--line); border-radius: 7px; background: #111110; color: #d6d2ca; font: inherit; font-size: 10px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+      .cmp-slots { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+      .slot { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 12px; border: 1px dashed #51463b; border-radius: 9px; background: #171615; text-align: left; cursor: pointer; }
+      .slot:hover { border-color: #75472c; }
+      .slot.filled { border-style: solid; border-color: var(--line); }
+      .slot-tag { display: grid; width: 24px; height: 24px; flex: 0 0 auto; place-items: center; border-radius: 6px; background: #2b1d15; color: var(--orange-soft); font-size: 11px; font-weight: 700; }
+      .slot-name { overflow: hidden; color: #d6d2ca; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+      .cmp-stage { position: relative; margin-top: 12px; overflow: hidden; border: 1px solid var(--line); border-radius: 9px; background: #0c0c0b; line-height: 0; }
+      .cmp-stage canvas { display: block; width: 100%; height: auto; }
+      .cmp-stage canvas + canvas { position: absolute; inset: 0; height: 100%; }
+      .cmp-stage canvas#cmp-d { position: static; height: auto; }
+      .range { flex: 1 1 140px; accent-color: var(--orange); }
+
+      .lib-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; margin-top: 15px; }
+      .lib-item { overflow: hidden; border: 1px solid var(--line); border-radius: 9px; background: #151514; }
+      .lib-item img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; background: #0c0c0b; }
+      .lib-meta { padding: 8px 9px 9px; font-size: 10px; }
+      .lib-meta strong { display: block; overflow: hidden; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+      .lib-meta span { display: block; margin-top: 3px; overflow: hidden; color: var(--muted); text-overflow: ellipsis; white-space: nowrap; }
+      .lib-meta button { margin-top: 7px; padding: 0; border: 0; background: none; color: #d18454; font-size: 10px; cursor: pointer; }
+
+      .log { display: grid; gap: 9px; margin: 14px 0 0; padding: 0; list-style: none; }
+      .log li { display: grid; gap: 2px; padding-left: 10px; border-left: 2px solid #3a2a20; font-size: 10px; line-height: 1.5; }
+      .log time { color: #77756e; font-size: 9px; }
+
       @media (max-width: 900px) {
         :root { --sidebar: 205px; }
         .content { padding: 32px 26px; }
@@ -199,6 +275,7 @@
         .eye-art { position: absolute; right: 9px; bottom: 8px; width: 170px; max-width: 45%; opacity: .36; }
         .hero-copy { max-width: 100%; }
         .workspace { grid-template-columns: 1fr; }
+        .results, .cmp-slots { grid-template-columns: 1fr; }
       }
       @media (max-width: 390px) {
         .tool-grid { grid-template-columns: 1fr; }
@@ -234,23 +311,28 @@
 
         <div class="sidebar-bottom">
           <div class="status-card">
-            <div class="status-line"><span class="status-dot"></span>Prototype workspace</div>
-            <p>Your files stay in this browser demo. Image analysis is not connected yet.</p>
+            <div class="status-line"><span class="status-dot ok"></span>Live workspace</div>
+            <p>Analysis runs in this browser. Your images are never uploaded.</p>
+            <div class="engines" aria-label="Engine status">
+              <div class="engine" id="eng-detect"><span><i></i>Object detection</span><em>on demand</em></div>
+              <div class="engine" id="eng-classify"><span><i></i>Scene labels</span><em>on demand</em></div>
+              <div class="engine" id="eng-text"><span><i></i>Text (OCR)</span><em>on demand</em></div>
+            </div>
           </div>
-          <div class="version">EYE3 VISION · INTERFACE CONCEPT</div>
+          <div class="version">EYE3 VISION · v0.2 LIVE</div>
         </div>
       </aside>
 
       <main class="main" id="overview">
         <header class="topbar">
           <div class="breadcrumb">Workspace <span aria-hidden="true">/</span> <strong>Overview</strong></div>
-          <div class="topbar-right"><span class="prototype-tag">DESIGN PREVIEW</span><div class="avatar" aria-label="Guest profile">G</div></div>
+          <div class="topbar-right"><span class="prototype-tag">LIVE · ON-DEVICE</span><div class="avatar" aria-label="Guest profile">G</div></div>
         </header>
 
         <div class="content">
           <div class="eyebrow">See beyond the surface</div>
           <h1>Welcome to EYE3.</h1>
-          <p class="intro">A focused visual workspace concept for inspecting images, comparing details, and organizing what you see.</p>
+          <p class="intro">A live visual workspace for inspecting images, comparing details, and organizing what you see — now with real on-device analysis and a camera mode.</p>
 
           <section class="hero" aria-labelledby="hero-title">
             <div class="hero-copy">
@@ -283,39 +365,95 @@
             <div class="tool-grid">
               <button class="tool-card selected" type="button" data-tool="Image inspector">
                 <span class="tool-icon" aria-hidden="true">⌕</span><span class="tool-name">Image inspector</span>
-                <span class="tool-description">Review an image and its basic file details.</span><span class="tool-arrow">Select tool ↗</span>
+                <span class="tool-description">Detect objects, label scenes, read text, and inspect metadata — or go live with your camera.</span><span class="tool-arrow">Select tool ↗</span>
               </button>
               <button class="tool-card" type="button" data-tool="Side-by-side compare">
                 <span class="tool-icon" aria-hidden="true">◫</span><span class="tool-name">Side-by-side compare</span>
-                <span class="tool-description">Prepare two images for a visual comparison.</span><span class="tool-arrow">Select tool ↗</span>
+                <span class="tool-description">Compare two images with a split slider and a pixel-difference heatmap.</span><span class="tool-arrow">Select tool ↗</span>
               </button>
               <button class="tool-card" type="button" data-tool="Visual library">
                 <span class="tool-icon" aria-hidden="true">▤</span><span class="tool-name">Visual library</span>
-                <span class="tool-description">A starting point for keeping image work organized.</span><span class="tool-arrow">Select tool ↗</span>
+                <span class="tool-description">Save inspected images with their labels and keep them in this browser.</span><span class="tool-arrow">Select tool ↗</span>
               </button>
             </div>
           </section>
 
-          <section class="workspace" id="inspector" aria-label="Image workspace">
+          <section class="workspace" id="inspector" aria-label="Vision workspace">
             <div class="panel">
-              <div class="panel-title"><h2 id="upload-title">Image inspector</h2><span>Local preview</span></div>
-              <div class="dropzone" id="dropzone" tabindex="0" role="group" aria-label="Choose or drop image files">
-                <span class="upload-icon" aria-hidden="true">↑</span>
-                <strong>Drop an image here</strong>
-                <p>PNG, JPG, WEBP, or GIF · files are not uploaded</p>
-                <label class="upload-button" for="file-input">Choose image</label>
-                <input class="file-input" id="file-input" type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple>
+              <div class="panel-title"><h2 id="upload-title">Image inspector</h2><span>On-device</span></div>
+
+              <div id="view-inspector">
+                <div class="toolbar">
+                  <button class="btn" id="btn-choose" type="button">Choose image</button>
+                  <button class="btn" id="btn-camera" type="button" aria-pressed="false">Start live camera</button>
+                  <button class="btn" id="btn-capture" type="button" hidden>Capture frame</button>
+                  <button class="btn ghost" id="btn-save" type="button" disabled>Save to library</button>
+                  <button class="btn ghost" id="btn-clear" type="button" disabled>Clear</button>
+                  <input class="file-input" id="file-input" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/avif" aria-label="Choose an image">
+                </div>
+                <div class="stage-wrap" id="dropzone" tabindex="0" role="group" aria-label="Choose or drop an image">
+                  <div class="dz-empty" id="dz-empty">
+                    <span class="upload-icon" aria-hidden="true">↑</span>
+                    <strong>Drop, paste or choose an image</strong>
+                    <p>PNG, JPG, WEBP, GIF · or start the live camera. Analysis runs in your browser; images are never uploaded.</p>
+                  </div>
+                  <div class="stage" id="stage" hidden>
+                    <canvas id="stage-canvas"></canvas>
+                    <video id="cam" playsinline muted hidden></video>
+                    <canvas id="overlay"></canvas>
+                    <div class="hud" id="hud" hidden></div>
+                  </div>
+                </div>
+                <div class="results" id="results" aria-live="polite">
+                  <article class="result" id="r-file"><h3>File</h3><div class="body"><p class="muted">Waiting for an image.</p></div></article>
+                  <article class="result" id="r-palette"><h3>Palette</h3><div class="body"><p class="muted">Waiting for an image.</p></div></article>
+                  <article class="result" id="r-objects"><h3>Objects <small>COCO-SSD</small></h3><div class="body"><p class="muted">Waiting for an image.</p></div></article>
+                  <article class="result" id="r-labels"><h3>Scene labels <small>MobileNet</small></h3><div class="body"><p class="muted">Waiting for an image.</p></div></article>
+                  <article class="result" id="r-exif"><h3>Camera data <small>EXIF</small></h3><div class="body"><p class="muted">Waiting for an image.</p></div></article>
+                  <article class="result" id="r-text">
+                    <h3>Text <small>Tesseract OCR</small></h3>
+                    <div class="body"><p class="muted">Read printed text from the image.</p></div>
+                    <div class="toolbar"><button class="btn" id="btn-ocr" type="button" disabled>Extract text</button></div>
+                  </article>
+                </div>
               </div>
-              <div class="file-list" id="file-list" aria-live="polite"></div>
-              <p class="footnote">This interface is a design prototype. It does not run image recognition or send files to a server.</p>
+
+              <div id="view-compare" hidden>
+                <div class="cmp-slots">
+                  <button class="slot" id="slot-a" type="button"><span class="slot-tag">A</span><span class="slot-name">Choose first image</span></button>
+                  <button class="slot" id="slot-b" type="button"><span class="slot-tag">B</span><span class="slot-name">Choose second image</span></button>
+                  <input class="file-input" id="cmp-input-a" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/avif" aria-label="Choose first image">
+                  <input class="file-input" id="cmp-input-b" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/avif" aria-label="Choose second image">
+                </div>
+                <div class="toolbar" id="cmp-controls" hidden>
+                  <button class="btn on" id="cmp-split" type="button">Split</button>
+                  <button class="btn ghost" id="cmp-diff" type="button">Difference</button>
+                  <input class="range" id="cmp-range" type="range" min="0" max="100" value="50" aria-label="Split position">
+                </div>
+                <div class="cmp-stage" id="cmp-stage" hidden>
+                  <canvas id="cmp-a"></canvas><canvas id="cmp-b"></canvas><canvas id="cmp-d" hidden></canvas>
+                </div>
+                <p class="muted" id="cmp-stats" style="margin-top:12px">Pick two images to compare them side by side and highlight what changed.</p>
+              </div>
+
+              <div id="view-library" hidden>
+                <div class="toolbar">
+                  <button class="btn ghost" id="lib-clear" type="button" disabled>Clear library</button>
+                </div>
+                <div class="lib-grid" id="lib-grid"></div>
+                <p class="muted" id="lib-empty" style="margin-top:12px">Nothing saved yet. Inspect an image and choose “Save to library”.</p>
+              </div>
+
+              <p class="footnote">Everything runs in your browser. AI models download once from public CDNs and are cached; your images are never uploaded. The library lives in this browser's local storage.</p>
             </div>
             <div class="panel" id="activity">
               <div class="panel-title"><h2>Recent activity</h2><span>Session</span></div>
-              <div class="activity-empty">
+              <div class="activity-empty" id="activity-empty">
                 <div class="activity-symbol" aria-hidden="true">◷</div>
                 <strong>No activity yet</strong>
-                <p>Your selected files appear only in this browser demo.</p>
+                <p>Inspections, camera sessions and library changes appear here.</p>
               </div>
+              <ol class="log" id="log" aria-live="polite"></ol>
             </div>
           </section>
         </div>
@@ -323,86 +461,739 @@
       <div class="toast" id="toast" role="status" aria-live="polite"></div>
     </div>
     <script>
-      const fileInput = document.querySelector("#file-input");
-      const dropzone = document.querySelector("#dropzone");
-      const fileList = document.querySelector("#file-list");
-      const toast = document.querySelector("#toast");
-      const uploadTitle = document.querySelector("#upload-title");
-      let toastTimer;
+      (() => {
+        "use strict";
 
-      function showToast(message) {
-        toast.textContent = message;
-        toast.classList.add("visible");
-        window.clearTimeout(toastTimer);
-        toastTimer = window.setTimeout(() => toast.classList.remove("visible"), 2800);
-      }
+        // Free, open-source engines. Loaded on demand so the page itself stays light.
+        const CDN = "https://cdn.jsdelivr.net/npm/";
+        const LIBS = {
+          tf: `${CDN}@tensorflow/tfjs@4.22.0/dist/tf.min.js`,
+          coco: `${CDN}@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js`,
+          mobilenet: `${CDN}@tensorflow-models/mobilenet@2.1.1/dist/mobilenet.min.js`,
+          tesseract: `${CDN}tesseract.js@5.1.1/dist/tesseract.min.js`,
+          exifr: `${CDN}exifr@7.1.3/dist/lite.umd.js`,
+        };
+        const MAX_SIDE = 1600;
+        const LIBRARY_KEY = "eye3.library.v1";
+        const LIBRARY_MAX = 24;
 
-      function formatSize(bytes) {
-        if (bytes < 1024) return `${bytes} B`;
-        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-        return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-      }
+        const $ = (selector, root = document) => root.querySelector(selector);
+        const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        const toast = $("#toast");
+        let toastTimer;
 
-      function displayFiles(files) {
-        const images = Array.from(files).filter((file) => file.type.startsWith("image/"));
-        if (!images.length) {
-          showToast("Choose an image file to preview it here.");
-          return;
+        function showToast(message) {
+          toast.textContent = message;
+          toast.classList.add("visible");
+          window.clearTimeout(toastTimer);
+          toastTimer = window.setTimeout(() => toast.classList.remove("visible"), 3200);
         }
-        fileList.replaceChildren();
-        images.slice(0, 5).forEach((file) => {
-          const row = document.createElement("div");
-          row.className = "file-row";
-          const name = document.createElement("span");
-          name.className = "file-name";
-          name.textContent = file.name;
-          const size = document.createElement("span");
-          size.className = "file-size";
-          size.textContent = formatSize(file.size);
-          row.append(name, size);
-          fileList.append(row);
-        });
-        if (images.length > 5) showToast(`Showing 5 of ${images.length} selected images.`);
-      }
 
-      fileInput.addEventListener("change", (event) => displayFiles(event.target.files));
-      ["dragenter", "dragover"].forEach((eventName) => {
-        dropzone.addEventListener(eventName, (event) => {
-          event.preventDefault();
-          dropzone.classList.add("drag-over");
-        });
-      });
-      ["dragleave", "drop"].forEach((eventName) => {
-        dropzone.addEventListener(eventName, (event) => {
-          event.preventDefault();
-          dropzone.classList.remove("drag-over");
-        });
-      });
-      dropzone.addEventListener("drop", (event) => displayFiles(event.dataTransfer.files));
-      dropzone.addEventListener("keydown", (event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          fileInput.click();
+        function make(tag, className, text) {
+          const node = document.createElement(tag);
+          if (className) node.className = className;
+          if (text != null) node.textContent = text;
+          return node;
         }
-      });
-      document.querySelectorAll(".tool-card").forEach((card) => {
-        card.addEventListener("click", () => {
-          document.querySelectorAll(".tool-card").forEach((item) => item.classList.remove("selected"));
-          card.classList.add("selected");
-          uploadTitle.textContent = card.dataset.tool;
-          showToast(`${card.dataset.tool} selected. Tools are visual concepts in this prototype.`);
+
+        function formatSize(bytes) {
+          if (bytes == null) return "—";
+          if (bytes < 1024) return `${bytes} B`;
+          if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+          return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+        }
+
+        // ---------- Activity log ----------
+        const logList = $("#log");
+        const logEmpty = $("#activity-empty");
+        function log(message) {
+          logEmpty.hidden = true;
+          const item = make("li");
+          const time = make("time", "", new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
+          item.append(time, make("span", "", message));
+          logList.prepend(item);
+          while (logList.children.length > 30) logList.lastElementChild.remove();
+        }
+
+        // ---------- Engines (lazy-loaded, cached) ----------
+        const scriptCache = new Map();
+        function loadScript(src) {
+          if (!scriptCache.has(src)) {
+            scriptCache.set(src, new Promise((resolve, reject) => {
+              const script = document.createElement("script");
+              script.src = src;
+              script.async = true;
+              script.crossOrigin = "anonymous";
+              script.onload = resolve;
+              script.onerror = () => {
+                scriptCache.delete(src);
+                script.remove();
+                reject(new Error(`Could not load ${src}`));
+              };
+              document.head.append(script);
+            }));
+          }
+          return scriptCache.get(src);
+        }
+
+        const engineCache = {};
+        function setEngine(name, state) {
+          const row = $(`#eng-${name}`);
+          if (row) {
+            row.dataset.state = state;
+            $("em", row).textContent = state === "idle" ? "on demand" : state;
+          }
+        }
+        function useEngine(name, load) {
+          if (!engineCache[name]) {
+            setEngine(name, "loading");
+            engineCache[name] = load().then((engine) => {
+              setEngine(name, "ready");
+              return engine;
+            }).catch((error) => {
+              delete engineCache[name];
+              setEngine(name, "error");
+              throw error;
+            });
+          }
+          return engineCache[name];
+        }
+        const getDetector = () => useEngine("detect", async () => {
+          await loadScript(LIBS.tf);
+          await loadScript(LIBS.coco);
+          return window.cocoSsd.load({ base: "lite_mobilenet_v2" });
         });
-      });
-      document.querySelectorAll(".nav-link").forEach((link) => {
-        link.addEventListener("click", () => {
-          document.querySelectorAll(".nav-link").forEach((item) => {
-            item.classList.remove("active");
-            item.removeAttribute("aria-current");
+        const getClassifier = () => useEngine("classify", async () => {
+          await loadScript(LIBS.tf);
+          await loadScript(LIBS.mobilenet);
+          return window.mobilenet.load({ version: 2, alpha: 1.0 });
+        });
+        let ocrProgress = () => {};
+        const getOcr = () => useEngine("text", async () => {
+          await loadScript(LIBS.tesseract);
+          return window.Tesseract.createWorker("eng", 1, { logger: (message) => ocrProgress(message) });
+        });
+
+        // ---------- Result cards ----------
+        const cardBody = (id) => $(`#r-${id} .body`);
+        function setCard(id, ...nodes) { cardBody(id).replaceChildren(...nodes); }
+        function setNote(id, text, tone = "") { setCard(id, make("p", `muted ${tone}`.trim(), text)); }
+        function kvRows(rows) {
+          return rows.map(([key, value]) => {
+            const row = make("div", "kv");
+            row.append(make("span", "", key), make("span", "", String(value)));
+            return row;
           });
-          link.classList.add("active");
-          link.setAttribute("aria-current", "page");
+        }
+        function barRows(items) {
+          const wrap = make("div", "bars");
+          items.forEach(({ label, score }) => {
+            const row = make("div", "bar-row");
+            const track = make("div", "bar-track");
+            const fill = make("div", "bar-fill");
+            fill.style.width = `${Math.round(score * 100)}%`;
+            track.append(fill);
+            row.append(make("span", "", label), make("span", "pct", `${Math.round(score * 100)}%`), track);
+            wrap.append(row);
+          });
+          return wrap;
+        }
+        function resetResults() {
+          ["file", "palette", "objects", "labels", "exif"].forEach((id) => setNote(id, "Waiting for an image."));
+          setNote("text", "Read printed text from the image.");
+          $("#btn-ocr").disabled = true;
+        }
+
+        // ---------- Stage ----------
+        const dropzone = $("#dropzone");
+        const dzEmpty = $("#dz-empty");
+        const stage = $("#stage");
+        const stageCanvas = $("#stage-canvas");
+        const stageCtx = stageCanvas.getContext("2d", { willReadFrequently: true });
+        const overlay = $("#overlay");
+        const overlayCtx = overlay.getContext("2d");
+        const video = $("#cam");
+        const hud = $("#hud");
+        const fileInput = $("#file-input");
+        const btnCamera = $("#btn-camera");
+        const btnCapture = $("#btn-capture");
+        const btnSave = $("#btn-save");
+        const btnClear = $("#btn-clear");
+        const btnOcr = $("#btn-ocr");
+
+        let runId = 0;
+        let current = null; // { name, size, width, height, labels, objects }
+        let stream = null;
+        let live = false;
+
+        function showStage(mode) {
+          const hasMedia = mode !== "empty";
+          dzEmpty.hidden = hasMedia;
+          stage.hidden = !hasMedia;
+          dropzone.classList.toggle("has-media", hasMedia);
+          stageCanvas.hidden = mode === "live";
+          video.hidden = mode !== "live";
+          hud.hidden = mode !== "live";
+        }
+        function clearOverlay() { overlayCtx.clearRect(0, 0, overlay.width, overlay.height); }
+
+        function sourceSize(source) {
+          return { width: source.naturalWidth || source.videoWidth || source.width, height: source.naturalHeight || source.videoHeight || source.height };
+        }
+
+        async function decodeFile(file) {
+          if ("createImageBitmap" in window) {
+            try { return await createImageBitmap(file); } catch { /* fall back to <img> */ }
+          }
+          const url = URL.createObjectURL(file);
+          try {
+            const image = new Image();
+            image.src = url;
+            await image.decode();
+            return image;
+          } finally {
+            URL.revokeObjectURL(url);
+          }
+        }
+
+        function drawToStage(source) {
+          const { width, height } = sourceSize(source);
+          const scale = Math.min(1, MAX_SIDE / Math.max(width, height));
+          stageCanvas.width = overlay.width = Math.max(1, Math.round(width * scale));
+          stageCanvas.height = overlay.height = Math.max(1, Math.round(height * scale));
+          stageCtx.drawImage(source, 0, 0, stageCanvas.width, stageCanvas.height);
+          return { width, height };
+        }
+
+        function drawBoxes(predictions) {
+          const { width, height } = overlay;
+          overlayCtx.clearRect(0, 0, width, height);
+          const lineWidth = Math.max(2, Math.round(width / 300));
+          const fontSize = Math.max(12, Math.round(width / 44));
+          overlayCtx.lineWidth = lineWidth;
+          overlayCtx.font = `600 ${fontSize}px system-ui, sans-serif`;
+          overlayCtx.textBaseline = "top";
+          predictions.forEach(({ bbox: [x, y, w, h], class: name, score }) => {
+            overlayCtx.strokeStyle = "#ff762e";
+            overlayCtx.strokeRect(x, y, w, h);
+            const label = `${name} ${Math.round(score * 100)}%`;
+            const labelWidth = overlayCtx.measureText(label).width + 10;
+            const labelY = y - fontSize - 6 >= 0 ? y - fontSize - 6 : y;
+            overlayCtx.fillStyle = "#ff762e";
+            overlayCtx.fillRect(x, labelY, labelWidth, fontSize + 6);
+            overlayCtx.fillStyle = "#10100f";
+            overlayCtx.fillText(label, x + 5, labelY + 3);
+          });
+        }
+
+        function renderObjects(predictions) {
+          if (!predictions.length) { setNote("objects", "No objects found above 50% confidence."); return; }
+          const counts = new Map();
+          predictions.forEach(({ class: name }) => counts.set(name, (counts.get(name) || 0) + 1));
+          const best = new Map();
+          predictions.forEach(({ class: name, score }) => best.set(name, Math.max(best.get(name) || 0, score)));
+          setCard("objects", barRows([...counts].map(([name, count]) => ({
+            label: count > 1 ? `${name} ×${count}` : name,
+            score: best.get(name),
+          }))));
+        }
+
+        // ---------- Image analysis ----------
+        function rgbToHex([r, g, b]) {
+          return `#${[r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("")}`;
+        }
+
+        function dominantColors(canvas, count = 5) {
+          const sample = make("canvas");
+          const ratio = canvas.width / canvas.height;
+          sample.width = ratio >= 1 ? 64 : Math.max(1, Math.round(64 * ratio));
+          sample.height = ratio >= 1 ? Math.max(1, Math.round(64 / ratio)) : 64;
+          const ctx = sample.getContext("2d", { willReadFrequently: true });
+          ctx.drawImage(canvas, 0, 0, sample.width, sample.height);
+          const { data } = ctx.getImageData(0, 0, sample.width, sample.height);
+          const bins = new Map();
+          let total = 0;
+          for (let i = 0; i < data.length; i += 4) {
+            if (data[i + 3] < 128) continue;
+            const key = ((data[i] >> 4) << 8) | ((data[i + 1] >> 4) << 4) | (data[i + 2] >> 4);
+            const bin = bins.get(key) || { r: 0, g: 0, b: 0, n: 0 };
+            bin.r += data[i]; bin.g += data[i + 1]; bin.b += data[i + 2]; bin.n += 1;
+            bins.set(key, bin);
+            total += 1;
+          }
+          const ranked = [...bins.values()]
+            .sort((a, b) => b.n - a.n)
+            .map((bin) => ({ rgb: [Math.round(bin.r / bin.n), Math.round(bin.g / bin.n), Math.round(bin.b / bin.n)], share: bin.n / total }));
+          const picked = [];
+          for (const color of ranked) {
+            const distinct = picked.every((p) => Math.hypot(p.rgb[0] - color.rgb[0], p.rgb[1] - color.rgb[1], p.rgb[2] - color.rgb[2]) > 48);
+            if (distinct) picked.push(color);
+            if (picked.length === count) break;
+          }
+          return picked;
+        }
+
+        function renderPalette(canvas) {
+          const colors = dominantColors(canvas);
+          if (!colors.length) { setNote("palette", "No opaque pixels to sample."); return; }
+          const wrap = make("div", "swatches");
+          colors.forEach(({ rgb, share }) => {
+            const hex = rgbToHex(rgb);
+            const swatch = make("button", "swatch");
+            swatch.type = "button";
+            swatch.title = `Copy ${hex}`;
+            const chip = make("b");
+            chip.style.background = hex;
+            swatch.append(chip, make("span", "", hex), make("span", "", `${Math.round(share * 100)}%`));
+            swatch.addEventListener("click", async () => {
+              try { await navigator.clipboard.writeText(hex); showToast(`Copied ${hex}`); } catch { showToast(hex); }
+            });
+            wrap.append(swatch);
+          });
+          setCard("palette", wrap);
+        }
+
+        function renderFile() {
+          setCard("file", ...kvRows([
+            ["Name", current.name],
+            ["Size", formatSize(current.size)],
+            ["Dimensions", `${current.width} × ${current.height}px`],
+            ["Megapixels", (current.width * current.height / 1e6).toFixed(2)],
+            ["Aspect", (current.width / current.height).toFixed(2)],
+          ]));
+        }
+
+        async function runExif(file, id) {
+          if (!file) { setNote("exif", "Camera frames carry no EXIF data."); return; }
+          setNote("exif", "Reading metadata…", "busy");
+          try {
+            await loadScript(LIBS.exifr);
+            const tags = await window.exifr.parse(file, { gps: true });
+            if (id !== runId) return;
+            if (!tags) { setNote("exif", "No EXIF data in this file."); return; }
+            const rows = [];
+            const camera = [tags.Make, tags.Model].filter(Boolean).join(" ");
+            if (camera) rows.push(["Camera", camera]);
+            if (tags.LensModel) rows.push(["Lens", tags.LensModel]);
+            const taken = tags.DateTimeOriginal || tags.CreateDate;
+            if (taken) rows.push(["Taken", taken instanceof Date ? taken.toLocaleString() : taken]);
+            if (tags.FNumber) rows.push(["Aperture", `f/${tags.FNumber}`]);
+            if (tags.ExposureTime) rows.push(["Shutter", tags.ExposureTime >= 1 ? `${tags.ExposureTime}s` : `1/${Math.round(1 / tags.ExposureTime)}s`]);
+            if (tags.ISO) rows.push(["ISO", tags.ISO]);
+            if (tags.FocalLength) rows.push(["Focal length", `${tags.FocalLength} mm`]);
+            if (typeof tags.latitude === "number" && typeof tags.longitude === "number") {
+              rows.push(["GPS", `${tags.latitude.toFixed(5)}, ${tags.longitude.toFixed(5)}`]);
+            }
+            if (rows.length) setCard("exif", ...kvRows(rows));
+            else setNote("exif", "No camera settings in this file.");
+          } catch {
+            if (id === runId) setNote("exif", "No readable EXIF data (or the metadata reader is offline).");
+          }
+        }
+
+        async function runDetect(id) {
+          setNote("objects", "Loading detector (first run downloads the model)…", "busy");
+          try {
+            const detector = await getDetector();
+            if (id !== runId) return;
+            const predictions = await detector.detect(stageCanvas, 20, 0.5);
+            if (id !== runId) return;
+            drawBoxes(predictions);
+            renderObjects(predictions);
+            current.objects = [...new Set(predictions.map((p) => p.class))];
+            log(`Detected ${predictions.length} object${predictions.length === 1 ? "" : "s"} in ${current.name}`);
+          } catch {
+            if (id === runId) setNote("objects", "Detector unavailable — check your connection and try again.", "bad");
+          }
+        }
+
+        async function runClassify(id) {
+          setNote("labels", "Loading classifier (first run downloads the model)…", "busy");
+          try {
+            const classifier = await getClassifier();
+            if (id !== runId) return;
+            const results = await classifier.classify(stageCanvas, 3);
+            if (id !== runId) return;
+            const items = results.map(({ className, probability }) => ({ label: className.split(",")[0], score: probability }));
+            current.labels = items.map((item) => item.label);
+            setCard("labels", barRows(items));
+          } catch {
+            if (id === runId) setNote("labels", "Classifier unavailable — check your connection and try again.", "bad");
+          }
+        }
+
+        async function inspect({ source, name, size, file }) {
+          const id = ++runId;
+          const { width, height } = drawToStage(source);
+          clearOverlay();
+          showStage("still");
+          current = { name, size, width, height, labels: [], objects: [] };
+          btnSave.disabled = false;
+          btnClear.disabled = false;
+          btnOcr.disabled = false;
+          setNote("text", "Read printed text from the image.");
+          renderFile();
+          renderPalette(stageCanvas);
+          log(`Inspecting ${name}`);
+          runExif(file, id);
+          await runDetect(id);
+          if (id === runId) await runClassify(id);
+        }
+
+        async function inspectFile(file) {
+          if (!file || !file.type.startsWith("image/")) { showToast("Choose an image file to inspect it."); return; }
+          await stopCamera();
+          try {
+            const source = await decodeFile(file);
+            await inspect({ source, name: file.name, size: file.size, file });
+          } catch {
+            showToast("That image could not be decoded.");
+          }
+        }
+
+        function clearAll() {
+          runId += 1;
+          current = null;
+          clearOverlay();
+          showStage("empty");
+          resetResults();
+          btnSave.disabled = true;
+          btnClear.disabled = true;
+        }
+
+        // ---------- Live camera ----------
+        async function stopCamera() {
+          if (!live && !stream) return;
+          live = false;
+          if (stream) stream.getTracks().forEach((track) => track.stop());
+          stream = null;
+          video.srcObject = null;
+          btnCamera.textContent = "Start live camera";
+          btnCamera.setAttribute("aria-pressed", "false");
+          btnCamera.classList.remove("on");
+          btnCapture.hidden = true;
+          clearOverlay();
+          showStage(current ? "still" : "empty");
+          if (current) { overlay.width = stageCanvas.width; overlay.height = stageCanvas.height; }
+          log("Camera stopped");
+        }
+
+        async function startCamera() {
+          if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            showToast("Live camera needs a secure (HTTPS or localhost) page.");
+            return;
+          }
+          runId += 1;
+          let media;
+          try {
+            media = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 } }, audio: false });
+          } catch (error) {
+            showToast(error && error.name === "NotAllowedError" ? "Camera permission was denied." : "No camera is available.");
+            return;
+          }
+          stream = media;
+          live = true;
+          video.srcObject = media;
+          try { await video.play(); } catch { /* autoplay already allowed for muted video */ }
+          overlay.width = video.videoWidth || 1280;
+          overlay.height = video.videoHeight || 720;
+          clearOverlay();
+          showStage("live");
+          current = null;
+          btnSave.disabled = true;
+          btnClear.disabled = false;
+          btnCamera.textContent = "Stop camera";
+          btnCamera.setAttribute("aria-pressed", "true");
+          btnCamera.classList.add("on");
+          btnCapture.hidden = false;
+          resetResults();
+          setNote("file", "Live camera feed.");
+          setNote("objects", "Loading detector (first run downloads the model)…", "busy");
+          hud.textContent = "LIVE · loading detector…";
+          log("Camera started");
+          const mine = media;
+          let detector;
+          try {
+            detector = await getDetector();
+          } catch {
+            if (stream === mine) {
+              showToast("Detector could not load — check your connection.");
+              setNote("objects", "Detector unavailable — check your connection and try again.", "bad");
+              hud.textContent = "LIVE · detector offline";
+            }
+            return;
+          }
+          if (stream !== mine) return;
+          liveLoop(detector, mine);
+        }
+
+        async function liveLoop(detector, mine) {
+          let last = performance.now();
+          let fps = 0;
+          let lastPanel = 0;
+          while (live && stream === mine) {
+            if (video.readyState >= 2) {
+              let predictions;
+              try { predictions = await detector.detect(video, 20, 0.5); } catch { break; }
+              if (!live || stream !== mine) break;
+              drawBoxes(predictions);
+              const now = performance.now();
+              const instant = 1000 / Math.max(1, now - last);
+              fps = fps ? fps * 0.8 + instant * 0.2 : instant;
+              last = now;
+              hud.textContent = `LIVE · ${fps.toFixed(0)} fps · ${predictions.length} object${predictions.length === 1 ? "" : "s"}`;
+              if (now - lastPanel > 400) { renderObjects(predictions); lastPanel = now; }
+            }
+            await new Promise((resolve) => requestAnimationFrame(resolve));
+          }
+        }
+
+        async function captureFrame() {
+          if (!live || !video.videoWidth) return;
+          const stamp = new Date().toLocaleTimeString([], { hour12: false }).replace(/:/g, "");
+          const frame = make("canvas");
+          frame.width = video.videoWidth;
+          frame.height = video.videoHeight;
+          frame.getContext("2d").drawImage(video, 0, 0);
+          await stopCamera();
+          await inspect({ source: frame, name: `camera-${stamp}.jpg`, size: null, file: null });
+        }
+
+        // ---------- OCR ----------
+        async function runOcr() {
+          if (!current) return;
+          const id = runId;
+          btnOcr.disabled = true;
+          setNote("text", "Loading text engine (first run downloads language data)…", "busy");
+          try {
+            const worker = await getOcr();
+            ocrProgress = (message) => {
+              if (id === runId && message.status === "recognizing text") {
+                setNote("text", `Reading… ${Math.round(message.progress * 100)}%`, "busy");
+              }
+            };
+            const { data } = await worker.recognize(stageCanvas);
+            if (id !== runId) return;
+            const text = (data.text || "").trim();
+            if (!text) { setNote("text", "No readable text found."); }
+            else {
+              const pre = make("pre", "ocr-text", text);
+              setCard("text", make("p", "muted", `Confidence ${Math.round(data.confidence)}%`), pre);
+            }
+            log(`Extracted ${text ? text.split(/\s+/).length : 0} words from ${current.name}`);
+          } catch {
+            if (id === runId) setNote("text", "Text engine unavailable — check your connection and try again.", "bad");
+          } finally {
+            if (id === runId) btnOcr.disabled = false;
+          }
+        }
+
+        // ---------- Compare ----------
+        const cmp = { a: null, b: null, mode: "split" };
+        const cmpCanvas = { a: $("#cmp-a"), b: $("#cmp-b"), d: $("#cmp-d") };
+        const cmpStage = $("#cmp-stage");
+        const cmpStats = $("#cmp-stats");
+        const cmpControls = $("#cmp-controls");
+        const cmpRange = $("#cmp-range");
+
+        async function setCompareSlot(slot, file) {
+          if (!file || !file.type.startsWith("image/")) { showToast("Choose an image file to compare."); return; }
+          try {
+            cmp[slot] = { source: await decodeFile(file), name: file.name };
+          } catch {
+            showToast("That image could not be decoded.");
+            return;
+          }
+          const button = $(`#slot-${slot}`);
+          button.classList.add("filled");
+          $(".slot-name", button).textContent = file.name;
+          log(`Compare ${slot.toUpperCase()}: ${file.name}`);
+          renderCompare();
+        }
+
+        function renderCompare() {
+          if (!cmp.a || !cmp.b) return;
+          const base = sourceSize(cmp.a.source);
+          const width = Math.min(900, base.width);
+          const height = Math.max(1, Math.round(width * base.height / base.width));
+          Object.values(cmpCanvas).forEach((canvas) => { canvas.width = width; canvas.height = height; });
+          const ctxA = cmpCanvas.a.getContext("2d", { willReadFrequently: true });
+          const ctxB = cmpCanvas.b.getContext("2d", { willReadFrequently: true });
+          ctxA.drawImage(cmp.a.source, 0, 0, width, height);
+          ctxB.drawImage(cmp.b.source, 0, 0, width, height);
+          const pixelsA = ctxA.getImageData(0, 0, width, height);
+          const pixelsB = ctxB.getImageData(0, 0, width, height).data;
+          const ctxD = cmpCanvas.d.getContext("2d");
+          const diff = ctxD.createImageData(width, height);
+          let changed = 0;
+          for (let i = 0; i < pixelsA.data.length; i += 4) {
+            const delta = Math.abs(pixelsA.data[i] - pixelsB[i]) + Math.abs(pixelsA.data[i + 1] - pixelsB[i + 1]) + Math.abs(pixelsA.data[i + 2] - pixelsB[i + 2]);
+            if (delta > 60) {
+              changed += 1;
+              diff.data[i] = 255; diff.data[i + 1] = 118; diff.data[i + 2] = 46;
+            } else {
+              const luma = (pixelsA.data[i] * 0.3 + pixelsA.data[i + 1] * 0.59 + pixelsA.data[i + 2] * 0.11) * 0.35;
+              diff.data[i] = diff.data[i + 1] = diff.data[i + 2] = luma;
+            }
+            diff.data[i + 3] = 255;
+          }
+          ctxD.putImageData(diff, 0, 0);
+          const share = changed / (width * height) * 100;
+          const sizeB = sourceSize(cmp.b.source);
+          const mismatch = Math.abs(base.width / base.height - sizeB.width / sizeB.height) > 0.02;
+          cmpStats.textContent = `${share.toFixed(share < 10 ? 2 : 1)}% of pixels differ.` + (mismatch ? " Aspect ratios differ, so B was stretched to match A." : "");
+          cmpStage.hidden = false;
+          cmpControls.hidden = false;
+          applyCompareMode();
+          log(`Compared ${cmp.a.name} and ${cmp.b.name}: ${share.toFixed(1)}% differ`);
+        }
+
+        function applyCompareMode() {
+          const split = cmp.mode === "split";
+          cmpCanvas.a.hidden = !split;
+          cmpCanvas.b.hidden = !split;
+          cmpCanvas.d.hidden = split;
+          cmpRange.hidden = !split;
+          $("#cmp-split").classList.toggle("on", split);
+          $("#cmp-split").classList.toggle("ghost", !split);
+          $("#cmp-diff").classList.toggle("on", !split);
+          $("#cmp-diff").classList.toggle("ghost", split);
+          updateSplit();
+        }
+        function updateSplit() {
+          cmpCanvas.b.style.clipPath = `inset(0 ${100 - Number(cmpRange.value)}% 0 0)`;
+        }
+
+        // ---------- Library ----------
+        const libGrid = $("#lib-grid");
+        const libEmpty = $("#lib-empty");
+        const libClear = $("#lib-clear");
+
+        function readLibrary() {
+          try { return JSON.parse(localStorage.getItem(LIBRARY_KEY)) || []; } catch { return []; }
+        }
+        function writeLibrary(items) {
+          try { localStorage.setItem(LIBRARY_KEY, JSON.stringify(items)); return true; } catch { return false; }
+        }
+        function thumbnail(canvas) {
+          const thumb = make("canvas");
+          const scale = 200 / Math.max(canvas.width, canvas.height);
+          thumb.width = Math.max(1, Math.round(canvas.width * scale));
+          thumb.height = Math.max(1, Math.round(canvas.height * scale));
+          thumb.getContext("2d").drawImage(canvas, 0, 0, thumb.width, thumb.height);
+          return thumb.toDataURL("image/jpeg", 0.72);
+        }
+        function renderLibrary() {
+          const items = readLibrary();
+          libGrid.replaceChildren(...items.map((item) => {
+            const card = make("div", "lib-item");
+            const image = make("img");
+            image.src = item.thumb;
+            image.alt = item.name;
+            const meta = make("div", "lib-meta");
+            const remove = make("button", "", "Remove");
+            remove.type = "button";
+            remove.addEventListener("click", () => {
+              writeLibrary(readLibrary().filter((entry) => entry.id !== item.id));
+              renderLibrary();
+              log(`Removed ${item.name} from library`);
+            });
+            const tags = [...item.labels, ...item.objects].slice(0, 3).join(", ") || "no labels";
+            meta.append(make("strong", "", item.name), make("span", "", `${item.width} × ${item.height}`), make("span", "", tags), remove);
+            card.append(image, meta);
+            return card;
+          }));
+          libEmpty.hidden = items.length > 0;
+          libClear.disabled = items.length === 0;
+        }
+        function saveToLibrary() {
+          if (!current) return;
+          const items = readLibrary();
+          items.unshift({
+            id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            name: current.name,
+            width: current.width,
+            height: current.height,
+            labels: current.labels,
+            objects: current.objects,
+            thumb: thumbnail(stageCanvas),
+          });
+          if (!writeLibrary(items.slice(0, LIBRARY_MAX))) { showToast("Browser storage is full or blocked — could not save."); return; }
+          renderLibrary();
+          log(`Saved ${current.name} to library`);
+          showToast("Saved to the visual library.");
+        }
+
+        // ---------- Views ----------
+        const views = { "Image inspector": "inspector", "Side-by-side compare": "compare", "Visual library": "library" };
+        function setView(tool) {
+          const key = views[tool] || "inspector";
+          Object.values(views).forEach((name) => { $(`#view-${name}`).hidden = name !== key; });
+          document.querySelectorAll(".tool-card").forEach((card) => card.classList.toggle("selected", card.dataset.tool === tool));
+          $("#upload-title").textContent = tool;
+          if (key !== "inspector") stopCamera();
+          if (key === "library") renderLibrary();
+        }
+
+        // ---------- Wiring ----------
+        $("#btn-choose").addEventListener("click", () => fileInput.click());
+        fileInput.addEventListener("change", () => { inspectFile(fileInput.files[0]); fileInput.value = ""; });
+        btnCamera.addEventListener("click", () => (live ? stopCamera() : startCamera()));
+        btnCapture.addEventListener("click", captureFrame);
+        btnSave.addEventListener("click", saveToLibrary);
+        btnClear.addEventListener("click", async () => { await stopCamera(); clearAll(); });
+        btnOcr.addEventListener("click", runOcr);
+        ["dragenter", "dragover"].forEach((name) => dropzone.addEventListener(name, (event) => { event.preventDefault(); dropzone.classList.add("drag-over"); }));
+        ["dragleave", "drop"].forEach((name) => dropzone.addEventListener(name, (event) => { event.preventDefault(); dropzone.classList.remove("drag-over"); }));
+        dropzone.addEventListener("drop", (event) => inspectFile(event.dataTransfer.files[0]));
+        dropzone.addEventListener("keydown", (event) => {
+          if (event.target === dropzone && (event.key === "Enter" || event.key === " ")) { event.preventDefault(); fileInput.click(); }
         });
-      });
+        document.addEventListener("paste", (event) => {
+          const item = [...(event.clipboardData ? event.clipboardData.items : [])].find((entry) => entry.type.startsWith("image/"));
+          if (!item || $("#view-inspector").hidden) return;
+          inspectFile(item.getAsFile());
+        });
+
+        ["a", "b"].forEach((slot) => {
+          const input = $(`#cmp-input-${slot}`);
+          $(`#slot-${slot}`).addEventListener("click", () => input.click());
+          input.addEventListener("change", () => { setCompareSlot(slot, input.files[0]); input.value = ""; });
+        });
+        $("#cmp-split").addEventListener("click", () => { cmp.mode = "split"; applyCompareMode(); });
+        $("#cmp-diff").addEventListener("click", () => { cmp.mode = "diff"; applyCompareMode(); });
+        cmpRange.addEventListener("input", updateSplit);
+
+        libClear.addEventListener("click", () => {
+          if (!readLibrary().length) return;
+          if (!window.confirm("Remove every saved image from this browser's library?")) return;
+          writeLibrary([]);
+          renderLibrary();
+          log("Cleared library");
+        });
+
+        document.querySelectorAll(".tool-card").forEach((card) => {
+          card.addEventListener("click", () => {
+            setView(card.dataset.tool);
+            $("#inspector").scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+          });
+        });
+        document.querySelectorAll(".nav-link").forEach((link) => {
+          link.addEventListener("click", () => {
+            document.querySelectorAll(".nav-link").forEach((item) => {
+              item.classList.remove("active");
+              item.removeAttribute("aria-current");
+            });
+            link.classList.add("active");
+            link.setAttribute("aria-current", "page");
+          });
+        });
+        window.addEventListener("pagehide", () => { if (stream) stream.getTracks().forEach((track) => track.stop()); });
+
+        ["detect", "classify", "text"].forEach((name) => setEngine(name, "idle"));
+        renderLibrary();
+        log("Workspace ready");
+      })();
     </script>
   </body>
 </html>
