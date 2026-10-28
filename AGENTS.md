@@ -20,5 +20,8 @@ A single static page (`index.html`): an on-device visual workspace. No backend, 
 - A failed engine load must degrade to an inline message, not break the page.
 - Deploys via `.github/workflows/pages.yml` on push to `main`.
 
+## Skills
+Design and UI skills from jakubkrehel/skills (MIT) live in `.claude/skills/` and load automatically in Claude Code and OpenCode: better-ui, better-colors, better-typography, better-layout, better-accessibility, better-writing, better-interface, interface-review, break, state-machine, variant, build-design, explain-interface, teardown.
+
 ## Verify a change
 Load the page, inspect an image, run the live camera, compare two images, save to the library. Check the browser console for errors.
