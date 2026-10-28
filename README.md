@@ -27,9 +27,14 @@ Publish free on GitHub Pages: the workflow in `.github/workflows/pages.yml` depl
 **Phones:** 44px touch targets, safe-area aware, live camera uses the rear lens.
 **TV:** auto-enabled on Tizen, webOS, Android TV, Fire TV and similar; otherwise add `?tv=1` or press the **TV mode** button. Large type, big focus rings, D-pad navigation and Back/Escape to stop the camera.
 
-**Connect TV (Philips Saphi and others):** the **Connect TV** tool covers three routes. You can open the EYE3 link in the TV's own browser, where TV mode turns on automatically. You can mirror with Miracast from an Android phone (Cast / Smart View) or a Windows PC (`Win + K`). Or you can mirror with AirPlay from an iPhone or Mac to an Apple TV or AirPlay TV. **Start presentation** hides the menus, switches to the large TV layout and keeps the screen awake.
+**Connect TV:** the **Connect TV** tool lists every route.
+- **iPhone with a TV that has no browser or AirPlay (e.g. Philips Saphi):** use a USB-C/Lightning to HDMI adapter (most reliable), or a streaming stick (Apple TV for AirPlay; Fire TV or Google TV stick for a browser). Wi-Fi mirroring apps (DLNA) also exist; most are paid. IPTV player apps can only play video channels, so they can't run EYE3.
+- **Mirroring:** Miracast from an Android phone (Cast / Smart View) or a Windows PC (`Win + K`); AirPlay from an iPhone or Mac to an Apple TV or AirPlay TV.
+- **TV browsers:** where a TV or stick has a browser, open the EYE3 link there and TV mode turns on automatically.
 
-**Built-in iPhone to TV casting (no Miracast needed):** open EYE3 in the TV's browser, go to **Connect TV** and press **Show pairing code here**. On the iPhone, scan the code with the camera app (or **Scan the TV's code** in EYE3) or type the 8-character code, press **Connect**, and allow it on the TV. Your image or live camera, with detections, appears on the TV. Pictures travel directly between the two devices over the Wi-Fi (WebRTC with no relay). Only the connection details pass through ntfy.sh, encrypted with the pairing code. Add `?receive=1` to a TV bookmark to open straight into pairing. Guest Wi-Fi networks that isolate devices will block it.
+**Start presentation** hides the menus, switches to the large TV layout and keeps the screen awake.
+
+**Built-in casting to a screen with a browser (Fire TV / Google TV stick, browser TV, laptop):** open EYE3 on that screen, go to **Connect TV** and press **Show pairing code here**. On the iPhone, scan the code with the camera app (or **Scan the TV's code** in EYE3) or type the 8-character code, press **Connect**, and allow it on the TV. Your image or live camera, with detections, appears on the TV. Pictures travel directly between the two devices over the Wi-Fi (WebRTC with no relay). Only the connection details pass through ntfy.sh, encrypted with the pairing code. Add `?receive=1` to a TV bookmark to open straight into pairing. Guest Wi-Fi networks that isolate devices will block it.
 
 Images never leave the browser. Models download once from public CDNs (jsDelivr, Google storage, TF Hub) and are cached by the browser.
 

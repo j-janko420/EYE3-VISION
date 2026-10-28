@@ -11,7 +11,7 @@ A single static page (`index.html`): an on-device visual workspace. No backend, 
 ## Structure (all in `index.html`)
 - CSS tokens on `:root`; keep the dark/orange look.
 - One IIFE script. Engines load lazily through `useEngine()`: COCO-SSD (`getDetector`), MobileNet (`getClassifier`), Tesseract (`getOcr`), exifr. Versions are pinned in `LIBS`.
-- Views: Image inspector, Side-by-side compare, Visual library, Connect TV (`setView`). Connect TV is a mirroring helper (Miracast for Philips Saphi and similar, AirPlay for Apple TV) with a QR link, a TV-browser route and presentation mode; no native TV app. It also has built-in casting: receiver overlay `#receiver`, sender `connectSender`, scanner.
+- Views: Image inspector, Side-by-side compare, Visual library, Connect TV (`setView`). Connect TV is a mirroring helper (Miracast; iPhone + Philips Saphi needs HDMI or a stick, since Saphi has no browser, AirPlay for Apple TV) with a QR link, a TV-browser route and presentation mode; no native TV app. It also has built-in casting: receiver overlay `#receiver`, sender `connectSender`, scanner.
 
 ## Rules
 - Images must never be uploaded to a server. Keep analysis in the browser. Casting sends frames only peer-to-peer over the LAN (`RTCPeerConnection` with `iceServers: []`, never add STUN/TURN); ntfy carries only AES-GCM ciphertext keyed by the pairing code.

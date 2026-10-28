@@ -476,7 +476,7 @@
               </button>
               <button class="tool-card" type="button" data-tool="Connect TV">
                 <span class="tool-icon" aria-hidden="true">▭</span><span class="tool-name">Connect TV</span>
-                <span class="tool-description">Show EYE3 on a Philips Saphi or any smart TV: built-in iPhone casting, TV browser, Miracast or AirPlay.</span><span class="tool-arrow">Select tool ↗</span>
+                <span class="tool-description">Show EYE3 on your TV: iPhone HDMI adapter, AirPlay, Miracast, or built-in casting to a TV browser or computer.</span><span class="tool-arrow">Select tool ↗</span>
               </button>
             </div>
           </section>
@@ -540,13 +540,29 @@
               </div>
 
               <div id="view-appletv" hidden>
-                <p class="lead">Put EYE3 on a Philips Saphi or any smart TV. Mirror it from your phone or computer, or open it in the TV's own browser. Both are free and built in, with no app to install.</p>
+                <p class="lead">Put EYE3 on your TV. Pick the route your TV and phone support.</p>
 
-                <h3 class="sub-title">iPhone to Philips Saphi or any TV browser (built in, no Miracast needed)</h3>
-                <p class="lead" style="margin-top:.4rem">Both devices on the same Wi-Fi. EYE3 runs in the TV's browser as the screen, and your iPhone sends its image or live camera to it.</p>
+                <h3 class="sub-title">iPhone with a TV that has no browser or AirPlay (for example Philips Saphi)</h3>
+                <ol class="steps">
+                  <li class="step">
+                    <span class="step-n" aria-hidden="true">A</span>
+                    <div><strong>HDMI cable (most reliable, no Wi-Fi needed)</strong><p>Connect the iPhone to the TV's HDMI port with a USB-C to HDMI adapter (iPhone 15 and later) or Apple's Lightning Digital AV Adapter (older iPhones). Pick that HDMI input on the TV, open EYE3 on the iPhone and press <b>Start presentation</b> below. Turn the phone sideways to fill the screen.</p></div>
+                  </li>
+                  <li class="step">
+                    <span class="step-n" aria-hidden="true">B</span>
+                    <div><strong>Streaming stick</strong><p>Plug an Apple TV into the TV and use AirPlay (below). Or plug in a Fire TV or Google TV stick and open EYE3 in its browser. TV mode and the built-in casting then work.</p></div>
+                  </li>
+                  <li class="step">
+                    <span class="step-n" aria-hidden="true">C</span>
+                    <div><strong>Mirroring app</strong><p>Some iPhone apps mirror to Philips TVs over Wi-Fi (DLNA). Quality varies and most are paid. IPTV player apps can only play video channels, so they can't run EYE3.</p></div>
+                  </li>
+                </ol>
+
+                <h3 class="sub-title">Built-in casting to a TV browser, tablet or computer</h3>
+                <p class="lead" style="margin-top:.4rem">For screens that have a web browser. Both devices on the same Wi-Fi. EYE3 runs on the screen, and your iPhone sends its image or live camera to it.</p>
                 <section class="cast-card" aria-labelledby="cast-recv-title">
                   <h3 id="cast-recv-title">1. On the TV: show a pairing code</h3>
-                  <p>Open EYE3 in the TV's browser (Philips Saphi: the Internet or Browser app), go to Connect TV and press the button. Works on tablets and computers too.</p>
+                  <p>Open EYE3 in the screen's browser (for example a Fire TV or Google TV stick, a smart TV with a browser, or a laptop connected to the TV), go to Connect TV and press the button.</p>
                   <div class="toolbar"><button class="btn" id="btn-receive" type="button">Show pairing code here</button></div>
                 </section>
                 <section class="cast-card" aria-labelledby="cast-send-title">
@@ -587,9 +603,9 @@
                     <span class="step-n" aria-hidden="true">3</span>
                     <div>
                       <strong>Mirror to your TV</strong>
-                      <p><b>Philips Saphi and most smart TVs (Miracast):</b> on the TV, turn on Screen Mirroring from the Home menu or Sources (the name varies by model). Then on an <b>Android phone</b> open Quick Settings and tap Cast, Smart View or Screen Cast, or on a <b>Windows PC</b> press Win + K, and choose your TV.</p>
+                      <p><b>Miracast TVs (many Philips Saphi models):</b> on the TV, turn on Screen Mirroring from the Home menu or Sources (the name varies by model). Then on an <b>Android phone</b> open Quick Settings and tap Cast, Smart View or Screen Cast, or on a <b>Windows PC</b> press Win + K, and choose your TV.</p>
                       <p><b>Apple TV and AirPlay TVs:</b> on an iPhone or iPad open Control Center and tap Screen Mirroring; on a Mac use Control Center in the menu bar.</p>
-                      <p>iPhones can't mirror to a Miracast-only TV such as Philips Saphi. Open EYE3 in the TV's browser instead.</p>
+                      <p>iPhones can't use Miracast. With a Miracast-only TV such as Philips Saphi, use an HDMI adapter or a streaming stick (see above).</p>
                       <div class="toolbar"><button class="btn" id="btn-present" type="button">Start presentation</button></div>
                       <p>Presentation hides the menus, switches to the large TV layout and keeps the screen awake. Turn your phone sideways to fill the TV.</p>
                       <p id="atv-support"></p>
@@ -1470,7 +1486,7 @@
           if (root.hasAttribute("data-tv")) hint = "You're on a TV browser, so EYE3 already runs here. Use the tools above with your remote.";
           else if (/Android/.test(agent)) hint = "This Android device can mirror to a Miracast TV: Quick Settings, then Cast, Smart View or Screen Cast.";
           else if (/Windows/.test(agent)) hint = "On this PC, press Win + K to mirror to a Miracast TV.";
-          else if ("WebKitPlaybackTargetAvailabilityEvent" in window) hint = "This device can use AirPlay. For a Philips Saphi TV, open EYE3 in the TV's browser instead.";
+          else if ("WebKitPlaybackTargetAvailabilityEvent" in window) hint = "This device can use AirPlay. For a TV without AirPlay, such as Philips Saphi, use an HDMI adapter (see above).";
           $("#atv-support").className = "muted";
           $("#atv-support").textContent = hint;
           renderQr();
