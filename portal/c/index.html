@@ -4,80 +4,103 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>EYE3 TV</title>
+<script>
+  // Show any script error on screen, so a photo of the TV tells us what failed.
+  window.onerror = function (message, source, line) {
+    var box = document.getElementById('err');
+    if (box) { box.style.display = 'block'; box.appendChild(document.createTextNode('Error: ' + message + ' (line ' + line + ')  ')); }
+    return false;
+  };
+</script>
 <style>
-  /* Plain CSS only (no custom properties, flexbox or grid): this page runs inside old TV engines such as Smart STB on Philips Saphi. */
-  html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #08122b; color: #efe9dc; font-family: Arial, Helvetica, sans-serif; }
+  /* Normal document flow, tables and plain CSS only: old TV engines (Smart STB on Philips Saphi runs Opera)
+     may show the portal at its content height, so nothing here relies on absolute layout or 100% heights. */
+  html, body { margin: 0; padding: 0; background: #08122b; color: #efe9dc; font-family: Arial, Helvetica, sans-serif; }
   body.playing { background: transparent; }
-  body.playing #app { display: none; }
-  #app { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
-  #splash { position: absolute; left: 0; top: 0; width: 100%; height: 100%; z-index: 9; background: #08122b; text-align: center; }
-  #splash .inner { position: absolute; left: 0; top: 26%; width: 100%; }
-  .logo { display: inline-block; padding: 10px 24px 8px; border: 6px solid #efe9dc; background: #0b1a3a; color: #efe9dc; font-weight: bold; }
-  .logo b { display: block; font-size: 64px; line-height: 66px; }
-  .logo span { display: block; font-size: 18px; letter-spacing: 4px; }
-  #splash h1 { margin: 26px 0 8px; font-size: 40px; }
-  #splash p { margin: 0; color: #b9c3dc; font-size: 21px; letter-spacing: 1px; }
-  #header { position: absolute; left: 3%; right: 3%; top: 3%; height: 8%; }
-  #brand { float: left; color: #ff9a61; font-size: 30px; font-weight: bold; letter-spacing: 3px; }
-  #brand small { margin-left: 14px; color: #b9c3dc; font-size: 17px; font-weight: normal; letter-spacing: 1px; }
-  #clock { float: right; font-size: 26px; }
-  #menu { position: absolute; left: 3%; top: 14%; bottom: 7%; width: 23%; }
-  .mi { margin-bottom: 8px; padding: 11px 16px; border: 3px solid #101d3d; background: #101d3d; color: #c9cfe0; font-size: 21px; }
-  .mi.cur { color: #ffb078; }
+  .wrap { width: 94%; margin: 0 auto; padding: 18px 0 10px; }
+  .badge { display: inline-block; padding: 4px 10px 3px; border: 4px solid #efe9dc; background: #0b1a3a; color: #efe9dc; font-weight: bold; text-align: center; vertical-align: middle; }
+  .badge b { display: block; font-size: 30px; line-height: 30px; }
+  .badge span { display: block; font-size: 10px; letter-spacing: 2px; }
+  #splash { padding: 120px 0 80px; text-align: center; }
+  #splash .badge { padding: 10px 26px 8px; border-width: 6px; }
+  #splash .badge b { font-size: 70px; line-height: 70px; }
+  #splash .badge span { font-size: 18px; letter-spacing: 4px; }
+  #splash h1 { margin: 30px 0 10px; font-size: 42px; }
+  #splash p { margin: 0 0 8px; color: #b9c3dc; font-size: 22px; }
+  #splash .go { display: inline-block; margin-top: 26px; padding: 12px 34px; border: 3px solid #ff9a61; background: #2a1d15; color: #ffffff; font-size: 22px; font-weight: bold; }
+  table { border-collapse: collapse; }
+  #top { width: 100%; margin-bottom: 16px; }
+  #top td { vertical-align: middle; }
+  #brand { margin-left: 16px; color: #ff9a61; font-size: 32px; font-weight: bold; letter-spacing: 3px; vertical-align: middle; }
+  #by { margin-left: 12px; color: #b9c3dc; font-size: 17px; vertical-align: middle; }
+  #clockcell { text-align: right; }
+  #clock { font-size: 30px; font-weight: bold; }
+  #date { color: #b9c3dc; font-size: 16px; }
+  #main { width: 100%; }
+  #main td { vertical-align: top; }
+  #menucell { width: 27%; padding-right: 18px; }
+  .mi { margin-bottom: 5px; padding: 8px 14px; border: 3px solid #101d3d; border-left: 6px solid #22305a; background: #101d3d; color: #c9cfe0; font-size: 20px; }
+  .mi.cur { border-left-color: #ff9a61; color: #ffb078; }
   .mi.on { border-color: #ff9a61; background: #2a1d15; color: #ffffff; }
-  #panel { position: absolute; left: 28%; right: 3%; top: 14%; bottom: 7%; overflow: hidden; border: 2px solid #22305a; background: #0c1836; }
-  #ptitle { padding: 13px 20px; border-bottom: 2px solid #22305a; font-size: 24px; font-weight: bold; }
-  #ptitle span { float: right; color: #8a96b5; font-size: 18px; font-weight: normal; }
-  #list { padding: 8px 12px; }
-  .row { padding: 9px 14px; border: 3px solid #0c1836; overflow: hidden; font-size: 22px; white-space: nowrap; text-overflow: ellipsis; }
-  .row small { margin-left: 12px; color: #8a96b5; font-size: 16px; }
+  .mi.gap { margin-top: 10px; }
+  #panel { border: 2px solid #22305a; background: #0c1836; }
+  #ptitle { padding: 12px 18px; border-bottom: 2px solid #22305a; font-size: 24px; font-weight: bold; }
+  #pcount { float: right; color: #8a96b5; font-size: 17px; font-weight: normal; }
+  #list { padding: 8px 10px 4px; }
+  .row { margin-bottom: 2px; padding: 8px 12px; border: 3px solid #0c1836; overflow: hidden; font-size: 21px; white-space: nowrap; text-overflow: ellipsis; }
+  .row small { margin-left: 12px; color: #8a96b5; font-size: 15px; }
   .row.action { color: #ffb078; }
+  .row.info { color: #c9cfe0; white-space: normal; font-size: 18px; line-height: 1.45; }
   .row.on { border-color: #ff9a61; background: #2a1d15; color: #ffffff; }
-  #msg { padding: 16px 22px; color: #b9c3dc; font-size: 20px; line-height: 1.5; }
-  #hint { position: absolute; left: 3%; right: 3%; bottom: 2%; color: #8a96b5; font-size: 16px; }
-  #video { position: absolute; left: 0; top: 0; width: 100%; height: 100%; display: none; background: #000000; }
+  #msg { padding: 10px 18px 16px; color: #b9c3dc; font-size: 18px; line-height: 1.5; }
+  #hint { margin-top: 12px; color: #8a96b5; font-size: 15px; }
+  #ver { float: right; }
+  #err { display: none; margin: 8px 3%; padding: 8px 12px; border: 2px solid #e5584f; background: #2a0e0e; color: #ffb3ad; font-size: 16px; }
+  #video { display: none; width: 100%; background: #000000; }
   body.playing.html5 #video { display: block; }
-  #osd { position: absolute; left: 4%; bottom: 6%; z-index: 8; display: none; padding: 12px 22px; border: 2px solid #ff9a61; background: #08122b; color: #efe9dc; font-size: 24px; }
-  #editor { position: absolute; left: 0; top: 0; width: 100%; height: 100%; z-index: 7; display: none; background: #08122b; }
-  #editor .box { position: absolute; left: 10%; right: 10%; top: 25%; padding: 24px; border: 3px solid #ff9a61; background: #0c1836; }
+  #osd { position: absolute; left: 40px; bottom: 40px; display: none; padding: 12px 22px; border: 2px solid #ff9a61; background: #08122b; color: #efe9dc; font-size: 24px; }
+  #editor { display: none; width: 80%; margin: 120px auto 0; padding: 24px; border: 3px solid #ff9a61; background: #0c1836; }
   #editor h2 { margin: 0 0 10px; font-size: 26px; }
   #editor p { margin: 0 0 14px; color: #b9c3dc; font-size: 18px; line-height: 1.5; }
-  #pl-input { width: 96%; padding: 10px; border: 2px solid #8a96b5; background: #ffffff; color: #000000; font-size: 20px; }
+  #ed-input { width: 96%; padding: 10px; border: 2px solid #8a96b5; background: #ffffff; color: #000000; font-size: 22px; }
 </style>
 </head>
 <body>
-<div id="app">
-  <div id="header"><div id="brand">EYE3 TV<small>by i3 Design</small></div><div id="clock"></div></div>
-  <div id="menu"></div>
-  <div id="panel"><div id="ptitle"></div><div id="list"></div><div id="msg"></div></div>
-  <div id="hint">Arrows: move &nbsp;·&nbsp; OK: open / play &nbsp;·&nbsp; Back: return &nbsp;·&nbsp; While watching: Up/Down or CH+/CH- to change channel</div>
+<div id="splash">
+  <div class="badge"><b>i3</b><span>DESIGN</span></div>
+  <h1>Welcome to EYE3 Vision</h1>
+  <p>Designed by i3 Design</p>
+  <p>Live TV · Your playlist · Search · Cast &amp; mirror</p>
+  <div class="go">Press OK to start</div>
+</div>
+<div id="err"></div>
+<div class="wrap" id="wrap" style="display: none">
+  <table id="top"><tr>
+    <td><span class="badge"><b>i3</b><span>DESIGN</span></span><span id="brand">EYE3 TV</span><span id="by">by i3 Design</span></td>
+    <td id="clockcell"><div id="clock"></div><div id="date"></div></td>
+  </tr></table>
+  <table id="main"><tr>
+    <td id="menucell"><div id="menu"></div></td>
+    <td><div id="panel"><div id="ptitle"><span id="pcount"></span><span id="ptext"></span></div><div id="list"></div><div id="msg"></div></div></td>
+  </tr></table>
+  <div id="hint"><span id="ver">EYE3 TV v2 · i3 Design</span>Arrows: move · OK: open / play · Back: return · Watching: Up/Down or CH+/CH- to change channel</div>
+</div>
+<div id="editor">
+  <h2 id="ed-title"></h2>
+  <p id="ed-help"></p>
+  <input id="ed-input" type="text" autocomplete="off" spellcheck="false">
 </div>
 <video id="video" autoplay></video>
 <div id="osd"></div>
-<div id="editor">
-  <div class="box">
-    <h2>Your playlist link</h2>
-    <p>Type your M3U or Xtream playlist link, then press OK. It is saved on this TV only. Press Back to cancel.</p>
-    <input id="pl-input" type="text" autocomplete="off" spellcheck="false">
-  </div>
-</div>
-<div id="splash">
-  <div class="inner">
-    <div class="logo"><b>i3</b><span>DESIGN</span></div>
-    <h1>Welcome to EYE3 Vision</h1>
-    <p>Designed by i3 Design &nbsp;·&nbsp; Press OK to start</p>
-  </div>
-</div>
 <script>
-// EYE3 TV portal. ES5 only, so it runs on old TV engines (Smart STB / MAG, Opera TV, early WebKit).
-// Playback uses the box's own player through the MAG API (gSTB) when present, otherwise an HTML5 <video>.
-// Only free public streams and the viewer's own playlist are used; nothing is sent to EYE3.
+// EYE3 TV portal v2. ES5 only, for old TV engines (Smart STB / MAG on Opera, early WebKit).
+// Playback uses the box player through the MAG API (gSTB) when present, otherwise an HTML5 <video>.
+// Only free public streams and the viewer's own playlist; nothing is sent to EYE3.
 (function () {
   var stb = window.gSTB || window.stb || null;
   var PLAYLIST_KEY = 'eye3.tv.playlist';
   var VISIBLE = 9;
   var ORG = 'https://iptv-org.github.io/iptv/categories/';
-  // Public broadcaster streams (free to air online). Links can change over time.
   var FREE = [
     { name: 'Al Jazeera English', group: 'News', url: 'https://live-hls-web-aje.getaj.net/AJE/index.m3u8' },
     { name: 'DW English', group: 'News', url: 'https://dwamdstream102.akamaized.net/hls/live/2015525/dwstream102/index.m3u8' },
@@ -86,19 +109,29 @@
     { name: 'Red Bull TV', group: 'Sports', url: 'https://rbmn-live.akamaized.net/hls/live/590964/BoRB-AT/master.m3u8' }
   ];
   var MENU = [
-    { title: 'EYE3 Free TV', kind: 'free' },
+    { title: 'Live TV', kind: 'free' },
     { title: 'World news', kind: 'org', cat: 'news' },
     { title: 'Documentary', kind: 'org', cat: 'documentary' },
     { title: 'Music', kind: 'org', cat: 'music' },
     { title: 'Kids', kind: 'org', cat: 'kids' },
     { title: 'My playlist', kind: 'mine' },
-    { title: 'TV check', kind: 'link', href: '../check/' },
+    { title: 'Search channels', kind: 'search', gap: true },
+    { title: 'Cast & mirror', kind: 'cast' },
+    { title: 'Web search', kind: 'web' },
+    { title: 'TV check', kind: 'link', href: '../check/', gap: true },
     { title: 'Full EYE3 app', kind: 'link', href: '../../index.html?tv=1' }
   ];
-  var state = { zone: 'menu', menu: 0, open: -1, row: 0, top: 0, items: [], title: '', note: '', playing: -1, loading: 0 };
+  var CAST = [
+    { name: 'iPhone or iPad to this TV: on the TV open Settings > Network > Digital media renderer and switch it On. Then use a DLNA mirroring app on the iPhone and choose this TV.', info: true },
+    { name: 'Android phone or Windows PC to this TV: on the TV choose Sources > Miracast. Then use Cast / Smart View (Android) or press Win + K (Windows).', info: true },
+    { name: 'Most reliable for iPhone: a USB-C or Lightning to HDMI adapter into HDMI 1, 2 or 3, then pick that source on the TV.', info: true },
+    { name: 'Show EYE3 analysis from the phone: open j-janko420.github.io/EYE3-VISION on the phone, then mirror it with one of the ways above.', info: true }
+  ];
+  var cache = {};
+  var state = { zone: 'menu', menu: 0, open: -1, row: 0, top: 0, items: [], title: 'Welcome', note: '', playing: -1, loading: 0 };
 
   function $(id) { return document.getElementById(id); }
-  function text(node, value) { while (node.firstChild) node.removeChild(node.firstChild); node.appendChild(document.createTextNode(value)); }
+  function setText(node, value) { while (node.firstChild) node.removeChild(node.firstChild); node.appendChild(document.createTextNode(value)); }
   function trim(s) { return String(s).replace(/^\s+|\s+$/g, ''); }
   function getStore(key) { try { return window.localStorage ? localStorage.getItem(key) : null; } catch (e) { return null; } }
   function setStore(key, value) { try { if (value === null) localStorage.removeItem(key); else localStorage.setItem(key, value); } catch (e) { /* storage unavailable */ } }
@@ -139,6 +172,13 @@
     try { xhr.send(); } catch (e) { finish(null, 'blocked'); }
     setTimeout(function () { if (!finished) { try { xhr.abort(); } catch (e) { /* ignore */ } finish(null, 'timeout'); } }, 20000);
   }
+  function loadList(url, done) {
+    if (cache[url]) { done(cache[url], null); return; }
+    fetchText(url, function (body, problem) {
+      if (body) cache[url] = parseM3U(body);
+      done(body ? cache[url] : null, problem);
+    });
+  }
   function linkFromAddress() {
     var hash = /[#&]playlist=([^&]+)/.exec(window.location.hash || '');
     var query = /[?&]playlist=([^&#]+)/.exec(window.location.search || '');
@@ -154,6 +194,8 @@
   function openSection(index) {
     var entry = MENU[index];
     if (entry.kind === 'link') { window.location.href = entry.href; return; }
+    if (entry.kind === 'search') { openEditor('search'); return; }
+    if (entry.kind === 'web') { openEditor('web'); return; }
     state.open = index;
     state.row = 0;
     state.top = 0;
@@ -164,12 +206,15 @@
     if (entry.kind === 'free') {
       state.items = FREE.slice(0);
       state.note = 'Public broadcaster streams. A channel may stop working if the broadcaster changes its link.';
+    } else if (entry.kind === 'cast') {
+      state.items = CAST.slice(0);
+      state.note = 'Philips Saphi has no AirPlay or browser, so these are the ways to show a phone or computer screen on it.';
     } else if (entry.kind === 'org') {
-      state.note = 'Loading free channels…';
-      fetchText(ORG + entry.cat + '.m3u', function (body, problem) {
+      state.note = 'Loading free channels...';
+      loadList(ORG + entry.cat + '.m3u', function (items, problem) {
         if (ticket !== state.loading) return;
-        state.items = body ? parseM3U(body) : [];
-        state.note = body ? (state.items.length ? 'Free public channels from the open iptv-org list.' : 'No channels in this list right now.')
+        state.items = items || [];
+        state.note = items ? (items.length ? 'Free public channels from the open iptv-org list.' : 'No channels in this list right now.')
           : 'Could not load this list (' + problem + '). Check the TV\'s internet connection.';
         render();
       });
@@ -179,12 +224,11 @@
       if (!link) {
         state.note = 'No playlist yet. Choose "Enter or change playlist link", or add #playlist=YOUR-M3U-LINK to the end of this portal\'s address in smart-stb.tv.';
       } else {
-        state.note = 'Loading your playlist…';
-        fetchText(link, function (body, problem) {
+        state.note = 'Loading your playlist...';
+        loadList(link, function (items, problem) {
           if (ticket !== state.loading) return;
-          var channels = body ? parseM3U(body) : [];
-          state.items = PLAYLIST_ACTIONS.slice(0).concat(channels);
-          state.note = body ? channels.length + ' channels from your playlist (saved on this TV only).'
+          state.items = PLAYLIST_ACTIONS.slice(0).concat(items || []);
+          state.note = items ? items.length + ' channels from your playlist (saved on this TV only).'
             : 'Could not load your playlist (' + problem + '). Some providers block web access; if so, keep using it as a normal Smart STB playlist.';
           render();
         });
@@ -194,22 +238,59 @@
     render();
   }
 
+  function runSearch(query) {
+    var words = trim(query).toLowerCase();
+    var index = 6;
+    state.open = index;
+    state.title = 'Search: ' + query;
+    state.row = 0;
+    state.top = 0;
+    state.items = [];
+    state.zone = 'list';
+    state.note = 'Searching...';
+    var ticket = ++state.loading;
+    var sources = [];
+    for (var m = 0; m < MENU.length; m++) if (MENU[m].kind === 'org') sources.push(ORG + MENU[m].cat + '.m3u');
+    var mine = getStore(PLAYLIST_KEY);
+    if (mine) sources.push(mine);
+    var pool = FREE.slice(0), pending = sources.length;
+    function finish() {
+      if (ticket !== state.loading) return;
+      var seen = {}, found = [];
+      for (var i = 0; i < pool.length; i++) {
+        var item = pool[i];
+        if (item.url && !seen[item.url] && (item.name + ' ' + item.group).toLowerCase().indexOf(words) > -1) { seen[item.url] = 1; found.push(item); }
+        if (found.length >= 300) break;
+      }
+      state.items = found;
+      state.note = found.length ? found.length + ' channels match "' + query + '".' : 'No channels match "' + query + '".';
+      render();
+    }
+    render();
+    if (!pending) { finish(); return; }
+    for (var s = 0; s < sources.length; s++) {
+      loadList(sources[s], function (items) {
+        if (items) pool = pool.concat(items);
+        pending -= 1;
+        if (!pending) finish();
+      });
+    }
+  }
+
   // ---------- Rendering ----------
   function render() {
     var menu = $('menu');
     while (menu.firstChild) menu.removeChild(menu.firstChild);
     for (var i = 0; i < MENU.length; i++) {
       var mi = document.createElement('div');
-      mi.className = 'mi' + (i === state.open ? ' cur' : '') + (state.zone === 'menu' && i === state.menu ? ' on' : '');
+      mi.className = 'mi' + (MENU[i].gap ? ' gap' : '') + (i === state.open ? ' cur' : '') + (state.zone === 'menu' && i === state.menu ? ' on' : '');
       mi.appendChild(document.createTextNode(MENU[i].title));
       menu.appendChild(mi);
     }
-    var title = $('ptitle');
-    while (title.firstChild) title.removeChild(title.firstChild);
-    title.appendChild(document.createTextNode(state.open > -1 ? state.title : 'Welcome'));
-    var channelCount = 0;
-    for (var c = 0; c < state.items.length; c++) if (!state.items[c].action) channelCount++;
-    if (channelCount) { var count = document.createElement('span'); count.appendChild(document.createTextNode(channelCount + ' channels')); title.appendChild(count); }
+    setText($('ptext'), state.title);
+    var channels = 0;
+    for (var c = 0; c < state.items.length; c++) if (state.items[c].url) channels++;
+    setText($('pcount'), channels ? channels + ' channels' : '');
     var list = $('list');
     while (list.firstChild) list.removeChild(list.firstChild);
     if (state.row < state.top) state.top = state.row;
@@ -217,24 +298,27 @@
     for (var r = state.top; r < Math.min(state.items.length, state.top + VISIBLE); r++) {
       var item = state.items[r];
       var row = document.createElement('div');
-      row.className = 'row' + (item.action ? ' action' : '') + (state.zone === 'list' && r === state.row ? ' on' : '');
+      row.className = 'row' + (item.action ? ' action' : '') + (item.info ? ' info' : '') + (state.zone === 'list' && r === state.row ? ' on' : '');
       row.appendChild(document.createTextNode(item.name));
       if (item.group) { var g = document.createElement('small'); g.appendChild(document.createTextNode(item.group)); row.appendChild(g); }
       list.appendChild(row);
     }
-    text($('msg'), state.open > -1 ? state.note : 'Choose a section on the left. EYE3 TV plays free public channels, or your own playlist, with your TV remote.');
+    setText($('msg'), state.open > -1 ? state.note : 'Choose a section on the left. EYE3 TV plays free public channels or your own playlist with your TV remote.');
   }
   function tick() {
     var now = new Date();
     var pad = function (n) { return (n < 10 ? '0' : '') + n; };
-    text($('clock'), pad(now.getHours()) + ':' + pad(now.getMinutes()));
+    var days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    var months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    setText($('clock'), pad(now.getHours()) + ':' + pad(now.getMinutes()));
+    setText($('date'), days[now.getDay()] + ', ' + now.getDate() + ' ' + months[now.getMonth()]);
   }
 
   // ---------- Playback ----------
   var osdTimer = null;
   function osd(message) {
     var box = $('osd');
-    text(box, message);
+    setText(box, message);
     box.style.display = 'block';
     clearTimeout(osdTimer);
     osdTimer = setTimeout(function () { box.style.display = 'none'; }, 3500);
@@ -243,6 +327,7 @@
     var channel = state.items[index];
     if (!channel || !channel.url) return;
     state.playing = index;
+    $('wrap').style.display = 'none';
     if (stb && typeof stb.Play === 'function') {
       document.body.className = 'playing';
       call('InitPlayer');
@@ -266,6 +351,7 @@
     state.playing = -1;
     document.body.className = '';
     $('osd').style.display = 'none';
+    $('wrap').style.display = 'block';
     render();
   }
   function zap(step) {
@@ -276,33 +362,53 @@
     }
   }
 
-  // ---------- Playlist editor ----------
-  var editing = false;
-  function openEditor() {
-    editing = true;
-    var input = $('pl-input');
-    input.value = getStore(PLAYLIST_KEY) || '';
+  // ---------- Text entry (playlist link, channel search, web search) ----------
+  var editing = '';
+  var EDITORS = {
+    playlist: { title: 'Your playlist link', help: 'Type your M3U or Xtream playlist link, then press OK. It is saved on this TV only. Back cancels.' },
+    search: { title: 'Search channels', help: 'Type a channel name, for example "news" or "sport", then press OK. Back cancels.' },
+    web: { title: 'Web search (experimental)', help: 'Type what to search for and press OK. A simple search page opens; use the TV\'s Back or Exit key to come back to EYE3.' }
+  };
+  function openEditor(kind) {
+    editing = kind;
+    setText($('ed-title'), EDITORS[kind].title);
+    setText($('ed-help'), EDITORS[kind].help);
+    var input = $('ed-input');
+    input.value = kind === 'playlist' ? (getStore(PLAYLIST_KEY) || '') : '';
+    $('wrap').style.display = 'none';
     $('editor').style.display = 'block';
     try { input.focus(); } catch (e) { /* ignore */ }
     call('ShowVirtualKeyboard');
   }
-  function closeEditor(save) {
-    var value = trim($('pl-input').value);
-    editing = false;
+  function closeEditor(accept) {
+    var kind = editing, value = trim($('ed-input').value);
+    editing = '';
     $('editor').style.display = 'none';
+    $('wrap').style.display = 'block';
     call('HideVirtualKeyboard');
-    try { $('pl-input').blur(); } catch (e) { /* ignore */ }
-    if (save) {
-      if (/^https?:\/\//i.test(value)) setStore(PLAYLIST_KEY, value);
-      else if (value) { osd('That link must start with http:// or https://'); }
+    try { $('ed-input').blur(); } catch (e) { /* ignore */ }
+    if (!accept || !value) { render(); return; }
+    if (kind === 'playlist') {
+      if (/^https?:\/\//i.test(value)) { setStore(PLAYLIST_KEY, value); delete cache[value]; }
+      else osd('A playlist link must start with http:// or https://');
+      openSection(5);
+    } else if (kind === 'search') {
+      runSearch(value);
+    } else if (kind === 'web') {
+      window.location.href = 'https://html.duckduckgo.com/html/?q=' + encodeURIComponent(value);
     }
-    openSection(state.open);
   }
 
   // ---------- Remote control ----------
   function isBack(code) { return code === 8 || code === 27 || code === 461 || code === 10009 || code === 166; }
   var splashOpen = true;
-  function hideSplash() { if (!splashOpen) return; splashOpen = false; $('splash').style.display = 'none'; }
+  function hideSplash() {
+    if (!splashOpen) return;
+    splashOpen = false;
+    $('splash').style.display = 'none';
+    $('wrap').style.display = 'block';
+    render();
+  }
   document.onkeydown = function (event) {
     event = event || window.event;
     var code = event.keyCode || event.which || 0;
@@ -332,9 +438,9 @@
     if (code === 13) {
       var item = state.items[state.row];
       if (!item) return false;
-      if (item.action === 'edit') openEditor();
-      else if (item.action === 'remove') { setStore(PLAYLIST_KEY, null); osd('Playlist removed from this TV'); openSection(state.open); }
-      else play(state.row);
+      if (item.action === 'edit') openEditor('playlist');
+      else if (item.action === 'remove') { setStore(PLAYLIST_KEY, null); osd('Playlist removed from this TV'); openSection(5); }
+      else if (item.url) play(state.row);
       return false;
     }
     return true;
@@ -343,10 +449,9 @@
 
   var fromAddress = linkFromAddress();
   if (fromAddress) setStore(PLAYLIST_KEY, fromAddress);
-  render();
   tick();
   setInterval(tick, 30000);
-  setTimeout(hideSplash, 3000);
+  setTimeout(hideSplash, 4000);
 })();
 </script>
 </body>

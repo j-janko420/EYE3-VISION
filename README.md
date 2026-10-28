@@ -43,6 +43,8 @@ Published free on **GitHub Pages**: `.github/workflows/pages.yml` deploys `index
 - **Free channels by category:** World news, Documentary, Music and Kids, from the open iptv-org lists.
 - **My playlist:** your own M3U/Xtream link, typed with the remote or added to the portal address as `#playlist=YOUR-LINK`. It is stored on the TV only.
 
+Also: **Search channels** across all lists, **Cast & mirror** (the routes that work with Philips Saphi: Digital media renderer, Miracast, HDMI) and an experimental **Web search**. Script errors show on screen in red so a photo of the TV is enough to diagnose problems. The layout uses normal page flow and tables (no absolute positioning) because Smart STB may show the portal at its content height.
+
 Channels play through the box's own player (MAG `gSTB.Play`), or an HTML5 video where there is no MAG API. Up/Down or CH+/CH- change channel; Back returns. Adult groups are filtered out. The page is plain ES5 with no modern CSS, so it runs on old TV engines. The capability check moved to `/portal/check/`.
 
 **Start presentation** hides the menus, switches to the large TV layout and keeps the screen awake.
