@@ -1,7 +1,8 @@
 // EYE3-VISION: zero-dependency server. Serves the UI and proxies Stalker/MAG portal + M3U requests (avoids CORS).
 const http = require('http'), fs = require('fs'), path = require('path'), { spawn } = require('child_process');
+const DATA_DIR = path.resolve(process.env.DATA_DIR || path.join(__dirname, 'data'));
 const MEDIA_DIR = path.resolve(process.env.MEDIA_DIR || path.join(__dirname, 'media'));
-const crypto = require('crypto'), { parse: parseXmltv, nowNext } = require('./lib/xmltv'), { srtToVtt } = require('./lib/subtitles');
+const adult = require('./lib/adult'), crypto = require('crypto'), { parse: parseXmltv, nowNext } = require('./lib/xmltv'), { srtToVtt } = require('./lib/subtitles');
 const PORT = process.env.PORT || 8080, HOST = process.env.HOST || '127.0.0.1';
 // Access token: required whenever the server is reachable beyond loopback.
 const LOOPBACK = ['127.0.0.1', 'localhost', '::1'].includes(HOST);
@@ -63,6 +64,7 @@ async function api(req, res, q) {
 }
 
 // ---- Plugin / connector system: every plugins/*.js exports {id,name,description,fields,list(params,ctx),resolve?(r,ctx)}
+const parental = adult.create(DATA_DIR);
 const ctx = { portal, normMac, mediaDir: MEDIA_DIR, fetchText: async (url) => { const u = httpUrl(url); if (!u) throw new Error('Invalid URL'); return (await safeFetch(u.href, { signal: AbortSignal.timeout(20000) })).text(); } };
 const plugins = {};
 for (const f of fs.readdirSync(path.join(__dirname, 'plugins')).filter((x) => x.endsWith('.js'))) {
@@ -73,7 +75,13 @@ async function pluginApi(u, res) {
   if (u.pathname === '/plugins') return send(res, 200, Object.values(plugins).map(({ id, name, description, fields, category }) => ({ id, name, description, fields, category })));
   const q = u.searchParams, p = plugins[q.get('id')]; if (!p) return send(res, 404, { error: 'Unknown plugin' });
   const params = JSON.parse(q.get('params') || '{}');
-  if (u.pathname === '/plugin/list') return send(res, 200, await p.list(params, ctx));
+  if (u.pathname === '/plugin/list') {
+    // Adult items are only ever returned (and only in the adult view) with a valid unlock token.
+    const wantAdult = q.get('adult') === '1';
+    if (wantAdult && !parental.valid(q.get('unlock'))) return send(res, 403, { error: 'Locked' });
+    const all = await p.list(params, ctx);
+    return send(res, 200, all.filter((i) => adult.isAdult(i) === wantAdult).map((i) => (wantAdult ? { ...i, adult: true } : i)));
+  }
   if (u.pathname === '/plugin/resolve' && p.resolve) return send(res, 200, await p.resolve(params, ctx));
   send(res, 400, { error: 'Unsupported' });
 }
@@ -98,6 +106,24 @@ function transcode(req, res, q) {
   res.on('close', () => ff.kill('SIGKILL'));
 }
 
+function readJson(req) {
+  return new Promise((resolve, reject) => {
+    if (!/^application\/json/.test(req.headers['content-type'] || '')) return reject(new Error('JSON required'));
+    let b = ''; req.on('data', (c) => { b += c; if (b.length > 2048) { reject(new Error('Too large')); req.destroy(); } });
+    req.on('end', () => { try { resolve(JSON.parse(b || '{}')); } catch { reject(new Error('Bad JSON')); } });
+  });
+}
+async function adultApi(req, res, u) {
+  if (u.pathname === '/adult/status') return send(res, 200, { pinSet: parental.isSet() });
+  if (req.method !== 'POST') return send(res, 405, { error: 'POST required' });
+  let b; try { b = await readJson(req); } catch (e) { return send(res, 400, { error: e.message }); }
+  try {
+    if (u.pathname === '/adult/setup') return send(res, 200, { unlock: parental.setup(b.pin) });
+    if (u.pathname === '/adult/unlock') return send(res, 200, { unlock: parental.unlock(b.pin) });
+    if (u.pathname === '/adult/lock') { parental.lock(b.unlock); return send(res, 200, { ok: true }); }
+  } catch (e) { return send(res, 403, { error: e.message }); }
+  send(res, 404, { error: 'Unknown' });
+}
 async function epg(res, q) {
   const text = await ctx.fetchText(q.get('url'));
   send(res, 200, nowNext(parseXmltv(text)));
@@ -119,6 +145,7 @@ http.createServer(async (req, res) => {
     if (u.pathname === '/api') return await api(req, res, u.searchParams);
     if (u.pathname.startsWith('/plugin')) return await pluginApi(u, res);
     if (u.pathname.startsWith('/media/')) return serveMedia(req, res, decodeURIComponent(u.pathname.slice(7)));
+    if (u.pathname.startsWith('/adult/')) return await adultApi(req, res, u);
     if (u.pathname === '/epg') return await epg(res, u.searchParams);
     if (u.pathname === '/subtitle') return await subtitle(res, u.searchParams);
     if (u.pathname === '/transcode') return transcode(req, res, u.searchParams);

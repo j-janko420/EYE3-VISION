@@ -28,3 +28,8 @@ Run tests with `npm test` (Node built-in runner, no dependencies).
 - Agent profile and rules: [docs/AGENT.md](docs/AGENT.md).
 
 **Use only content you are licensed or authorised to access.** No geo-unblocking, DRM circumvention or piracy sources are provided.
+
+## 18+ section (optional, PIN-protected)
+Hidden by default. Type `4`, `2`, `0` on the keyboard/remote (outside a text box) to reveal the **18+** tab, then create a PIN (4-8 digits) on first use. The PIN is scrypt-hashed and stored locally in `DATA_DIR` (default `./data`, git-ignored); 5 wrong tries lock it for a minute; it auto-locks after 15 minutes idle.
+- Items from **your own authorised** M3U/portal/URL sources whose group or name marks them as adult (e.g. group-title "Adult") are removed from every normal list and only returned by the server to an unlocked 18+ view, grouped into categories by the playlist's group titles.
+- No adult sources, scrapers, VPN or geo-unblocking are included or connected. Adults only; you are responsible for the content you open.

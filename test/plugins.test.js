@@ -9,7 +9,7 @@ test('every plugin has required shape', () => {
 });
 test('m3u parses names and urls', async () => {
   const ctx = { fetchText: async () => '#EXTM3U\n#EXTINF:-1,One\nhttp://a/1.m3u8\n#EXTINF:-1 tvg-id="x",Two\nhttps://b/2.ts\n' };
-  assert.deepStrictEqual(await m3u.list({ url: 'x' }, ctx), [{ name: 'One', url: 'http://a/1.m3u8' }, { name: 'Two', url: 'https://b/2.ts', epgId: 'x' }]);
+  assert.deepStrictEqual(await m3u.list({ url: 'x' }, ctx), [{ name: 'One', url: 'http://a/1.m3u8' }, { name: 'Two', url: 'https://b/2.ts', epgId: "x" }]);
 });
 test('url connector filters non-http and supports Name|URL', async () => {
   const r = await url.list({ urls: 'A|http://x/a.m3u8\nfile:///etc/passwd\nhttps://y/b.mp4' });

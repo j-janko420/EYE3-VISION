@@ -9,7 +9,7 @@ TABS.forEach(([k, label]) => { const b = document.createElement('button'); b.tex
 function show(k) {
   cat = k; document.querySelectorAll('#nav button').forEach((b) => b.classList.toggle('on', b.dataset.t === k));
   document.querySelectorAll('section').forEach((s) => s.classList.remove('on'));
-  const id = ['live', 'library', 'online'].includes(k) ? 'src' : k; $(id).classList.add('on');
+  const id = ['live', 'library', 'online'].includes(k) ? 'src' : k; if (k !== 'adult') { /* adult view stays separate */ } $(id).classList.add('on');
   if (id === 'src') fillPlugins(); if (k === 'favs') renderFavs();
 }
 
@@ -97,7 +97,7 @@ $('load').onclick = async () => {
     if (cat === 'live' && $('epgurl').value) { try { epgData = await api('/epg', { url: $('epgurl').value }); view(); } catch (e) { $('st').textContent += ' (EPG failed: ' + e.message + ')'; } }
   } catch (e) { $('st').textContent = 'Error: ' + e.message; }
 };
-const renderFavs = () => render($('favlist'), store('favs', []));
+const renderFavs = () => render($('favlist'), store('favs', []).filter((f) => !f.adult));
 
 // ---- browser + mirror
 const safeUrl = (u) => { try { const x = new URL(u); return x.protocol === 'http:' || x.protocol === 'https:' ? x.href : ''; } catch { return ''; } };
@@ -124,5 +124,51 @@ document.addEventListener('keydown', (e) => {
   if (e.key.startsWith('Arrow') && !(typing && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) && t.tagName !== 'SELECT') { e.preventDefault(); moveFocus(e.key); }
   else if (['Escape', 'BrowserBack', 'XF86Back'].includes(e.key) || e.keyCode === 10009 || (e.key === 'Backspace' && !typing)) { const b = document.querySelector('#nav button.on'); if (b) b.focus(); }
   else if (e.key === 'Enter' && t.classList.contains('nm')) t.click();
+});
+// ---- 18+ area: hidden until the key sequence 4-2-0 is typed; PIN is checked and the content filtered on the server
+let unlock = '', lockTimer, seq = '', aitems = [];
+const post = async (p, body) => { const r = await fetch(p, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); const j = await r.json(); if (j.error) throw new Error(j.error); return j; };
+function revealAdult() {
+  if (!document.querySelector('#nav button[data-t=adult]')) { const b = document.createElement('button'); b.textContent = '18+'; b.dataset.t = 'adult'; b.onclick = () => show('adult'); $('nav').append(b); }
+  show('adult'); showGate();
+}
+async function showGate() {
+  $('agate').style.display = ''; $('abody').style.display = 'none'; $('apin').value = '';
+  const { pinSet } = await (await fetch('/adult/status')).json();
+  $('aunlock').textContent = pinSet ? 'Unlock' : 'Create PIN'; $('amsg').textContent = pinSet ? '' : 'First use: choose a PIN to protect this area.'; $('apin').focus();
+}
+$('aunlock').onclick = async () => {
+  try {
+    const { pinSet } = await (await fetch('/adult/status')).json();
+    unlock = (await post(pinSet ? '/adult/unlock' : '/adult/setup', { pin: $('apin').value })).unlock;
+    $('agate').style.display = 'none'; $('abody').style.display = ''; fillAdultPlugins(); armLock();
+  } catch (e) { $('amsg').textContent = e.message; $('apin').value = ''; }
+};
+const armLock = () => { clearTimeout(lockTimer); lockTimer = setTimeout(lockAdult, 15 * 60 * 1000); };
+async function lockAdult() {
+  clearTimeout(lockTimer); if (unlock) post('/adult/lock', { unlock }).catch(() => {}); unlock = ''; aitems = []; $('alist').textContent = '';
+  const b = document.querySelector('#nav button[data-t=adult]'); if (b) b.remove(); show('live');
+}
+$('alock').onclick = lockAdult;
+function fillAdultPlugins() {
+  $('apl').innerHTML = ''; plugs.filter((p) => p.category === 'live' || p.category === 'online').forEach((p) => { const o = document.createElement('option'); o.value = p.id; o.textContent = p.name; $('apl').append(o); });
+  adultFields();
+}
+function adultFields() { const p = plugs.find((x) => x.id === $('apl').value); $('apf').textContent = ''; if (p) p.fields.forEach((f) => { const i = document.createElement('input'); i.dataset.f = f.name; i.placeholder = f.placeholder || f.label; i.value = f.default || ''; $('apf').append(i); }); }
+$('apl').onchange = adultFields;
+$('aload').onclick = async () => {
+  armLock(); $('ast').textContent = 'Loading...';
+  try {
+    const ps = Object.fromEntries([...document.querySelectorAll('#apf input')].map((i) => [i.dataset.f, i.value]));
+    aitems = (await api('/plugin/list', { id: $('apl').value, params: JSON.stringify(ps), adult: '1', unlock })).map((i) => ({ ...i, plugin: $('apl').value }));
+    const cats = [...new Set(aitems.map((i) => i.group || 'Uncategorised'))].sort();
+    $('acat').innerHTML = '<option value="">All categories (' + aitems.length + ')</option>'; cats.forEach((c) => { const o = document.createElement('option'); o.value = c; o.textContent = c; $('acat').append(o); });
+    $('ast').textContent = aitems.length + ' items'; viewAdult();
+  } catch (e) { $('ast').textContent = 'Error: ' + e.message; if (e.message === 'Locked') lockAdult(); }
+};
+const viewAdult = () => render($('alist'), aitems.filter((i) => !$('acat').value || (i.group || 'Uncategorised') === $('acat').value));
+$('acat').onchange = viewAdult;
+document.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT') return; seq = (seq + e.key).slice(-3); if (seq === '420') { seq = ''; revealAdult(); }
 });
 show('live'); document.querySelector('#nav button').focus();
