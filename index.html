@@ -174,7 +174,7 @@
       .activity-empty strong { margin-top: 0.5rem; font-size: 0.6875rem; font-weight: 600; }
       .activity-empty p { max-width: 11.25rem; margin: 0.3125rem 0 0; color: var(--muted); font-size: 0.625rem; line-height: 1.55; }
       .footnote { margin: 1.125rem 0 0; color: #74716a; font-size: 0.625rem; line-height: 1.6; }
-      .toast { position: fixed; right: 1.5rem; bottom: 1.5rem; z-index: 5; max-width: min(23.75rem, calc(100vw - 2rem)); padding: 0.75rem 0.9375rem; transform: translateY(0.75rem); border: 0.0625rem solid #573b28; border-radius: 0.5rem; background: #241b15; color: #f3c6a4; font-size: 0.6875rem; opacity: 0; pointer-events: none; transition: .2s ease; }
+      .toast { position: fixed; right: 1.5rem; bottom: 1.5rem; z-index: 9; max-width: min(23.75rem, calc(100vw - 2rem)); padding: 0.75rem 0.9375rem; transform: translateY(0.75rem); border: 0.0625rem solid #573b28; border-radius: 0.5rem; background: #241b15; color: #f3c6a4; font-size: 0.6875rem; opacity: 0; pointer-events: none; transition: .2s ease; }
       .toast.visible { transform: translateY(0); opacity: 1; }
 
       [hidden] { display: none !important; }
@@ -348,6 +348,27 @@
       html[data-present] .content { padding-top: 1rem; }
       html[data-present] .workspace { grid-template-columns: 1fr; margin-top: 0; }
 
+      /* Casting: pair two devices */
+      .cast-card { margin-top: .9rem; padding: .9rem; border: 1px solid var(--line); border-radius: .65rem; background: #151514; }
+      .cast-card h3 { margin: 0; font-size: .75rem; font-weight: 650; }
+      .cast-card p { margin: .3rem 0 0; color: var(--muted); font-size: .6875rem; line-height: 1.65; }
+      .cast-card .toolbar { margin-top: .75rem; }
+      .cast-card .field-label { margin-top: .9rem; }
+      .sub-title { margin: 1.5rem 0 0; font-size: .75rem; font-weight: 650; }
+      .code-field { max-width: 12rem; font-weight: 650; letter-spacing: .18em; text-transform: uppercase; }
+      .receiver { position: fixed; inset: 0; z-index: 8; display: flex; flex-direction: column; padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left)); background: var(--bg); }
+      .rx-top { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+      .rx-brand { font-size: .75rem; font-weight: 750; letter-spacing: .16em; }
+      .rx-hud { margin-right: auto; color: #ffb078; font-size: .6875rem; font-weight: 650; }
+      .rx-body { display: flex; flex: 1; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; text-align: center; }
+      .rx-body h2 { margin: 0; max-width: 34rem; font-size: 1.25rem; font-weight: 650; }
+      .rx-body .qr { width: min(46vh, 70vw, 20rem); height: min(46vh, 70vw, 20rem); }
+      .rx-code { color: var(--orange-soft); font-size: clamp(2rem, 7vw, 4rem); font-weight: 750; letter-spacing: .2em; }
+      .rx-line { max-width: 34rem; margin: 0; color: var(--muted); font-size: .8125rem; line-height: 1.7; }
+      .rx-stage { display: flex; flex: 1; min-height: 0; align-items: center; justify-content: center; padding-top: .75rem; }
+      .rx-stage canvas, .rx-stage video { max-width: 100%; max-height: 100%; border-radius: .5rem; background: #0c0c0b; }
+      .cast-pill { position: fixed; bottom: calc(1rem + env(safe-area-inset-bottom)); left: 1rem; z-index: 7; display: flex; align-items: center; gap: .75rem; padding: .3rem .4rem .3rem .9rem; border: 1px solid #433021; border-radius: 2rem; background: #241b15; color: #ffb078; font-size: .6875rem; font-weight: 650; }
+
       /* Big monitors reporting 4K CSS pixels. */
       @media (min-width: 2400px) { html { font-size: 28px; } }
 
@@ -455,7 +476,7 @@
               </button>
               <button class="tool-card" type="button" data-tool="Connect Apple TV">
                 <span class="tool-icon" aria-hidden="true">▭</span><span class="tool-name">Connect Apple TV</span>
-                <span class="tool-description">Mirror EYE3 to the big screen with AirPlay, with a scannable link and a presentation mode.</span><span class="tool-arrow">Select tool ↗</span>
+                <span class="tool-description">Cast to a TV or computer by scan or code, or mirror to Apple TV with AirPlay.</span><span class="tool-arrow">Select tool ↗</span>
               </button>
             </div>
           </section>
@@ -519,7 +540,27 @@
               </div>
 
               <div id="view-appletv" hidden>
-                <p class="lead">Apple TV has no web browser, so EYE3 reaches the big screen through AirPlay: mirror it from your iPhone, iPad or Mac. It is free, built in, and needs no app.</p>
+                <p class="lead">Two ways to put EYE3 on a big screen. Pair a TV, tablet or computer browser by scanning a code or typing it on the same Wi-Fi, or mirror to an Apple TV with AirPlay.</p>
+
+                <section class="cast-card" aria-labelledby="cast-send-title">
+                  <h3 id="cast-send-title">Cast from this device</h3>
+                  <p>Show this device's image or live camera, with detections, on another screen on the same Wi-Fi. The picture goes straight to that screen and never leaves your network.</p>
+                  <div class="toolbar"><button class="btn" id="btn-scan" type="button">Scan the screen's code</button></div>
+                  <label class="field-label" for="cast-code">Or type the code (same Wi-Fi)</label>
+                  <div class="toolbar">
+                    <input class="field code-field" id="cast-code" type="text" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="9" placeholder="ABCD-EFGH">
+                    <button class="btn" id="btn-cast-connect" type="button">Connect</button>
+                  </div>
+                  <p id="cast-status" aria-live="polite"></p>
+                </section>
+                <section class="cast-card" aria-labelledby="cast-recv-title">
+                  <h3 id="cast-recv-title">Use this device as the screen</h3>
+                  <p>Open EYE3 on a TV, tablet or computer browser, then show a pairing code. Scan it with your phone camera, or type it in EYE3 on your phone.</p>
+                  <div class="toolbar"><button class="btn" id="btn-receive" type="button">Show pairing code here</button></div>
+                </section>
+
+                <h3 class="sub-title">Apple TV (AirPlay)</h3>
+                <p class="lead" style="margin-top:.4rem">Apple TV has no web browser, so EYE3 reaches it through AirPlay: mirror it from your iPhone, iPad or Mac. It is free, built in, and needs no app.</p>
                 <ol class="steps">
                   <li class="step">
                     <span class="step-n" aria-hidden="true">1</span>
@@ -576,6 +617,29 @@
           </section>
         </div>
       </main>
+      <div class="receiver" id="receiver" role="dialog" aria-modal="true" aria-labelledby="rx-title" hidden>
+        <div class="rx-top">
+          <span class="rx-brand" id="rx-title">EYE3 · SCREEN</span>
+          <span class="rx-hud" id="rx-hud"></span>
+          <button class="btn ghost" id="rx-close" type="button">Close</button>
+        </div>
+        <div class="rx-body" id="rx-wait">
+          <div class="qr empty" id="rx-qr" role="img" aria-label="QR code with the pairing link">Loading code…</div>
+          <div class="rx-code" id="rx-code" aria-label="Pairing code"></div>
+          <p class="rx-line">On the same Wi-Fi, scan this code with your phone camera, or open EYE3 on your phone, choose Connect Apple TV, and type the code.</p>
+          <p class="muted" id="rx-note" aria-live="polite"></p>
+        </div>
+        <div class="rx-body" id="rx-ask" hidden>
+          <h2 id="rx-ask-title"></h2>
+          <div class="toolbar"><button class="btn" id="rx-allow" type="button">Allow</button><button class="btn ghost" id="rx-deny" type="button">Deny</button></div>
+        </div>
+        <div class="rx-stage" id="rx-live" hidden><canvas id="rx-canvas" aria-label="Screen shared from your device"></canvas></div>
+      </div>
+      <div class="receiver" id="scanner" role="dialog" aria-modal="true" aria-label="Scan a pairing code" hidden>
+        <div class="rx-top"><span class="rx-brand">SCAN THE CODE ON THE SCREEN</span><button class="btn ghost" id="scan-cancel" type="button">Cancel</button></div>
+        <div class="rx-stage"><video id="scan-video" playsinline muted></video></div>
+      </div>
+      <div class="cast-pill" id="cast-pill" role="status" hidden><span id="cast-pill-text"></span><button class="btn ghost" id="cast-pill-stop" type="button">Stop</button></div>
       <button class="btn exit-present" id="btn-exit-present" type="button" hidden>Exit presentation</button>
       <div class="toast" id="toast" role="status" aria-live="polite"></div>
     </div>
@@ -592,6 +656,7 @@
           tesseract: `${CDN}tesseract.js@5.1.1/dist/tesseract.min.js`,
           exifr: `${CDN}exifr@7.1.3/dist/lite.umd.js`,
           qr: `${CDN}qrcode-generator@1.4.4/qrcode.js`,
+          jsqr: `${CDN}jsqr@1.4.0/dist/jsQR.js`,
         };
         const MAX_SIDE = 1600;
         const LIBRARY_KEY = "eye3.library.v1";
@@ -1340,9 +1405,9 @@
           if (/^(localhost|127\.|\[?::1)/.test(parsed.hostname)) return "localhost only works on this computer. Use your computer's network address or the published link.";
           return "";
         }
-        function drawQr(value) {
-          qrBox.replaceChildren();
-          qrBox.classList.remove("empty");
+        function drawQr(value, box = qrBox) {
+          box.replaceChildren();
+          box.classList.remove("empty");
           const code = window.qrcode(0, "M");
           code.addData(value);
           code.make();
@@ -1360,7 +1425,21 @@
           shape.setAttribute("d", path.join(""));
           shape.setAttribute("fill", "#10100f");
           svg.append(shape);
-          qrBox.append(svg);
+          box.append(svg);
+        }
+        function shareBase() {
+          const typed = urlField.value.trim();
+          if (/^https?:\/\//i.test(typed)) { try { const u = new URL(typed); return `${u.origin}${u.pathname}`; } catch { /* fall through */ } }
+          return defaultShareUrl() || `${location.origin}${location.pathname}`;
+        }
+        async function drawLinkQr(box, value) {
+          try {
+            await loadScript(LIBS.qr);
+            drawQr(value, box);
+          } catch {
+            box.replaceChildren(document.createTextNode("Code unavailable offline"));
+            box.classList.add("empty");
+          }
         }
         async function renderQr() {
           const value = urlField.value.trim();
@@ -1438,6 +1517,450 @@
           }
         });
 
+        // ---------- Cast: pair two devices on the same Wi-Fi by scanning a code or typing it ----------
+        // Signalling goes through ntfy (free, open source) as AES-GCM ciphertext keyed by the pairing code.
+        // Media then flows peer-to-peer over the LAN (WebRTC with no STUN/TURN, so it never leaves the Wi-Fi).
+        const PARAMS = new URLSearchParams(location.search);
+        const LOCAL_HOST = ["localhost", "127.0.0.1"].includes(location.hostname);
+        const SIGNAL_BASE = (LOCAL_HOST && PARAMS.get("signal")) || "https://ntfy.sh";
+        const PAIR_TIMEOUT = (LOCAL_HOST && Number(PARAMS.get("pairTimeout"))) || 60000;
+        const CODE_ALPHABET = "ABCDEFGHJKMNPQRSTVWXYZ23456789";
+        const CODE_PATTERN = /^[ABCDEFGHJKMNPQRSTVWXYZ2-9]{8}$/;
+        const textEncoder = new TextEncoder();
+        const textDecoder = new TextDecoder();
+        const receiverEl = $("#receiver");
+        const scannerEl = $("#scanner");
+        const castPill = $("#cast-pill");
+        const castStatus = $("#cast-status");
+        const castCodeField = $("#cast-code");
+
+        const prettyCode = (code) => `${code.slice(0, 4)}-${code.slice(4)}`;
+        function newCode() {
+          let code = "";
+          while (code.length < 8) {
+            const bytes = crypto.getRandomValues(new Uint8Array(16));
+            for (const byte of bytes) if (byte < 240 && code.length < 8) code += CODE_ALPHABET[byte % CODE_ALPHABET.length];
+          }
+          return code;
+        }
+        function normalizeCode(text) {
+          const raw = String(text || "");
+          const fromLink = raw.match(/[?&]join=([^&#\s]+)/i);
+          const cleaned = (fromLink ? decodeURIComponent(fromLink[1]) : raw).toUpperCase().replace(/[^A-Z0-9]/g, "");
+          return CODE_PATTERN.test(cleaned) ? cleaned : "";
+        }
+        function bytesToBase64(bytes) {
+          let binary = "";
+          bytes.forEach((byte) => { binary += String.fromCharCode(byte); });
+          return btoa(binary);
+        }
+        async function pairingKeys(code) {
+          if (!(window.crypto && crypto.subtle)) throw new Error("secure-context");
+          const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", textEncoder.encode(`eye3-topic:${code}`)));
+          const topic = `eye3-${[...digest.slice(0, 12)].map((b) => b.toString(16).padStart(2, "0")).join("")}`;
+          const material = await crypto.subtle.importKey("raw", textEncoder.encode(code), "PBKDF2", false, ["deriveKey"]);
+          const key = await crypto.subtle.deriveKey(
+            { name: "PBKDF2", hash: "SHA-256", salt: textEncoder.encode("eye3-pair-v1"), iterations: 100000 },
+            material, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
+          return { topic, key };
+        }
+        async function seal(key, payload) {
+          const iv = crypto.getRandomValues(new Uint8Array(12));
+          const cipher = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, textEncoder.encode(JSON.stringify(payload))));
+          const out = new Uint8Array(12 + cipher.length);
+          out.set(iv);
+          out.set(cipher, 12);
+          const text = bytesToBase64(out);
+          if (text.length > 3800) throw new Error("too-large");
+          return text;
+        }
+        async function unseal(key, text) {
+          try {
+            const raw = Uint8Array.from(atob(text), (c) => c.charCodeAt(0));
+            const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: raw.slice(0, 12) }, key, raw.slice(12));
+            return JSON.parse(textDecoder.decode(plain));
+          } catch { return null; }
+        }
+        function openSignal(topic, onText, onFail) {
+          const seen = new Set();
+          const source = new EventSource(`${SIGNAL_BASE}/${topic}/sse?since=2m`);
+          let opened = false;
+          source.onopen = () => { opened = true; };
+          source.onerror = () => { if (!opened && source.readyState === 2) onFail(); };
+          source.onmessage = (event) => {
+            let data;
+            try { data = JSON.parse(event.data); } catch { return; }
+            if (data.event !== "message" || seen.has(data.id)) return;
+            seen.add(data.id);
+            onText(data.message);
+          };
+          return {
+            async send(text) {
+              const response = await fetch(`${SIGNAL_BASE}/${topic}`, { method: "POST", body: text });
+              if (!response.ok) throw new Error("signal");
+            },
+            close() { source.close(); },
+          };
+        }
+        function waitForIce(pc) {
+          return new Promise((resolve) => {
+            if (pc.iceGatheringState === "complete") { resolve(); return; }
+            const check = () => {
+              if (pc.iceGatheringState === "complete") { pc.removeEventListener("icegatheringstatechange", check); resolve(); }
+            };
+            pc.addEventListener("icegatheringstatechange", check);
+            window.setTimeout(resolve, 2500);
+          });
+        }
+        function trimSdp(sdp) {
+          let kept = 0;
+          return sdp.split("\r\n").filter((line) => {
+            if (!line.startsWith("a=candidate")) return true;
+            if (/ tcp /i.test(line)) return false;
+            kept += 1;
+            return kept <= 6;
+          }).join("\r\n");
+        }
+        function overlayOpen() { return !receiverEl.hidden || !scannerEl.hidden; }
+        function setBackgroundInert(on) {
+          [".sidebar", ".main"].forEach((selector) => { const node = $(selector); if (node) node.inert = on; });
+        }
+        async function keepAwake(on) {
+          if (!on) { if (wakeLock) { const lock = wakeLock; wakeLock = null; try { await lock.release(); } catch { /* already released */ } } return; }
+          try { if (navigator.wakeLock && !wakeLock) wakeLock = await navigator.wakeLock.request("screen"); } catch { /* denied */ }
+        }
+        function deviceName() {
+          const agent = navigator.userAgent;
+          if (/iPhone/.test(agent)) return "iPhone";
+          if (/iPad/.test(agent)) return "iPad";
+          if (/Android/.test(agent)) return "Android phone";
+          if (/Mac/.test(agent)) return "Mac";
+          return "Device";
+        }
+
+        // --- Receiver: this device is the screen ---
+        const rx = { state: "idle", code: "", keys: null, signal: null, pc: null, channel: null, offer: null, frames: 0, drawing: false, fpsTimer: null, expiry: null, linkTimer: null };
+        const rxCanvas = $("#rx-canvas");
+        const rxCtx = rxCanvas.getContext("2d");
+        function rxShow(panel) {
+          ["wait", "ask", "live"].forEach((name) => { $(`#rx-${name}`).hidden = name !== panel; });
+        }
+        function rxNote(text, tone = "") { const node = $("#rx-note"); node.className = `muted ${tone}`.trim(); node.textContent = text; }
+        function rxTeardown() {
+          window.clearTimeout(rx.expiry); window.clearTimeout(rx.linkTimer); window.clearInterval(rx.fpsTimer);
+          if (rx.signal) rx.signal.close();
+          if (rx.channel) { rx.channel.onclose = null; try { rx.channel.close(); } catch { /* closed */ } }
+          if (rx.pc) { rx.pc.onconnectionstatechange = null; try { rx.pc.close(); } catch { /* closed */ } }
+          Object.assign(rx, { signal: null, pc: null, channel: null, offer: null, keys: null, expiry: null, linkTimer: null, fpsTimer: null, frames: 0, drawing: false });
+        }
+        async function rxWait(message) {
+          rxTeardown();
+          rx.state = "waiting";
+          rxShow("wait");
+          $("#rx-hud").textContent = "";
+          $("#rx-code").textContent = "";
+          rxNote(message || "");
+          try {
+            rx.code = newCode();
+            rx.keys = await pairingKeys(rx.code);
+          } catch {
+            rx.state = "error";
+            rxNote("Pairing needs a secure page. Open EYE3 from its https:// link on this screen.", "bad");
+            return;
+          }
+          rx.signal = openSignal(rx.keys.topic, onReceiverText, () => rxNote("Can't reach the pairing service. Check this screen's internet connection.", "bad"));
+          $("#rx-code").textContent = prettyCode(rx.code);
+          await drawLinkQr($("#rx-qr"), `${shareBase()}?join=${rx.code}`);
+          rx.expiry = window.setTimeout(() => rxWait("The code expired, so here is a new one."), 10 * 60 * 1000);
+          $("#rx-close").focus({ preventScroll: true });
+        }
+        async function startReceiver() {
+          if (rx.state !== "idle") return;
+          await stopCamera();
+          receiverEl.hidden = false;
+          setBackgroundInert(true);
+          try { if (root.requestFullscreen && !document.fullscreenElement) await root.requestFullscreen(); } catch { /* optional */ }
+          keepAwake(true);
+          log("Screen ready for pairing");
+          await rxWait("");
+        }
+        async function stopReceiver() {
+          if (rx.state === "idle") return;
+          rxTeardown();
+          rx.state = "idle";
+          receiverEl.hidden = true;
+          setBackgroundInert(false);
+          keepAwake(false);
+          if (document.fullscreenElement && !presenting) { try { await document.exitFullscreen(); } catch { /* ignore */ } }
+          log("Screen pairing closed");
+        }
+        async function onReceiverText(text) {
+          if (rx.state !== "waiting" || !rx.keys) return;
+          const message = await unseal(rx.keys.key, text);
+          if (!message || message.from !== "s" || message.t !== "offer" || typeof message.sdp !== "string" || rx.state !== "waiting") return;
+          rx.offer = message;
+          rx.state = "asking";
+          $("#rx-ask-title").textContent = `Allow “${String(message.name || "Device").slice(0, 40)}” to show its screen here?`;
+          rxShow("ask");
+          $("#rx-allow").focus({ preventScroll: true });
+        }
+        async function rxAnswer(allow) {
+          const offer = rx.offer;
+          if (rx.state !== "asking" || !offer) return;
+          const { signal, keys } = rx;
+          if (!allow) {
+            try { await signal.send(await seal(keys.key, { from: "r", t: "deny", to: offer.id })); } catch { /* ignore */ }
+            rx.offer = null; rx.state = "waiting"; rxShow("wait"); rxNote("Request declined.");
+            return;
+          }
+          rx.state = "connecting";
+          rxShow("wait");
+          rxNote("Connecting…");
+          try {
+            const pc = new RTCPeerConnection({ iceServers: [] });
+            rx.pc = pc;
+            pc.ondatachannel = (event) => rxChannel(event.channel);
+            pc.onconnectionstatechange = () => { if (["failed", "closed"].includes(pc.connectionState) && rx.state !== "idle") rxWait("The connection dropped. Show the new code to pair again."); };
+            await pc.setRemoteDescription({ type: "offer", sdp: offer.sdp });
+            await pc.setLocalDescription(await pc.createAnswer());
+            await waitForIce(pc);
+            await signal.send(await seal(keys.key, { from: "r", t: "answer", sdp: trimSdp(pc.localDescription.sdp), to: offer.id }));
+            rx.linkTimer = window.setTimeout(() => { if (rx.state === "connecting") rxWait("Couldn't connect. Both devices need the same Wi-Fi, and guest networks often block this."); }, PAIR_TIMEOUT);
+          } catch {
+            rxWait("Couldn't connect. Show the new code to try again.");
+          }
+        }
+        function rxChannel(channel) {
+          rx.channel = channel;
+          channel.binaryType = "arraybuffer";
+          channel.onopen = () => {
+            window.clearTimeout(rx.linkTimer);
+            rx.state = "connected";
+            if (rx.signal) rx.signal.close();
+            rxShow("live");
+            log("A device is casting to this screen");
+            rx.fpsTimer = window.setInterval(() => {
+              $("#rx-hud").textContent = rx.frames > 1 ? `${rx.peerName || "Device"} · ${rx.frames} fps` : (rx.peerName || "Device");
+              rx.frames = 0;
+            }, 1000);
+          };
+          channel.onclose = () => { if (rx.state === "connected") rxWait("The device disconnected. Show the new code to pair again."); };
+          channel.onmessage = async (event) => {
+            if (typeof event.data === "string") {
+              try { const hello = JSON.parse(event.data); if (hello.k === "hello") rx.peerName = String(hello.name || "Device").slice(0, 40); } catch { /* ignore */ }
+              return;
+            }
+            if (rx.drawing) return;
+            rx.drawing = true;
+            try {
+              const bitmap = await createImageBitmap(new Blob([event.data], { type: "image/jpeg" }));
+              rxCanvas.width = bitmap.width;
+              rxCanvas.height = bitmap.height;
+              rxCtx.drawImage(bitmap, 0, 0);
+              if (bitmap.close) bitmap.close();
+              rx.frames += 1;
+            } catch { /* skip a bad frame */ } finally { rx.drawing = false; }
+          };
+        }
+
+        // --- Sender: this device is the camera ---
+        const tx = { state: "idle", signal: null, pc: null, channel: null, id: "", timer: null, pump: null, busy: false };
+        const castCanvas = make("canvas");
+        function castMessage(text, tone = "") { castStatus.className = `muted ${tone}`.trim(); castStatus.textContent = text; }
+        function txTeardown() {
+          window.clearTimeout(tx.timer); window.clearTimeout(tx.pump);
+          if (tx.signal) tx.signal.close();
+          if (tx.channel) { tx.channel.onclose = null; try { tx.channel.close(); } catch { /* closed */ } }
+          if (tx.pc) { tx.pc.onconnectionstatechange = null; try { tx.pc.close(); } catch { /* closed */ } }
+          Object.assign(tx, { signal: null, pc: null, channel: null, timer: null, pump: null, busy: false });
+          castPill.hidden = true;
+          $("#btn-cast-connect").disabled = false;
+          $("#btn-cast-connect").textContent = "Connect";
+        }
+        function txFail(message) {
+          txTeardown();
+          tx.state = "idle";
+          castMessage(message, "bad");
+          showToast(message);
+        }
+        function stopSender(message) {
+          if (tx.state === "idle") return;
+          const wasConnected = tx.state === "connected";
+          if (wasConnected && tx.channel && tx.channel.readyState === "open") { try { tx.channel.send(JSON.stringify({ k: "bye" })); } catch { /* ignore */ } }
+          txTeardown();
+          tx.state = "idle";
+          castMessage(message || "Stopped casting.");
+          if (wasConnected) log("Stopped casting");
+        }
+        async function connectSender(code) {
+          if (tx.state !== "idle") return;
+          tx.state = "connecting";
+          tx.id = Math.random().toString(36).slice(2, 10);
+          $("#btn-cast-connect").disabled = true;
+          castMessage(`Connecting to ${prettyCode(code)}…`);
+          try {
+            const keys = await pairingKeys(code);
+            tx.signal = openSignal(keys.topic, async (text) => {
+              const message = await unseal(keys.key, text);
+              if (!message || message.from !== "r" || message.to !== tx.id || tx.state !== "connecting") return;
+              if (message.t === "deny") { txFail("The screen declined the request."); return; }
+              if (message.t === "answer" && typeof message.sdp === "string") {
+                try { await tx.pc.setRemoteDescription({ type: "answer", sdp: message.sdp }); } catch { txFail("Couldn't complete the connection."); }
+              }
+            }, () => txFail("Can't reach the pairing service. Check your internet connection."));
+            const pc = new RTCPeerConnection({ iceServers: [] });
+            tx.pc = pc;
+            const channel = pc.createDataChannel("eye3", { ordered: true });
+            channel.binaryType = "arraybuffer";
+            tx.channel = channel;
+            channel.onopen = () => {
+              window.clearTimeout(tx.timer);
+              tx.state = "connected";
+              if (tx.signal) tx.signal.close();
+              channel.send(JSON.stringify({ k: "hello", name: deviceName() }));
+              castMessage("Connected. Pick an image or start the camera to show it on the screen.");
+              $("#cast-pill-text").textContent = "Casting to a screen";
+              castPill.hidden = false;
+              $("#btn-cast-connect").disabled = false;
+              $("#btn-cast-connect").textContent = "Stop casting";
+              log("Casting to a screen");
+              pumpFrames();
+            };
+            channel.onclose = () => { if (tx.state === "connected") { txTeardown(); tx.state = "idle"; castMessage("The screen disconnected."); } };
+            pc.onconnectionstatechange = () => { if (pc.connectionState === "failed" && tx.state !== "idle") txFail("The connection failed. Check both devices are on the same Wi-Fi."); };
+            await pc.setLocalDescription(await pc.createOffer());
+            await waitForIce(pc);
+            await tx.signal.send(await seal(keys.key, { from: "s", t: "offer", sdp: trimSdp(pc.localDescription.sdp), name: deviceName(), id: tx.id }));
+            castMessage("Waiting for the screen to accept…");
+            tx.timer = window.setTimeout(() => { if (tx.state === "connecting") txFail("No answer. Is the code still on the screen, and are you on the same Wi-Fi? Guest networks often block this."); }, PAIR_TIMEOUT);
+          } catch (error) {
+            txFail(error && error.message === "secure-context" ? "Casting needs a secure page. Open EYE3 from its https:// link." : "Couldn't start the connection.");
+          }
+        }
+        function composeFrame() {
+          let source;
+          let width;
+          let height;
+          if (live && video.videoWidth) { source = video; width = video.videoWidth; height = video.videoHeight; }
+          else if (current) { source = stageCanvas; width = stageCanvas.width; height = stageCanvas.height; }
+          else return null;
+          const scale = Math.min(1, 1280 / Math.max(width, height));
+          castCanvas.width = Math.max(1, Math.round(width * scale));
+          castCanvas.height = Math.max(1, Math.round(height * scale));
+          const ctx = castCanvas.getContext("2d");
+          ctx.drawImage(source, 0, 0, castCanvas.width, castCanvas.height);
+          ctx.drawImage(overlay, 0, 0, castCanvas.width, castCanvas.height);
+          return castCanvas;
+        }
+        async function pumpFrames() {
+          if (tx.state !== "connected") return;
+          const channel = tx.channel;
+          if (channel && channel.readyState === "open" && channel.bufferedAmount < 1000000 && !tx.busy) {
+            const canvas = composeFrame();
+            if (canvas) {
+              tx.busy = true;
+              try {
+                const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.72));
+                if (blob && channel.readyState === "open") channel.send(await blob.arrayBuffer());
+              } catch { /* skip a frame */ } finally { tx.busy = false; }
+            }
+          }
+          tx.pump = window.setTimeout(pumpFrames, live ? 150 : 1000);
+        }
+
+        // --- Scan a screen's code with this device's camera ---
+        const scanVideo = $("#scan-video");
+        let scanStream = null;
+        let scanTimer = null;
+        function stopScan() {
+          window.clearTimeout(scanTimer);
+          scanTimer = null;
+          if (scanStream) scanStream.getTracks().forEach((track) => track.stop());
+          scanStream = null;
+          scanVideo.srcObject = null;
+          scannerEl.hidden = true;
+          if (receiverEl.hidden) setBackgroundInert(false);
+        }
+        async function startScan() {
+          if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { showToast("Scanning needs a secure (HTTPS) page and a camera."); return; }
+          await stopCamera();
+          let media;
+          try { media = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } }, audio: false }); }
+          catch (error) { showToast(error && error.name === "NotAllowedError" ? "Camera permission was denied." : "No camera is available."); return; }
+          scanStream = media;
+          scanVideo.srcObject = media;
+          try { await scanVideo.play(); } catch { /* muted autoplay */ }
+          scannerEl.hidden = false;
+          setBackgroundInert(true);
+          $("#scan-cancel").focus({ preventScroll: true });
+          let detector = null;
+          if ("BarcodeDetector" in window) { try { detector = new window.BarcodeDetector({ formats: ["qr_code"] }); } catch { detector = null; } }
+          if (!detector) {
+            try { await loadScript(LIBS.jsqr); } catch { stopScan(); showToast("The scanner couldn't load. Type the code instead."); return; }
+          }
+          const frame = make("canvas");
+          const frameCtx = frame.getContext("2d", { willReadFrequently: true });
+          const tick = async () => {
+            if (!scanStream) return;
+            if (scanVideo.readyState >= 2 && scanVideo.videoWidth) {
+              let text = "";
+              if (detector) {
+                try { const found = await detector.detect(scanVideo); text = found[0] ? found[0].rawValue : ""; } catch { text = ""; }
+              } else {
+                const scale = Math.min(1, 640 / scanVideo.videoWidth);
+                frame.width = Math.round(scanVideo.videoWidth * scale);
+                frame.height = Math.round(scanVideo.videoHeight * scale);
+                frameCtx.drawImage(scanVideo, 0, 0, frame.width, frame.height);
+                const pixels = frameCtx.getImageData(0, 0, frame.width, frame.height);
+                const hit = window.jsQR(pixels.data, pixels.width, pixels.height, { inversionAttempts: "dontInvert" });
+                text = hit ? hit.data : "";
+              }
+              const code = normalizeCode(text);
+              if (code) { stopScan(); castCodeField.value = prettyCode(code); connectSender(code); return; }
+            }
+            if (scanStream) scanTimer = window.setTimeout(tick, 200);
+          };
+          tick();
+        }
+
+        // --- Wiring ---
+        $("#btn-receive").addEventListener("click", startReceiver);
+        $("#rx-close").addEventListener("click", stopReceiver);
+        $("#rx-allow").addEventListener("click", () => rxAnswer(true));
+        $("#rx-deny").addEventListener("click", () => rxAnswer(false));
+        $("#btn-scan").addEventListener("click", startScan);
+        $("#scan-cancel").addEventListener("click", stopScan);
+        $("#cast-pill-stop").addEventListener("click", () => stopSender("Stopped casting."));
+        $("#btn-cast-connect").addEventListener("click", () => {
+          if (tx.state === "connected") { stopSender("Stopped casting."); return; }
+          const code = normalizeCode(castCodeField.value);
+          if (!code) { castMessage("Enter the 8-character code shown on the screen.", "bad"); castCodeField.focus(); return; }
+          connectSender(code);
+        });
+        castCodeField.addEventListener("keydown", (event) => { if (event.key === "Enter") $("#btn-cast-connect").click(); });
+        document.addEventListener("keydown", (event) => {
+          const back = event.key === "Escape" || event.key === "GoBack" || event.keyCode === 10009 || event.keyCode === 461;
+          if (!back || !overlayOpen()) return;
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          if (!scannerEl.hidden) stopScan(); else stopReceiver();
+        });
+        window.addEventListener("pagehide", () => { rxTeardown(); txTeardown(); });
+        if (PARAMS.get("join")) {
+          const code = normalizeCode(PARAMS.get("join"));
+          window.setTimeout(() => {
+            setView("Connect Apple TV");
+            if (code) {
+              castCodeField.value = prettyCode(code);
+              castMessage(`This link carries the code ${prettyCode(code)}. Press Connect to show this device on that screen.`);
+              $("#btn-cast-connect").focus({ preventScroll: true });
+            } else {
+              castMessage("That link's code isn't valid. Type the code shown on the screen.", "bad");
+            }
+          }, 0);
+        }
+        if (PARAMS.get("receive") === "1") window.setTimeout(startReceiver, 0);
+
         // ---------- TV mode: large layout and remote-control (D-pad) navigation ----------
         const root = document.documentElement;
         const tvButton = $("#btn-tv");
@@ -1460,14 +1983,15 @@
         }
         const FOCUSABLE = 'button:not([disabled]), a[href], input[type="range"], [tabindex="0"]';
         function focusables() {
-          return [...document.querySelectorAll(FOCUSABLE)].filter((node) => {
+          const scope = !receiverEl.hidden ? receiverEl : !scannerEl.hidden ? scannerEl : document;
+          return [...scope.querySelectorAll(FOCUSABLE)].filter((node) => {
             if (node.classList.contains("file-input")) return false;
             const box = node.getBoundingClientRect();
             return box.width > 0 && box.height > 0 && getComputedStyle(node).visibility !== "hidden";
           });
         }
         function focusFirst() {
-          const target = $(".tool-card.selected") || focusables()[0];
+          const target = overlayOpen() ? focusables()[0] : ($(".tool-card.selected") || focusables()[0]);
           if (target) target.focus({ preventScroll: true });
         }
         function moveFocus(key) {
@@ -1496,7 +2020,7 @@
           }
         }
         document.addEventListener("keydown", (event) => {
-          if (!root.hasAttribute("data-tv") || event.altKey || event.ctrlKey || event.metaKey) return;
+          if ((!root.hasAttribute("data-tv") && !overlayOpen()) || event.altKey || event.ctrlKey || event.metaKey) return;
           const onSlider = document.activeElement && document.activeElement.type === "range";
           if (event.key.startsWith("Arrow") && !(onSlider && event.key.match(/Left|Right/))) {
             event.preventDefault();
