@@ -100,7 +100,7 @@ $('load').onclick = async () => {
 const renderFavs = () => render($('favlist'), store('favs', []));
 
 // ---- browser + mirror
-const safeUrl = (u) => /^https?:\/\//i.test(u) ? u : '';
+const safeUrl = (u) => { try { const x = new URL(u); return x.protocol === 'http:' || x.protocol === 'https:' ? x.href : ''; } catch { return ''; } };
 $('wgo').onclick = () => { $('frame').src = safeUrl($('wurl').value) || 'about:blank'; };
 $('wtab').onclick = () => { const u = safeUrl($('wurl').value); if (u) window.open(u, '_blank', 'noopener'); };
 $('mstart').onclick = async () => { $('mv').srcObject = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true }); };

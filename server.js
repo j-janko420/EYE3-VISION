@@ -13,6 +13,16 @@ const MAC_RE = /^([0-9A-F]{2}:){5}[0-9A-F]{2}$/;
 const normMac = (m) => { const h = String(m || '').replace(/[^0-9a-f]/gi, '').toUpperCase(); return h.length === 12 ? h.match(/../g).join(':') : null; };
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json' };
 const send = (res, code, body, type = 'application/json') => { res.writeHead(code, { 'Content-Type': type }); res.end(typeof body === 'string' || Buffer.isBuffer(body) ? body : JSON.stringify(body)); };
+// SSRF guard: outbound fetches may not target loopback, link-local (cloud metadata) or unspecified addresses. LAN ranges stay allowed for local portals.
+const dns = require('dns').promises, net = require('net');
+const blockedIp = (ip) => net.isIPv4(ip) ? /^(127\.|169\.254\.|0\.)/.test(ip) : /^(::1?|::ffff:(127\.|169\.254\.|0\.)|fe80:)/i.test(ip);
+async function safeFetch(url, opts) {
+  const u = httpUrl(url); if (!u) throw new Error('Invalid URL');
+  const host = u.hostname.replace(/^\[|\]$/g, '');
+  const addrs = net.isIP(host) ? [{ address: host }] : await dns.lookup(host, { all: true });
+  if (addrs.some((a) => blockedIp(a.address))) throw new Error('Target address not allowed');
+  return fetch(u, { ...opts, redirect: 'manual' });
+}
 const httpUrl = (u) => { try { const x = new URL(u); return /^https?:$/.test(x.protocol) ? x : null; } catch { return null; } };
 
 async function portal(base, mac, params, token) {
@@ -21,7 +31,7 @@ async function portal(base, mac, params, token) {
   const url = `${root}/server/load.php?` + new URLSearchParams({ JsHttpRequest: '1-xml', ...params });
   const headers = { Cookie: `mac=${mac}; stb_lang=en; timezone=GMT`, 'User-Agent': 'Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) MAG200 stbapp ver: 2 rev: 250 Safari/533.3', 'X-User-Agent': 'Model: MAG250; Link: WiFi' };
   if (token) headers.Authorization = 'Bearer ' + token;
-  const r = await fetch(url, { headers, signal: AbortSignal.timeout(15000) });
+  const r = await safeFetch(url, { headers, signal: AbortSignal.timeout(15000) });
   const j = JSON.parse(await r.text());
   return j.js;
 }
@@ -46,14 +56,14 @@ async function api(req, res, q) {
   }
   if (act === 'm3u') {
     const u = httpUrl(q.get('url')); if (!u) return send(res, 400, { error: 'Invalid URL' });
-    const r = await fetch(u, { signal: AbortSignal.timeout(20000) });
+    const r = await safeFetch(u.href, { signal: AbortSignal.timeout(20000) });
     return send(res, 200, await r.text(), 'text/plain');
   }
   send(res, 400, { error: 'Unknown action' });
 }
 
 // ---- Plugin / connector system: every plugins/*.js exports {id,name,description,fields,list(params,ctx),resolve?(r,ctx)}
-const ctx = { portal, normMac, mediaDir: MEDIA_DIR, fetchText: async (url) => { const u = httpUrl(url); if (!u) throw new Error('Invalid URL'); return (await fetch(u, { signal: AbortSignal.timeout(20000) })).text(); } };
+const ctx = { portal, normMac, mediaDir: MEDIA_DIR, fetchText: async (url) => { const u = httpUrl(url); if (!u) throw new Error('Invalid URL'); return (await safeFetch(u.href, { signal: AbortSignal.timeout(20000) })).text(); } };
 const plugins = {};
 for (const f of fs.readdirSync(path.join(__dirname, 'plugins')).filter((x) => x.endsWith('.js'))) {
   try { const p = require(path.join(__dirname, 'plugins', f)); plugins[p.id] = p; } catch (e) { console.error('plugin', f, e.message); }
