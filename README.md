@@ -1,6 +1,12 @@
 # EYE3-VISION
 Designed by i3 Design
 
+## Welcome and personal theme
+
+EYE3 opens with a **Welcome to EYE3 Vision · Designed by i3 Design** screen. It shows once per session; press OK or tap to start, or add `?welcome=0` to skip it.
+
+**Personalize** (top bar) sets your own photo as the background. EYE3 finds the faces in it (TensorFlow.js BlazeFace, free, on-device) and uses them as round tool icons and as your profile picture, on an i3 navy theme. If no faces are found, or the face model can't load, the centre of the photo becomes the icon. The photo is stored only in this browser (localStorage) and is never uploaded or added to this repo. Switch the theme off or remove the photo from the same dialog.
+
 ## Run it live
 
 EYE3 Vision is a static page (`index.html`) with real, free, on-device analysis. No API keys, no backend, no cost.

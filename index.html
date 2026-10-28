@@ -293,6 +293,7 @@
       .stage > canvas#stage-canvas, .stage > video { height: 100%; }
 
       .tv-toggle { padding: .4rem .7rem; border: 1px solid var(--line); border-radius: 1.25rem; background: transparent; color: var(--muted); font-size: .6875rem; font-weight: 650; letter-spacing: .04em; cursor: pointer; }
+      .tv-toggle { white-space: nowrap; }
       .tv-toggle[aria-pressed="true"] { border-color: var(--orange); background: #261b15; color: #ffab7b; }
       button { touch-action: manipulation; }
 
@@ -317,6 +318,8 @@
         .brand-subtitle { display: none; }
         .nav-link { flex-direction: column; gap: .1rem; padding: .35rem .15rem; font-size: .625rem; line-height: 1.2; }
         .prototype-tag { display: none; }
+        .breadcrumb { display: none; }
+        .topbar { justify-content: flex-end; }
         .toolbar .btn { flex: 1 1 calc(50% - .5rem); }
         .tool-card { min-height: 0; padding: 1rem; }
         .tool-arrow { padding-top: .6rem; }
@@ -369,6 +372,29 @@
       .rx-stage canvas, .rx-stage video { max-width: 100%; max-height: 100%; border-radius: .5rem; background: #0c0c0b; }
       .cast-pill { position: fixed; bottom: calc(1rem + env(safe-area-inset-bottom)); left: 1rem; z-index: 7; display: flex; align-items: center; gap: .75rem; padding: .3rem .4rem .3rem .9rem; border: 1px solid #433021; border-radius: 2rem; background: #241b15; color: #ffb078; font-size: .6875rem; font-weight: 650; }
 
+      /* Welcome screen and personal i3 theme */
+      .splash { position: fixed; inset: 0; z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; padding: 2rem; color: #efe9dc; text-align: center; background: radial-gradient(circle at 28% 18%, #1d3a7a 0, transparent 45%), radial-gradient(circle at 82% 86%, #16306a 0, transparent 40%), #08122b; transition: opacity .35s ease; }
+      .splash.leaving { opacity: 0; }
+      .splash svg { width: min(34vw, 9rem); height: auto; }
+      .splash h2 { margin: .4rem 0 0; font-size: clamp(1.6rem, 5vw, 2.6rem); font-weight: 700; letter-spacing: -.02em; }
+      .splash p { margin: 0; color: #b9c3dc; font-size: .9375rem; letter-spacing: .08em; }
+      .splash p.hint { margin-top: .5rem; color: #8a96b5; font-size: .6875rem; letter-spacing: .02em; }
+      .sheet { position: fixed; inset: 0; z-index: 8; display: flex; align-items: center; justify-content: center; padding: 1rem; background: rgba(5, 8, 16, .72); }
+      .sheet-card { width: min(100%, 32rem); max-height: 100%; overflow: auto; padding: 1.25rem; border: 1px solid var(--line); border-radius: .9rem; background: #151514; }
+      .sheet-card h2 { margin: 0; font-size: 1rem; font-weight: 650; }
+      .theme-faces { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: .9rem; }
+      .theme-faces img { width: 3.5rem; height: 3.5rem; border: 2px solid #efe9dc; border-radius: 50%; object-fit: cover; }
+      .tool-icon.face { width: 2.75rem; height: 2.75rem; overflow: hidden; padding: 0; border: 2px solid #efe9dc; border-radius: 50%; }
+      .avatar.face { overflow: hidden; padding: 0; border-color: #efe9dc; }
+      .tool-icon.face img, .avatar.face img { display: block; width: 100%; height: 100%; object-fit: cover; }
+      html[data-theme-i3] body { background: linear-gradient(180deg, rgba(6, 14, 34, .78), rgba(6, 14, 34, .92)), var(--i3-photo, none) center / cover fixed, radial-gradient(circle at 30% 20%, #1d3a7a 0, transparent 45%), #08122b; }
+      html[data-theme-i3] .sidebar, html[data-theme-i3] .topbar { border-color: rgba(239, 233, 220, .12); background: rgba(8, 18, 43, .72); }
+      html[data-theme-i3] .panel, html[data-theme-i3] .tool-card, html[data-theme-i3] .hero, html[data-theme-i3] .status-card,
+      html[data-theme-i3] .result, html[data-theme-i3] .step, html[data-theme-i3] .cast-card, html[data-theme-i3] .stage-wrap { border-color: rgba(239, 233, 220, .16); background: rgba(12, 24, 54, .76); }
+      html[data-theme-i3] .tool-card:hover, html[data-theme-i3] .tool-card.selected { border-color: #efe9dc; background: rgba(28, 48, 96, .84); }
+      html[data-theme-i3] .eyebrow, html[data-theme-i3] .text-link, html[data-theme-i3] .tool-arrow { color: #efe9dc; }
+      html[data-theme-i3] .eyebrow::before { background: #efe9dc; }
+
       /* Big monitors reporting 4K CSS pixels. */
       @media (min-width: 2400px) { html { font-size: 28px; } }
 
@@ -418,14 +444,14 @@
               <div class="engine" id="eng-text"><span><i></i>Text (OCR)</span><em>on demand</em></div>
             </div>
           </div>
-          <div class="version">EYE3 VISION · v0.2 LIVE</div>
+          <div class="version">EYE3 VISION · v0.3 · BY i3 DESIGN</div>
         </div>
       </aside>
 
       <main class="main" id="overview">
         <header class="topbar">
           <div class="breadcrumb">Workspace <span aria-hidden="true">/</span> <strong>Overview</strong></div>
-          <div class="topbar-right"><button class="tv-toggle" id="btn-tv" type="button" aria-pressed="false" title="Large-screen layout with remote-control navigation">TV mode</button><span class="prototype-tag">LIVE · ON-DEVICE</span><div class="avatar" aria-label="Guest profile">G</div></div>
+          <div class="topbar-right"><button class="tv-toggle" id="btn-theme" type="button" title="Your photo as the background, with face icons">Personalize</button><button class="tv-toggle" id="btn-tv" type="button" aria-pressed="false" title="Large-screen layout with remote-control navigation">TV mode</button><span class="prototype-tag">LIVE · ON-DEVICE</span><div class="avatar" aria-label="Guest profile">G</div></div>
         </header>
 
         <div class="content">
@@ -636,6 +662,30 @@
           </section>
         </div>
       </main>
+      <div class="splash" id="splash" role="dialog" aria-modal="true" aria-labelledby="splash-title">
+          <svg viewBox="0 0 200 230" role="img" aria-label="i3 Design logo">
+            <rect x="8" y="8" width="184" height="214" fill="#0b1a3a" stroke="#efe9dc" stroke-width="12"/>
+            <text x="100" y="140" fill="#efe9dc" font-family="Arial, Helvetica, sans-serif" font-size="128" font-weight="700" text-anchor="middle" letter-spacing="-4">i3</text>
+            <text x="100" y="196" fill="#efe9dc" font-family="Arial, Helvetica, sans-serif" font-size="36" font-weight="700" text-anchor="middle" letter-spacing="2">DESIGN</text>
+          </svg>
+        <h2 id="splash-title">Welcome to EYE3 Vision</h2>
+        <p>Designed by i3 Design</p>
+        <p class="hint">See beyond the surface. Press OK or tap to start.</p>
+      </div>
+      <div class="sheet" id="personalize" role="dialog" aria-modal="true" aria-labelledby="theme-title" hidden>
+        <div class="sheet-card">
+          <div class="panel-title"><h2 id="theme-title">Personalize · i3 theme</h2><button class="btn ghost" id="theme-close" type="button">Close</button></div>
+          <p class="muted" style="margin-top:.6rem">Use your own photo as the background. Faces in it become your tool icons and profile picture. Everything stays on this device; nothing is uploaded.</p>
+          <div class="toolbar">
+            <button class="btn" id="theme-choose" type="button">Choose photo</button>
+            <button class="btn ghost" id="theme-toggle" type="button" aria-pressed="false" disabled>Turn i3 theme on</button>
+            <button class="btn ghost" id="theme-remove" type="button" disabled>Remove photo</button>
+            <input class="file-input" id="theme-input" type="file" accept="image/png,image/jpeg,image/webp,image/avif,image/heic" aria-label="Choose a background photo">
+          </div>
+          <div class="theme-faces" id="theme-faces" aria-label="Face icons"></div>
+          <p class="muted" id="theme-status" aria-live="polite" style="margin-top:.8rem"></p>
+        </div>
+      </div>
       <div class="receiver" id="receiver" role="dialog" aria-modal="true" aria-labelledby="rx-title" hidden>
         <div class="rx-top">
           <span class="rx-brand" id="rx-title">EYE3 · SCREEN</span>
@@ -674,6 +724,7 @@
           mobilenet: `${CDN}@tensorflow-models/mobilenet@2.1.1/dist/mobilenet.min.js`,
           tesseract: `${CDN}tesseract.js@5.1.1/dist/tesseract.min.js`,
           exifr: `${CDN}exifr@7.1.3/dist/lite.umd.js`,
+          blazeface: `${CDN}@tensorflow-models/blazeface@0.1.0/dist/blazeface.min.js`,
           qr: `${CDN}qrcode-generator@1.4.4/qrcode.js`,
           jsqr: `${CDN}jsqr@1.4.0/dist/jsQR.js`,
         };
@@ -1643,7 +1694,7 @@
             return kept <= 6;
           }).join("\r\n");
         }
-        function overlayOpen() { return !receiverEl.hidden || !scannerEl.hidden; }
+        function overlayOpen() { return !receiverEl.hidden || !scannerEl.hidden || !$("#personalize").hidden; }
         function setBackgroundInert(on) {
           [".sidebar", ".main"].forEach((selector) => { const node = $(selector); if (node) node.inert = on; });
         }
@@ -1984,7 +2035,7 @@
           if (!back || !overlayOpen()) return;
           event.preventDefault();
           event.stopImmediatePropagation();
-          if (!scannerEl.hidden) stopScan(); else stopReceiver();
+          if (!$("#personalize").hidden) closePersonalize(); else if (!scannerEl.hidden) stopScan(); else stopReceiver();
         });
         window.addEventListener("pagehide", () => { rxTeardown(); txTeardown(); });
         if (PARAMS.get("join")) {
@@ -2024,7 +2075,7 @@
         }
         const FOCUSABLE = 'button:not([disabled]), a[href], input[type="range"], [tabindex="0"]';
         function focusables() {
-          const scope = !receiverEl.hidden ? receiverEl : !scannerEl.hidden ? scannerEl : document;
+          const scope = !receiverEl.hidden ? receiverEl : !scannerEl.hidden ? scannerEl : !$("#personalize").hidden ? $("#personalize") : document;
           return [...scope.querySelectorAll(FOCUSABLE)].filter((node) => {
             if (node.classList.contains("file-input")) return false;
             const box = node.getBoundingClientRect();
@@ -2078,6 +2129,163 @@
         });
         tvButton.addEventListener("click", () => setTv(!root.hasAttribute("data-tv"), true));
         setTv(initialTv(), false);
+
+        // ---------- Personal i3 theme: background photo and face icons, kept only in this browser ----------
+        const THEME_KEY = "eye3.theme.v1";
+        const personalizeEl = $("#personalize");
+        const themeStatus = $("#theme-status");
+        const themeFaces = $("#theme-faces");
+        const themeToggle = $("#theme-toggle");
+        const toolIconGlyphs = [...document.querySelectorAll(".tool-icon")].map((node) => node.textContent);
+        const avatarEl = $(".avatar");
+        const avatarText = avatarEl.textContent;
+
+        function readTheme() {
+          try { return JSON.parse(localStorage.getItem(THEME_KEY)) || null; } catch { return null; }
+        }
+        function writeTheme(theme) {
+          try {
+            if (theme) localStorage.setItem(THEME_KEY, JSON.stringify(theme)); else localStorage.removeItem(THEME_KEY);
+            return true;
+          } catch { return false; }
+        }
+        function themeNote(text, tone = "") { themeStatus.className = `muted ${tone}`.trim(); themeStatus.textContent = text; }
+        function faceImage(src, alt) {
+          const image = make("img");
+          image.src = src;
+          image.alt = alt;
+          image.decoding = "async";
+          return image;
+        }
+        function applyTheme() {
+          const theme = readTheme();
+          const on = !!(theme && theme.on);
+          root.toggleAttribute("data-theme-i3", on);
+          if (on && theme.bg) root.style.setProperty("--i3-photo", `url("${theme.bg}")`);
+          else root.style.removeProperty("--i3-photo");
+          const faces = on && theme.faces ? theme.faces : [];
+          document.querySelectorAll(".tool-icon").forEach((node, index) => {
+            if (faces.length) { node.replaceChildren(faceImage(faces[index % faces.length], "")); node.classList.add("face"); }
+            else { node.textContent = toolIconGlyphs[index]; node.classList.remove("face"); }
+          });
+          if (faces.length) { avatarEl.replaceChildren(faceImage(faces[0], "Your profile")); avatarEl.classList.add("face"); }
+          else { avatarEl.textContent = avatarText; avatarEl.classList.remove("face"); }
+          themeToggle.disabled = !theme;
+          themeToggle.textContent = on ? "Turn i3 theme off" : "Turn i3 theme on";
+          themeToggle.setAttribute("aria-pressed", String(on));
+          $("#theme-remove").disabled = !theme;
+          themeFaces.replaceChildren(...(theme && theme.faces ? theme.faces : []).map((src, index) => faceImage(src, `Face ${index + 1}`)));
+        }
+        function squareCrop(source, cx, cy, size, out = 160) {
+          const canvas = make("canvas");
+          canvas.width = canvas.height = out;
+          const { width, height } = sourceSize(source);
+          const half = Math.min(size / 2, cx, cy, width - cx, height - cy);
+          canvas.getContext("2d").drawImage(source, cx - half, cy - half, half * 2, half * 2, 0, 0, out, out);
+          return canvas.toDataURL("image/jpeg", 0.85);
+        }
+        const getFaceFinder = () => useEngine("faces", async () => {
+          await loadScript(LIBS.tf);
+          await loadScript(LIBS.blazeface);
+          return window.blazeface.load();
+        });
+        async function findFaces(canvas) {
+          try {
+            const finder = await getFaceFinder();
+            const found = await finder.estimateFaces(canvas, false);
+            return found
+              .filter((face) => (face.probability === undefined ? 1 : Number(face.probability)) > 0.8)
+              .sort((a, b) => a.topLeft[0] - b.topLeft[0])
+              .slice(0, 6)
+              .map((face) => {
+                const [x1, y1] = face.topLeft;
+                const [x2, y2] = face.bottomRight;
+                return { cx: (x1 + x2) / 2, cy: (y1 + y2) / 2, size: Math.max(x2 - x1, y2 - y1) * 1.7 };
+              });
+          } catch { return null; }
+        }
+        async function setThemePhoto(file) {
+          if (!file || !file.type.startsWith("image/")) { themeNote("Choose an image file.", "bad"); return; }
+          themeNote("Preparing your photo…", "busy");
+          let source;
+          try { source = await decodeFile(file); } catch { themeNote("That photo could not be opened.", "bad"); return; }
+          const { width, height } = sourceSize(source);
+          const scale = Math.min(1, 1600 / Math.max(width, height));
+          const background = make("canvas");
+          background.width = Math.round(width * scale);
+          background.height = Math.round(height * scale);
+          background.getContext("2d").drawImage(source, 0, 0, background.width, background.height);
+          themeNote("Finding faces (first run downloads a small model)…", "busy");
+          const faces = await findFaces(background);
+          let crops;
+          if (faces && faces.length) {
+            crops = faces.map((face) => squareCrop(background, face.cx, face.cy, face.size));
+          } else {
+            crops = [squareCrop(background, background.width / 2, background.height / 2, Math.min(background.width, background.height))];
+          }
+          const theme = { on: true, bg: background.toDataURL("image/jpeg", 0.8), faces: crops };
+          if (!writeTheme(theme)) {
+            theme.bg = background.toDataURL("image/jpeg", 0.55);
+            if (!writeTheme(theme)) { themeNote("This browser's storage is full or blocked, so the photo can't be saved.", "bad"); return; }
+          }
+          applyTheme();
+          if (faces && faces.length) themeNote(`Found ${faces.length} face${faces.length === 1 ? "" : "s"}. They're now your tool icons. Saved on this device only.`);
+          else if (faces) themeNote("No faces found, so the centre of the photo is your icon. Saved on this device only.");
+          else themeNote("Face finder unavailable offline, so the centre of the photo is your icon. Saved on this device only.");
+          log("Personal i3 theme applied");
+        }
+        function openPersonalize() {
+          personalizeEl.hidden = false;
+          setBackgroundInert(true);
+          applyTheme();
+          if (!themeStatus.textContent) themeNote(readTheme() ? "Your photo is saved on this device only." : "Pick a photo with faces. It never leaves this device.");
+          $("#theme-choose").focus({ preventScroll: true });
+        }
+        function closePersonalize() {
+          personalizeEl.hidden = true;
+          if (receiverEl.hidden && scannerEl.hidden) setBackgroundInert(false);
+          $("#btn-theme").focus({ preventScroll: true });
+        }
+        $("#btn-theme").addEventListener("click", openPersonalize);
+        $("#theme-close").addEventListener("click", closePersonalize);
+        $("#theme-choose").addEventListener("click", () => $("#theme-input").click());
+        $("#theme-input").addEventListener("change", (event) => { setThemePhoto(event.target.files[0]); event.target.value = ""; });
+        themeToggle.addEventListener("click", () => {
+          const theme = readTheme();
+          if (!theme) return;
+          theme.on = !theme.on;
+          writeTheme(theme);
+          applyTheme();
+        });
+        $("#theme-remove").addEventListener("click", () => {
+          writeTheme(null);
+          applyTheme();
+          themeNote("Photo removed from this device.");
+          log("Personal theme removed");
+        });
+
+        // ---------- Welcome screen ----------
+        const splash = $("#splash");
+        function hideSplash() {
+          if (splash.hidden) return;
+          splash.classList.add("leaving");
+          window.setTimeout(() => { splash.hidden = true; }, reduceMotion ? 0 : 350);
+          try { sessionStorage.setItem("eye3.welcomed", "1"); } catch { /* storage blocked */ }
+        }
+        let welcomed = false;
+        try { welcomed = sessionStorage.getItem("eye3.welcomed") === "1"; } catch { /* storage blocked */ }
+        if (welcomed || PARAMS.get("welcome") === "0") splash.hidden = true;
+        else {
+          splash.addEventListener("click", hideSplash);
+          document.addEventListener("keydown", (event) => {
+            if (splash.hidden) return;
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            hideSplash();
+          }, true);
+          window.setTimeout(hideSplash, 3200);
+        }
+        applyTheme();
 
         ["detect", "classify", "text"].forEach((name) => setEngine(name, "idle"));
         renderLibrary();
