@@ -1,1 +1,1 @@
-{"name":"eye3-vision","version":"1.0.0","description":"IPTV MAG/Stalker portal client with virtual MAC, M3U, web browser, screen mirror and online streaming","main":"server.js","scripts":{"start":"node server.js"},"license":"MIT"}
+{"name":"eye3-vision","version":"1.0.0","description":"IPTV MAG/Stalker portal client with virtual MAC, M3U, web browser, screen mirror and online streaming","main":"server.js","scripts":{"start":"node server.js","test":"node --test \"test/*.test.js\""},"license":"MIT"}
