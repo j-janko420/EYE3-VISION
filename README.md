@@ -32,6 +32,8 @@ Publish free on GitHub Pages: the workflow in `.github/workflows/pages.yml` depl
 - **Mirroring:** Miracast from an Android phone (Cast / Smart View) or a Windows PC (`Win + K`); AirPlay from an iPhone or Mac to an Apple TV or AirPlay TV.
 - **TV browsers:** where a TV or stick has a browser, open the EYE3 link there and TV mode turns on automatically.
 
+**Smart STB portal check (Philips Saphi with Smart STB):** add `https://<user>.github.io/EYE3-VISION/portal/c/` as a portal in Smart STB (at smart-stb.tv, using the code the app shows) and open it on the TV. The page lists what the TV's engine supports: MAG remote API, box MAC, modern JavaScript, WebGL, WebAssembly, WebRTC, HLS/MP4 video, internet access. It also shows every remote key code. It is plain ES5, so it runs on old TV engines, and it sends nothing anywhere. Its **Open EYE3 app** button opens the full app in TV mode.
+
 **Start presentation** hides the menus, switches to the large TV layout and keeps the screen awake.
 
 **Built-in casting to a screen with a browser (Fire TV / Google TV stick, browser TV, laptop):** open EYE3 on that screen, go to **Connect TV** and press **Show pairing code here**. On the iPhone, scan the code with the camera app (or **Scan the TV's code** in EYE3) or type the 8-character code, press **Connect**, and allow it on the TV. Your image or live camera, with detections, appears on the TV. Pictures travel directly between the two devices over the Wi-Fi (WebRTC with no relay). Only the connection details pass through ntfy.sh, encrypted with the pairing code. Add `?receive=1` to a TV bookmark to open straight into pairing. Guest Wi-Fi networks that isolate devices will block it.
