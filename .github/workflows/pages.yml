@@ -1,8 +1,6 @@
 name: Deploy EYE3 Vision
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
