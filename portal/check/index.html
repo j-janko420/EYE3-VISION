@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EYE3 portal check</title>
+<style>
+  /* Plain CSS only: old TV engines (Opera/Presto, early WebKit) lack custom properties and modern layout. */
+  html, body { margin: 0; padding: 0; background: #10100f; color: #f4f1eb; font-family: Arial, Helvetica, sans-serif; }
+  body { padding: 28px 48px; font-size: 20px; }
+  h1 { margin: 0 0 4px; font-size: 34px; color: #ff9a61; letter-spacing: 1px; }
+  .sub { margin: 0 0 18px; color: #b9b5ad; font-size: 18px; }
+  table { width: 100%; border-collapse: collapse; }
+  td { padding: 7px 10px; border-bottom: 1px solid #30302d; vertical-align: top; font-size: 19px; }
+  td.k { width: 30%; color: #b9b5ad; }
+  .ok { color: #97d8a4; font-weight: bold; }
+  .no { color: #e5584f; font-weight: bold; }
+  .maybe { color: #ffb078; font-weight: bold; }
+  .cols { overflow: hidden; }
+  .col { float: left; width: 49%; }
+  .col + .col { margin-left: 2%; }
+  .keys { margin-top: 16px; padding: 12px 14px; border: 2px solid #433021; background: #241b15; color: #ffb078; }
+  .actions { margin-top: 16px; }
+  .btn { display: inline-block; margin-right: 14px; padding: 12px 22px; border: 3px solid #69412a; background: #322116; color: #ffc094; font-size: 20px; font-weight: bold; }
+  .btn.focus { border-color: #ff9a61; background: #482b19; color: #fff; }
+  .small { color: #8a877f; font-size: 15px; }
+</style>
+</head>
+<body>
+<h1>EYE3 portal check</h1>
+<p class="sub">Take a photo of this screen and send it to your EYE3 assistant. Nothing here is sent anywhere.</p>
+<div class="cols">
+  <div class="col"><table id="t1"></table></div>
+  <div class="col"><table id="t2"></table></div>
+</div>
+<div class="keys" id="keys">Press remote keys (arrows, OK, Back, colours, numbers): each key's code shows here.</div>
+<div class="actions">
+  <a class="btn focus" id="b-open" href="../../index.html?tv=1">Open EYE3 app</a>
+  <a class="btn" id="b-rerun" href="#">Run checks again</a>
+</div>
+<p class="small" id="foot"></p>
+<script>
+// ES5 only, so this runs on old TV engines. It only reads local capabilities; no data leaves the TV
+// except one capability check that downloads a small public file from the jsDelivr CDN.
+(function () {
+  var t1 = document.getElementById('t1');
+  var t2 = document.getElementById('t2');
+  var keysBox = document.getElementById('keys');
+
+  function row(table, key, value, tone) {
+    var tr = document.createElement('tr');
+    var a = document.createElement('td');
+    var b = document.createElement('td');
+    a.className = 'k';
+    a.appendChild(document.createTextNode(key));
+    if (tone) b.className = tone;
+    b.appendChild(document.createTextNode(String(value)));
+    tr.appendChild(a);
+    tr.appendChild(b);
+    table.appendChild(tr);
+    return b;
+  }
+  function yes(table, key, ok, detail) {
+    row(table, key, (ok ? 'Yes' : 'No') + (detail ? ' (' + detail + ')' : ''), ok ? 'ok' : 'no');
+  }
+  function safe(fn) { try { return fn(); } catch (e) { return undefined; } }
+  function clear(table) { while (table.firstChild) table.removeChild(table.firstChild); }
+
+  function magApi() {
+    var api = window.gSTB || window.stb || null;
+    var names = [];
+    if (api) { for (var name in api) { names.push(name); if (names.length > 400) break; } }
+    var call = function (method, arg) { return api && typeof api[method] === 'function' ? safe(function () { return api[method](arg); }) : undefined; };
+    var mac = call('GetDeviceMacAddress') || call('RDir', 'MACAddress') || '';
+    var model = call('GetDeviceModelExt') || call('GetDeviceModel') || '';
+    var vendor = call('GetDeviceVendor') || '';
+    return { present: !!api, global: window.gSTB ? 'gSTB' : (window.stb ? 'stb' : ''), count: names.length, mac: mac, model: model, vendor: vendor };
+  }
+
+  function run() {
+    clear(t1); clear(t2);
+    var mag = magApi();
+    row(t1, 'Engine', navigator.userAgent);
+    row(t1, 'Screen', (window.innerWidth || 0) + ' x ' + (window.innerHeight || 0) + ' (scale ' + (window.devicePixelRatio || 1) + ')');
+    yes(t1, 'MAG remote API', mag.present, mag.present ? mag.global + ', ' + mag.count + ' functions' : '');
+    if (mag.present) {
+      row(t1, 'Box MAC (from app)', mag.mac || 'not shared', mag.mac ? 'ok' : 'maybe');
+      if (mag.model || mag.vendor) row(t1, 'Box model', (mag.vendor + ' ' + mag.model).replace(/^\s+|\s+$/g, ''));
+    }
+    yes(t1, 'Modern JavaScript', !!safe(function () { return new Function('let f = (a) => a * 2; return `${f(2)}` === "4";')(); }));
+    yes(t1, 'Promises / fetch', !!window.Promise && !!window.fetch);
+    yes(t1, 'Local storage', !!safe(function () { localStorage.setItem('eye3-probe', '1'); return localStorage.getItem('eye3-probe') === '1'; }));
+
+    var canvas = document.createElement('canvas');
+    yes(t2, 'WebGL (AI speed)', !!safe(function () { return canvas.getContext('webgl') || canvas.getContext('experimental-webgl'); }));
+    yes(t2, 'WebAssembly (OCR)', typeof window.WebAssembly === 'object');
+    yes(t2, 'WebRTC (casting)', !!(window.RTCPeerConnection || window.webkitRTCPeerConnection));
+    yes(t2, 'Secure crypto', !!(window.crypto && window.crypto.subtle));
+    yes(t2, 'Server events', !!window.EventSource);
+    var video = document.createElement('video');
+    var can = function (type) { var r = video.canPlayType ? video.canPlayType(type) : ''; return r === 'probably' || r === 'maybe'; };
+    yes(t2, 'HLS video (.m3u8)', can('application/vnd.apple.mpegurl') || can('application/x-mpegURL'));
+    yes(t2, 'MP4 H.264 video', can('video/mp4; codecs="avc1.42E01E, mp4a.40.2"'));
+    var net = row(t2, 'Internet / CDN', 'checking...', 'maybe');
+    var xhr = new XMLHttpRequest();
+    var done = false;
+    var finish = function (ok, detail) { if (done) return; done = true; net.className = ok ? 'ok' : 'no'; net.firstChild.nodeValue = (ok ? 'Yes' : 'No') + (detail ? ' (' + detail + ')' : ''); };
+    try {
+      xhr.open('GET', 'https://cdn.jsdelivr.net/npm/exifr@7.1.3/package.json', true);
+      xhr.onreadystatechange = function () { if (xhr.readyState === 4) finish(xhr.status === 200, xhr.status ? 'HTTP ' + xhr.status : 'blocked'); };
+      xhr.send();
+      setTimeout(function () { finish(false, 'timeout'); }, 8000);
+    } catch (e) { finish(false, 'error'); }
+    var foot = document.getElementById('foot');
+    while (foot.firstChild) foot.removeChild(foot.firstChild);
+    foot.appendChild(document.createTextNode('Checked ' + new Date().toString()));
+  }
+
+  // Remote control: show every key code, and move focus between the two buttons.
+  var buttons = [document.getElementById('b-open'), document.getElementById('b-rerun')];
+  var focus = 0;
+  function setFocus(i) { focus = (i + buttons.length) % buttons.length; for (var j = 0; j < buttons.length; j++) buttons[j].className = j === focus ? 'btn focus' : 'btn'; }
+  document.onkeydown = function (e) {
+    e = e || window.event;
+    var code = e.keyCode || e.which || 0;
+    keysBox.firstChild.nodeValue = 'Last key: ' + (e.key || '(no name)') + ', code ' + code + (e.shiftKey ? ' + shift' : '');
+    if (code === 37 || code === 38) { setFocus(focus - 1); return false; }
+    if (code === 39 || code === 40) { setFocus(focus + 1); return false; }
+    if (code === 13) { if (focus === 0) window.location.href = buttons[0].href; else run(); return false; }
+    return true;
+  };
+  buttons[1].onclick = function () { run(); return false; };
+  run();
+})();
+</script>
+</body>
+</html>

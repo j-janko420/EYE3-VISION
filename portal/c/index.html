@@ -3,134 +3,350 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>EYE3 portal check</title>
+<title>EYE3 TV</title>
 <style>
-  /* Plain CSS only: old TV engines (Opera/Presto, early WebKit) lack custom properties and modern layout. */
-  html, body { margin: 0; padding: 0; background: #10100f; color: #f4f1eb; font-family: Arial, Helvetica, sans-serif; }
-  body { padding: 28px 48px; font-size: 20px; }
-  h1 { margin: 0 0 4px; font-size: 34px; color: #ff9a61; letter-spacing: 1px; }
-  .sub { margin: 0 0 18px; color: #b9b5ad; font-size: 18px; }
-  table { width: 100%; border-collapse: collapse; }
-  td { padding: 7px 10px; border-bottom: 1px solid #30302d; vertical-align: top; font-size: 19px; }
-  td.k { width: 30%; color: #b9b5ad; }
-  .ok { color: #97d8a4; font-weight: bold; }
-  .no { color: #e5584f; font-weight: bold; }
-  .maybe { color: #ffb078; font-weight: bold; }
-  .cols { overflow: hidden; }
-  .col { float: left; width: 49%; }
-  .col + .col { margin-left: 2%; }
-  .keys { margin-top: 16px; padding: 12px 14px; border: 2px solid #433021; background: #241b15; color: #ffb078; }
-  .actions { margin-top: 16px; }
-  .btn { display: inline-block; margin-right: 14px; padding: 12px 22px; border: 3px solid #69412a; background: #322116; color: #ffc094; font-size: 20px; font-weight: bold; }
-  .btn.focus { border-color: #ff9a61; background: #482b19; color: #fff; }
-  .small { color: #8a877f; font-size: 15px; }
+  /* Plain CSS only (no custom properties, flexbox or grid): this page runs inside old TV engines such as Smart STB on Philips Saphi. */
+  html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #08122b; color: #efe9dc; font-family: Arial, Helvetica, sans-serif; }
+  body.playing { background: transparent; }
+  body.playing #app { display: none; }
+  #app { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+  #splash { position: absolute; left: 0; top: 0; width: 100%; height: 100%; z-index: 9; background: #08122b; text-align: center; }
+  #splash .inner { position: absolute; left: 0; top: 26%; width: 100%; }
+  .logo { display: inline-block; padding: 10px 24px 8px; border: 6px solid #efe9dc; background: #0b1a3a; color: #efe9dc; font-weight: bold; }
+  .logo b { display: block; font-size: 64px; line-height: 66px; }
+  .logo span { display: block; font-size: 18px; letter-spacing: 4px; }
+  #splash h1 { margin: 26px 0 8px; font-size: 40px; }
+  #splash p { margin: 0; color: #b9c3dc; font-size: 21px; letter-spacing: 1px; }
+  #header { position: absolute; left: 3%; right: 3%; top: 3%; height: 8%; }
+  #brand { float: left; color: #ff9a61; font-size: 30px; font-weight: bold; letter-spacing: 3px; }
+  #brand small { margin-left: 14px; color: #b9c3dc; font-size: 17px; font-weight: normal; letter-spacing: 1px; }
+  #clock { float: right; font-size: 26px; }
+  #menu { position: absolute; left: 3%; top: 14%; bottom: 7%; width: 23%; }
+  .mi { margin-bottom: 8px; padding: 11px 16px; border: 3px solid #101d3d; background: #101d3d; color: #c9cfe0; font-size: 21px; }
+  .mi.cur { color: #ffb078; }
+  .mi.on { border-color: #ff9a61; background: #2a1d15; color: #ffffff; }
+  #panel { position: absolute; left: 28%; right: 3%; top: 14%; bottom: 7%; overflow: hidden; border: 2px solid #22305a; background: #0c1836; }
+  #ptitle { padding: 13px 20px; border-bottom: 2px solid #22305a; font-size: 24px; font-weight: bold; }
+  #ptitle span { float: right; color: #8a96b5; font-size: 18px; font-weight: normal; }
+  #list { padding: 8px 12px; }
+  .row { padding: 9px 14px; border: 3px solid #0c1836; overflow: hidden; font-size: 22px; white-space: nowrap; text-overflow: ellipsis; }
+  .row small { margin-left: 12px; color: #8a96b5; font-size: 16px; }
+  .row.action { color: #ffb078; }
+  .row.on { border-color: #ff9a61; background: #2a1d15; color: #ffffff; }
+  #msg { padding: 16px 22px; color: #b9c3dc; font-size: 20px; line-height: 1.5; }
+  #hint { position: absolute; left: 3%; right: 3%; bottom: 2%; color: #8a96b5; font-size: 16px; }
+  #video { position: absolute; left: 0; top: 0; width: 100%; height: 100%; display: none; background: #000000; }
+  body.playing.html5 #video { display: block; }
+  #osd { position: absolute; left: 4%; bottom: 6%; z-index: 8; display: none; padding: 12px 22px; border: 2px solid #ff9a61; background: #08122b; color: #efe9dc; font-size: 24px; }
+  #editor { position: absolute; left: 0; top: 0; width: 100%; height: 100%; z-index: 7; display: none; background: #08122b; }
+  #editor .box { position: absolute; left: 10%; right: 10%; top: 25%; padding: 24px; border: 3px solid #ff9a61; background: #0c1836; }
+  #editor h2 { margin: 0 0 10px; font-size: 26px; }
+  #editor p { margin: 0 0 14px; color: #b9c3dc; font-size: 18px; line-height: 1.5; }
+  #pl-input { width: 96%; padding: 10px; border: 2px solid #8a96b5; background: #ffffff; color: #000000; font-size: 20px; }
 </style>
 </head>
 <body>
-<h1>EYE3 portal check</h1>
-<p class="sub">Take a photo of this screen and send it to your EYE3 assistant. Nothing here is sent anywhere.</p>
-<div class="cols">
-  <div class="col"><table id="t1"></table></div>
-  <div class="col"><table id="t2"></table></div>
+<div id="app">
+  <div id="header"><div id="brand">EYE3 TV<small>by i3 Design</small></div><div id="clock"></div></div>
+  <div id="menu"></div>
+  <div id="panel"><div id="ptitle"></div><div id="list"></div><div id="msg"></div></div>
+  <div id="hint">Arrows: move &nbsp;·&nbsp; OK: open / play &nbsp;·&nbsp; Back: return &nbsp;·&nbsp; While watching: Up/Down or CH+/CH- to change channel</div>
 </div>
-<div class="keys" id="keys">Press remote keys (arrows, OK, Back, colours, numbers): each key's code shows here.</div>
-<div class="actions">
-  <a class="btn focus" id="b-open" href="../../index.html?tv=1">Open EYE3 app</a>
-  <a class="btn" id="b-rerun" href="#">Run checks again</a>
+<video id="video" autoplay></video>
+<div id="osd"></div>
+<div id="editor">
+  <div class="box">
+    <h2>Your playlist link</h2>
+    <p>Type your M3U or Xtream playlist link, then press OK. It is saved on this TV only. Press Back to cancel.</p>
+    <input id="pl-input" type="text" autocomplete="off" spellcheck="false">
+  </div>
 </div>
-<p class="small" id="foot"></p>
+<div id="splash">
+  <div class="inner">
+    <div class="logo"><b>i3</b><span>DESIGN</span></div>
+    <h1>Welcome to EYE3 Vision</h1>
+    <p>Designed by i3 Design &nbsp;·&nbsp; Press OK to start</p>
+  </div>
+</div>
 <script>
-// ES5 only, so this runs on old TV engines. It only reads local capabilities; no data leaves the TV
-// except one capability check that downloads a small public file from the jsDelivr CDN.
+// EYE3 TV portal. ES5 only, so it runs on old TV engines (Smart STB / MAG, Opera TV, early WebKit).
+// Playback uses the box's own player through the MAG API (gSTB) when present, otherwise an HTML5 <video>.
+// Only free public streams and the viewer's own playlist are used; nothing is sent to EYE3.
 (function () {
-  var t1 = document.getElementById('t1');
-  var t2 = document.getElementById('t2');
-  var keysBox = document.getElementById('keys');
+  var stb = window.gSTB || window.stb || null;
+  var PLAYLIST_KEY = 'eye3.tv.playlist';
+  var VISIBLE = 9;
+  var ORG = 'https://iptv-org.github.io/iptv/categories/';
+  // Public broadcaster streams (free to air online). Links can change over time.
+  var FREE = [
+    { name: 'Al Jazeera English', group: 'News', url: 'https://live-hls-web-aje.getaj.net/AJE/index.m3u8' },
+    { name: 'DW English', group: 'News', url: 'https://dwamdstream102.akamaized.net/hls/live/2015525/dwstream102/index.m3u8' },
+    { name: 'France 24 English', group: 'News', url: 'https://static.france24.com/live/F24_EN_LO_HLS/live_web.m3u8' },
+    { name: 'NASA TV', group: 'Science', url: 'https://ntv1.akamaized.net/hls/live/2014075/NASA-NTV1-HLS/master.m3u8' },
+    { name: 'Red Bull TV', group: 'Sports', url: 'https://rbmn-live.akamaized.net/hls/live/590964/BoRB-AT/master.m3u8' }
+  ];
+  var MENU = [
+    { title: 'EYE3 Free TV', kind: 'free' },
+    { title: 'World news', kind: 'org', cat: 'news' },
+    { title: 'Documentary', kind: 'org', cat: 'documentary' },
+    { title: 'Music', kind: 'org', cat: 'music' },
+    { title: 'Kids', kind: 'org', cat: 'kids' },
+    { title: 'My playlist', kind: 'mine' },
+    { title: 'TV check', kind: 'link', href: '../check/' },
+    { title: 'Full EYE3 app', kind: 'link', href: '../../index.html?tv=1' }
+  ];
+  var state = { zone: 'menu', menu: 0, open: -1, row: 0, top: 0, items: [], title: '', note: '', playing: -1, loading: 0 };
 
-  function row(table, key, value, tone) {
-    var tr = document.createElement('tr');
-    var a = document.createElement('td');
-    var b = document.createElement('td');
-    a.className = 'k';
-    a.appendChild(document.createTextNode(key));
-    if (tone) b.className = tone;
-    b.appendChild(document.createTextNode(String(value)));
-    tr.appendChild(a);
-    tr.appendChild(b);
-    table.appendChild(tr);
-    return b;
-  }
-  function yes(table, key, ok, detail) {
-    row(table, key, (ok ? 'Yes' : 'No') + (detail ? ' (' + detail + ')' : ''), ok ? 'ok' : 'no');
-  }
-  function safe(fn) { try { return fn(); } catch (e) { return undefined; } }
-  function clear(table) { while (table.firstChild) table.removeChild(table.firstChild); }
-
-  function magApi() {
-    var api = window.gSTB || window.stb || null;
-    var names = [];
-    if (api) { for (var name in api) { names.push(name); if (names.length > 400) break; } }
-    var call = function (method, arg) { return api && typeof api[method] === 'function' ? safe(function () { return api[method](arg); }) : undefined; };
-    var mac = call('GetDeviceMacAddress') || call('RDir', 'MACAddress') || '';
-    var model = call('GetDeviceModelExt') || call('GetDeviceModel') || '';
-    var vendor = call('GetDeviceVendor') || '';
-    return { present: !!api, global: window.gSTB ? 'gSTB' : (window.stb ? 'stb' : ''), count: names.length, mac: mac, model: model, vendor: vendor };
+  function $(id) { return document.getElementById(id); }
+  function text(node, value) { while (node.firstChild) node.removeChild(node.firstChild); node.appendChild(document.createTextNode(value)); }
+  function trim(s) { return String(s).replace(/^\s+|\s+$/g, ''); }
+  function getStore(key) { try { return window.localStorage ? localStorage.getItem(key) : null; } catch (e) { return null; } }
+  function setStore(key, value) { try { if (value === null) localStorage.removeItem(key); else localStorage.setItem(key, value); } catch (e) { /* storage unavailable */ } }
+  function call(method) {
+    var args = Array.prototype.slice.call(arguments, 1);
+    try { if (stb && typeof stb[method] === 'function') return stb[method].apply(stb, args); } catch (e) { /* not supported by this box */ }
+    return undefined;
   }
 
-  function run() {
-    clear(t1); clear(t2);
-    var mag = magApi();
-    row(t1, 'Engine', navigator.userAgent);
-    row(t1, 'Screen', (window.innerWidth || 0) + ' x ' + (window.innerHeight || 0) + ' (scale ' + (window.devicePixelRatio || 1) + ')');
-    yes(t1, 'MAG remote API', mag.present, mag.present ? mag.global + ', ' + mag.count + ' functions' : '');
-    if (mag.present) {
-      row(t1, 'Box MAC (from app)', mag.mac || 'not shared', mag.mac ? 'ok' : 'maybe');
-      if (mag.model || mag.vendor) row(t1, 'Box model', (mag.vendor + ' ' + mag.model).replace(/^\s+|\s+$/g, ''));
+  // ---------- Playlists ----------
+  function parseM3U(body) {
+    var lines = String(body).split(/\r?\n/), out = [], info = null;
+    for (var i = 0; i < lines.length; i++) {
+      var line = trim(lines[i]);
+      if (!line) continue;
+      if (line.indexOf('#EXTINF') === 0) {
+        var group = /group-title="([^"]*)"/i.exec(line);
+        var comma = line.lastIndexOf(',');
+        info = { name: comma > -1 ? trim(line.slice(comma + 1)) : 'Channel', group: group ? group[1] : '' };
+      } else if (line.charAt(0) !== '#') {
+        if (/^(https?|rtmp|rtsp|udp):/i.test(line)) {
+          var item = info || { name: line, group: '' };
+          item.url = line;
+          if (!/adult|xxx|18\+|porn/i.test(item.group + ' ' + item.name)) out.push(item);
+        }
+        info = null;
+      }
     }
-    yes(t1, 'Modern JavaScript', !!safe(function () { return new Function('let f = (a) => a * 2; return `${f(2)}` === "4";')(); }));
-    yes(t1, 'Promises / fetch', !!window.Promise && !!window.fetch);
-    yes(t1, 'Local storage', !!safe(function () { localStorage.setItem('eye3-probe', '1'); return localStorage.getItem('eye3-probe') === '1'; }));
+    return out;
+  }
+  function fetchText(url, done) {
+    var finished = false, xhr;
+    function finish(body, problem) { if (finished) return; finished = true; done(body, problem); }
+    try { xhr = new XMLHttpRequest(); xhr.open('GET', url, true); } catch (e) { finish(null, 'blocked'); return; }
+    xhr.onreadystatechange = function () {
+      if (xhr.readyState === 4) finish(xhr.status >= 200 && xhr.status < 300 ? xhr.responseText : null, xhr.status ? 'HTTP ' + xhr.status : 'blocked');
+    };
+    try { xhr.send(); } catch (e) { finish(null, 'blocked'); }
+    setTimeout(function () { if (!finished) { try { xhr.abort(); } catch (e) { /* ignore */ } finish(null, 'timeout'); } }, 20000);
+  }
+  function linkFromAddress() {
+    var hash = /[#&]playlist=([^&]+)/.exec(window.location.hash || '');
+    var query = /[?&]playlist=([^&#]+)/.exec(window.location.search || '');
+    var raw = hash ? hash[1] : (query ? query[1] : '');
+    try { raw = decodeURIComponent(raw); } catch (e) { /* keep as is */ }
+    return /^https?:\/\//i.test(raw) ? raw : '';
+  }
+  var PLAYLIST_ACTIONS = [
+    { name: 'Enter or change playlist link', action: 'edit' },
+    { name: 'Remove playlist from this TV', action: 'remove' }
+  ];
 
-    var canvas = document.createElement('canvas');
-    yes(t2, 'WebGL (AI speed)', !!safe(function () { return canvas.getContext('webgl') || canvas.getContext('experimental-webgl'); }));
-    yes(t2, 'WebAssembly (OCR)', typeof window.WebAssembly === 'object');
-    yes(t2, 'WebRTC (casting)', !!(window.RTCPeerConnection || window.webkitRTCPeerConnection));
-    yes(t2, 'Secure crypto', !!(window.crypto && window.crypto.subtle));
-    yes(t2, 'Server events', !!window.EventSource);
-    var video = document.createElement('video');
-    var can = function (type) { var r = video.canPlayType ? video.canPlayType(type) : ''; return r === 'probably' || r === 'maybe'; };
-    yes(t2, 'HLS video (.m3u8)', can('application/vnd.apple.mpegurl') || can('application/x-mpegURL'));
-    yes(t2, 'MP4 H.264 video', can('video/mp4; codecs="avc1.42E01E, mp4a.40.2"'));
-    var net = row(t2, 'Internet / CDN', 'checking...', 'maybe');
-    var xhr = new XMLHttpRequest();
-    var done = false;
-    var finish = function (ok, detail) { if (done) return; done = true; net.className = ok ? 'ok' : 'no'; net.firstChild.nodeValue = (ok ? 'Yes' : 'No') + (detail ? ' (' + detail + ')' : ''); };
-    try {
-      xhr.open('GET', 'https://cdn.jsdelivr.net/npm/exifr@7.1.3/package.json', true);
-      xhr.onreadystatechange = function () { if (xhr.readyState === 4) finish(xhr.status === 200, xhr.status ? 'HTTP ' + xhr.status : 'blocked'); };
-      xhr.send();
-      setTimeout(function () { finish(false, 'timeout'); }, 8000);
-    } catch (e) { finish(false, 'error'); }
-    var foot = document.getElementById('foot');
-    while (foot.firstChild) foot.removeChild(foot.firstChild);
-    foot.appendChild(document.createTextNode('Checked ' + new Date().toString()));
+  function openSection(index) {
+    var entry = MENU[index];
+    if (entry.kind === 'link') { window.location.href = entry.href; return; }
+    state.open = index;
+    state.row = 0;
+    state.top = 0;
+    state.title = entry.title;
+    state.note = '';
+    state.items = [];
+    var ticket = ++state.loading;
+    if (entry.kind === 'free') {
+      state.items = FREE.slice(0);
+      state.note = 'Public broadcaster streams. A channel may stop working if the broadcaster changes its link.';
+    } else if (entry.kind === 'org') {
+      state.note = 'Loading free channels…';
+      fetchText(ORG + entry.cat + '.m3u', function (body, problem) {
+        if (ticket !== state.loading) return;
+        state.items = body ? parseM3U(body) : [];
+        state.note = body ? (state.items.length ? 'Free public channels from the open iptv-org list.' : 'No channels in this list right now.')
+          : 'Could not load this list (' + problem + '). Check the TV\'s internet connection.';
+        render();
+      });
+    } else if (entry.kind === 'mine') {
+      var link = getStore(PLAYLIST_KEY);
+      state.items = PLAYLIST_ACTIONS.slice(0);
+      if (!link) {
+        state.note = 'No playlist yet. Choose "Enter or change playlist link", or add #playlist=YOUR-M3U-LINK to the end of this portal\'s address in smart-stb.tv.';
+      } else {
+        state.note = 'Loading your playlist…';
+        fetchText(link, function (body, problem) {
+          if (ticket !== state.loading) return;
+          var channels = body ? parseM3U(body) : [];
+          state.items = PLAYLIST_ACTIONS.slice(0).concat(channels);
+          state.note = body ? channels.length + ' channels from your playlist (saved on this TV only).'
+            : 'Could not load your playlist (' + problem + '). Some providers block web access; if so, keep using it as a normal Smart STB playlist.';
+          render();
+        });
+      }
+    }
+    state.zone = 'list';
+    render();
   }
 
-  // Remote control: show every key code, and move focus between the two buttons.
-  var buttons = [document.getElementById('b-open'), document.getElementById('b-rerun')];
-  var focus = 0;
-  function setFocus(i) { focus = (i + buttons.length) % buttons.length; for (var j = 0; j < buttons.length; j++) buttons[j].className = j === focus ? 'btn focus' : 'btn'; }
-  document.onkeydown = function (e) {
-    e = e || window.event;
-    var code = e.keyCode || e.which || 0;
-    keysBox.firstChild.nodeValue = 'Last key: ' + (e.key || '(no name)') + ', code ' + code + (e.shiftKey ? ' + shift' : '');
-    if (code === 37 || code === 38) { setFocus(focus - 1); return false; }
-    if (code === 39 || code === 40) { setFocus(focus + 1); return false; }
-    if (code === 13) { if (focus === 0) window.location.href = buttons[0].href; else run(); return false; }
+  // ---------- Rendering ----------
+  function render() {
+    var menu = $('menu');
+    while (menu.firstChild) menu.removeChild(menu.firstChild);
+    for (var i = 0; i < MENU.length; i++) {
+      var mi = document.createElement('div');
+      mi.className = 'mi' + (i === state.open ? ' cur' : '') + (state.zone === 'menu' && i === state.menu ? ' on' : '');
+      mi.appendChild(document.createTextNode(MENU[i].title));
+      menu.appendChild(mi);
+    }
+    var title = $('ptitle');
+    while (title.firstChild) title.removeChild(title.firstChild);
+    title.appendChild(document.createTextNode(state.open > -1 ? state.title : 'Welcome'));
+    var channelCount = 0;
+    for (var c = 0; c < state.items.length; c++) if (!state.items[c].action) channelCount++;
+    if (channelCount) { var count = document.createElement('span'); count.appendChild(document.createTextNode(channelCount + ' channels')); title.appendChild(count); }
+    var list = $('list');
+    while (list.firstChild) list.removeChild(list.firstChild);
+    if (state.row < state.top) state.top = state.row;
+    if (state.row >= state.top + VISIBLE) state.top = state.row - VISIBLE + 1;
+    for (var r = state.top; r < Math.min(state.items.length, state.top + VISIBLE); r++) {
+      var item = state.items[r];
+      var row = document.createElement('div');
+      row.className = 'row' + (item.action ? ' action' : '') + (state.zone === 'list' && r === state.row ? ' on' : '');
+      row.appendChild(document.createTextNode(item.name));
+      if (item.group) { var g = document.createElement('small'); g.appendChild(document.createTextNode(item.group)); row.appendChild(g); }
+      list.appendChild(row);
+    }
+    text($('msg'), state.open > -1 ? state.note : 'Choose a section on the left. EYE3 TV plays free public channels, or your own playlist, with your TV remote.');
+  }
+  function tick() {
+    var now = new Date();
+    var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+    text($('clock'), pad(now.getHours()) + ':' + pad(now.getMinutes()));
+  }
+
+  // ---------- Playback ----------
+  var osdTimer = null;
+  function osd(message) {
+    var box = $('osd');
+    text(box, message);
+    box.style.display = 'block';
+    clearTimeout(osdTimer);
+    osdTimer = setTimeout(function () { box.style.display = 'none'; }, 3500);
+  }
+  function play(index) {
+    var channel = state.items[index];
+    if (!channel || !channel.url) return;
+    state.playing = index;
+    if (stb && typeof stb.Play === 'function') {
+      document.body.className = 'playing';
+      call('InitPlayer');
+      call('SetPIG', 1, 0, 0, 0);
+      call('Play', 'ffmpeg ' + channel.url);
+    } else {
+      document.body.className = 'playing html5';
+      var video = $('video');
+      video.onerror = function () { osd(channel.name + ' can\'t play on this TV. Press Back.'); };
+      video.src = channel.url;
+      try { var started = video.play(); if (started && started['catch']) started['catch'](function () { /* reported by onerror */ }); } catch (e) { /* reported by onerror */ }
+    }
+    osd(channel.name);
+  }
+  function stop() {
+    if (stb && typeof stb.Stop === 'function') call('Stop');
+    var video = $('video');
+    try { video.pause(); } catch (e) { /* not playing */ }
+    video.removeAttribute('src');
+    try { video.load(); } catch (e) { /* ignore */ }
+    state.playing = -1;
+    document.body.className = '';
+    $('osd').style.display = 'none';
+    render();
+  }
+  function zap(step) {
+    var n = state.items.length, i = state.playing;
+    for (var tries = 0; tries < n; tries++) {
+      i = (i + step + n) % n;
+      if (state.items[i] && state.items[i].url) { state.row = i; play(i); return; }
+    }
+  }
+
+  // ---------- Playlist editor ----------
+  var editing = false;
+  function openEditor() {
+    editing = true;
+    var input = $('pl-input');
+    input.value = getStore(PLAYLIST_KEY) || '';
+    $('editor').style.display = 'block';
+    try { input.focus(); } catch (e) { /* ignore */ }
+    call('ShowVirtualKeyboard');
+  }
+  function closeEditor(save) {
+    var value = trim($('pl-input').value);
+    editing = false;
+    $('editor').style.display = 'none';
+    call('HideVirtualKeyboard');
+    try { $('pl-input').blur(); } catch (e) { /* ignore */ }
+    if (save) {
+      if (/^https?:\/\//i.test(value)) setStore(PLAYLIST_KEY, value);
+      else if (value) { osd('That link must start with http:// or https://'); }
+    }
+    openSection(state.open);
+  }
+
+  // ---------- Remote control ----------
+  function isBack(code) { return code === 8 || code === 27 || code === 461 || code === 10009 || code === 166; }
+  var splashOpen = true;
+  function hideSplash() { if (!splashOpen) return; splashOpen = false; $('splash').style.display = 'none'; }
+  document.onkeydown = function (event) {
+    event = event || window.event;
+    var code = event.keyCode || event.which || 0;
+    if (splashOpen) { hideSplash(); return false; }
+    if (editing) {
+      if (code === 13) { closeEditor(true); return false; }
+      if (code === 27 || code === 461 || code === 10009) { closeEditor(false); return false; }
+      return true;
+    }
+    if (state.playing > -1) {
+      if (isBack(code)) { stop(); return false; }
+      if (code === 38 || code === 33) { zap(-1); return false; }
+      if (code === 40 || code === 34) { zap(1); return false; }
+      if (code === 13) { osd(state.items[state.playing].name); return false; }
+      return false;
+    }
+    if (isBack(code)) { if (state.zone === 'list') { state.zone = 'menu'; render(); } return false; }
+    if (state.zone === 'menu') {
+      if (code === 38) { state.menu = (state.menu + MENU.length - 1) % MENU.length; render(); return false; }
+      if (code === 40) { state.menu = (state.menu + 1) % MENU.length; render(); return false; }
+      if (code === 13 || code === 39) { openSection(state.menu); return false; }
+      return true;
+    }
+    if (code === 37) { state.zone = 'menu'; render(); return false; }
+    if (code === 38 || code === 33) { if (state.row > 0) state.row -= code === 33 ? Math.min(VISIBLE, state.row) : 1; render(); return false; }
+    if (code === 40 || code === 34) { if (state.row < state.items.length - 1) state.row = Math.min(state.items.length - 1, state.row + (code === 34 ? VISIBLE : 1)); render(); return false; }
+    if (code === 13) {
+      var item = state.items[state.row];
+      if (!item) return false;
+      if (item.action === 'edit') openEditor();
+      else if (item.action === 'remove') { setStore(PLAYLIST_KEY, null); osd('Playlist removed from this TV'); openSection(state.open); }
+      else play(state.row);
+      return false;
+    }
     return true;
   };
-  buttons[1].onclick = function () { run(); return false; };
-  run();
+  $('splash').onclick = hideSplash;
+
+  var fromAddress = linkFromAddress();
+  if (fromAddress) setStore(PLAYLIST_KEY, fromAddress);
+  render();
+  tick();
+  setInterval(tick, 30000);
+  setTimeout(hideSplash, 3000);
 })();
 </script>
 </body>
