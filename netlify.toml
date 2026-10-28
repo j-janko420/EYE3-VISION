@@ -1,0 +1,10 @@
+# Netlify: publish only the app files (index.html and the Smart STB portal check), not the rest of the repo.
+[build]
+  command = "rm -rf _site && mkdir _site && cp index.html _site/ && cp -r portal _site/"
+  publish = "_site"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
