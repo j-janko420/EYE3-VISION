@@ -28,7 +28,7 @@ Run locally (the camera needs `localhost` or HTTPS):
 python3 -m http.server 8080   # then open http://localhost:8080
 ```
 
-Publish free on **Netlify**: in Netlify choose **Add new project → Import an existing project → GitHub → EYE3-VISION**. `netlify.toml` already sets the build, publishing only `index.html` and `portal/`. Every push to `main` then redeploys. (GitHub Pages needs a paid plan for private repos; `.github/workflows/pages.yml` is kept as a manual-only option.)
+Published free on **GitHub Pages**: `.github/workflows/pages.yml` deploys `index.html` and `portal/` on every push to `main` (repo **Settings → Pages → Source: GitHub Actions**). Live: `https://j-janko420.github.io/EYE3-VISION/`, Smart STB portal: `https://j-janko420.github.io/EYE3-VISION/portal/c/`. `netlify.toml` remains as an alternative host.
 
 **Phones:** 44px touch targets, safe-area aware, live camera uses the rear lens.
 **TV:** auto-enabled on Tizen, webOS, Android TV, Fire TV and similar; otherwise add `?tv=1` or press the **TV mode** button. Large type, big focus rings, D-pad navigation and Back/Escape to stop the camera.
