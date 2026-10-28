@@ -38,7 +38,12 @@ Published free on **GitHub Pages**: `.github/workflows/pages.yml` deploys `index
 - **Mirroring:** Miracast from an Android phone (Cast / Smart View) or a Windows PC (`Win + K`); AirPlay from an iPhone or Mac to an Apple TV or AirPlay TV.
 - **TV browsers:** where a TV or stick has a browser, open the EYE3 link there and TV mode turns on automatically.
 
-**Smart STB portal check (Philips Saphi with Smart STB):** add `https://<user>.github.io/EYE3-VISION/portal/c/` as a portal in Smart STB (at smart-stb.tv, using the code the app shows) and open it on the TV. The page lists what the TV's engine supports: MAG remote API, box MAC, modern JavaScript, WebGL, WebAssembly, WebRTC, HLS/MP4 video, internet access. It also shows every remote key code. It is plain ES5, so it runs on old TV engines, and it sends nothing anywhere. Its **Open EYE3 app** button opens the full app in TV mode.
+**EYE3 TV portal (Smart STB / MAG, Philips Saphi):** in smart-stb.tv add a portal with the URL `https://j-janko420.github.io/EYE3-VISION/portal/c/`. It opens with the i3 Design welcome screen, then a remote-controlled IPTV menu:
+- **EYE3 Free TV:** public broadcaster streams.
+- **Free channels by category:** World news, Documentary, Music and Kids, from the open iptv-org lists.
+- **My playlist:** your own M3U/Xtream link, typed with the remote or added to the portal address as `#playlist=YOUR-LINK`. It is stored on the TV only.
+
+Channels play through the box's own player (MAG `gSTB.Play`), or an HTML5 video where there is no MAG API. Up/Down or CH+/CH- change channel; Back returns. Adult groups are filtered out. The page is plain ES5 with no modern CSS, so it runs on old TV engines. The capability check moved to `/portal/check/`.
 
 **Start presentation** hides the menus, switches to the large TV layout and keeps the screen awake.
 

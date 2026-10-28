@@ -13,6 +13,9 @@ A single static page (`index.html`): an on-device visual workspace. No backend, 
 - One IIFE script. Engines load lazily through `useEngine()`: COCO-SSD (`getDetector`), MobileNet (`getClassifier`), Tesseract (`getOcr`), exifr. Versions are pinned in `LIBS`.
 - Views: Image inspector, Side-by-side compare, Visual library, Connect TV (`setView`). Connect TV is a mirroring helper (Miracast; iPhone + Philips Saphi needs HDMI or a stick, since Saphi has no browser, AirPlay for Apple TV) with a QR link, a TV-browser route and presentation mode; no native TV app. It also has built-in casting: receiver overlay `#receiver`, sender `connectSender`, scanner.
 
+## TV portal
+`portal/c/index.html` is the Smart STB/MAG IPTV portal and `portal/check/index.html` is the TV capability check. Both must stay ES5 (no arrow functions, let/const, template literals, `?.`, `??`, spread) with plain CSS (no custom properties, flex, grid, `inset`, `min()`), because TV engines are old. Play through `gSTB.Play('ffmpeg ' + url)` when the MAG API exists, else HTML5 video. Only free public streams and the viewer's own playlist; never bundle paid or pirated sources.
+
 ## Rules
 - Images must never be uploaded to a server. Keep analysis in the browser. Casting sends frames only peer-to-peer over the LAN (`RTCPeerConnection` with `iceServers: []`, never add STUN/TURN); ntfy carries only AES-GCM ciphertext keyed by the pairing code.
 - Never auto-connect a sender from a `?join=` link; require a button press. The `?signal=` and `?pairTimeout=` overrides are honored on localhost only.
