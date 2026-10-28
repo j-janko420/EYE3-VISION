@@ -1,7 +1,9 @@
 name: Deploy EYE3 Vision
 
-# Manual only: the repo is private, so GitHub Pages needs a paid plan. Netlify (netlify.toml) hosts the site.
+# Deploys to GitHub Pages on every push to main (the repo is public). Can also be run by hand.
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
