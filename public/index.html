@@ -6,9 +6,9 @@ nav{display:flex;gap:6px;padding:8px;background:#161625}nav button{padding:10px 
 nav button.on{background:#6a5cff}main{padding:12px}section{display:none}section.on{display:block}
 input,select{padding:8px;background:#1e1e30;color:#eee;border:1px solid #444;border-radius:4px;margin:2px}
 video{width:100%;max-height:60vh;background:#000}iframe{width:100%;height:75vh;border:0;background:#fff}
-#list{max-height:30vh;overflow:auto}#list div{padding:6px;cursor:pointer;border-bottom:1px solid #222}#list div:hover{background:#24243a}
+#pllist{max-height:30vh;overflow:auto}#pllist div{padding:6px;cursor:pointer;border-bottom:1px solid #222}#list{max-height:30vh;overflow:auto}#list div{padding:6px;cursor:pointer;border-bottom:1px solid #222}#list div:hover{background:#24243a}
 </style></head><body>
-<nav id="nav"><button data-t="iptv" class="on">IPTV / MAG Portal</button><button data-t="stream">Online Streaming</button><button data-t="web">Web Browser</button><button data-t="mirror">Mirror TV</button></nav>
+<nav id="nav"><button data-t="iptv" class="on">IPTV / MAG Portal</button><button data-t="plugins">Connectors</button><button data-t="stream">Online Streaming</button><button data-t="web">Web Browser</button><button data-t="mirror">Mirror TV</button></nav>
 <main>
 <section id="iptv" class="on">
  <input id="portal" size="40" placeholder="Portal URL http://host/c/">
@@ -18,6 +18,8 @@ video{width:100%;max-height:60vh;background:#000}iframe{width:100%;height:75vh;b
  <br><select id="genre" onchange="chans()"></select>
  <div id="list"></div>
 </section>
+<section id="plugins"><select id="pl" onchange="plPick()"></select><span id="plf"></span>
+ <button onclick="plList()">Load</button> <label><input type="checkbox" id="tc"> Transcode (ffmpeg)</label> <span id="plst"></span><div id="pllist"></div></section>
 <section id="stream"><input id="surl" size="50" placeholder="HLS (.m3u8) / MP4 / DASH URL"><button onclick="play($('surl').value)">Play</button></section>
 <section id="web"><input id="wurl" size="50" placeholder="https://..."><button onclick="$('frame').src=$('wurl').value">Go</button>
  <p><small>Sites that forbid embedding (X-Frame-Options) will not load; use "Open in tab".</small> <button onclick="window.open($('wurl').value)">Open in tab</button></p><iframe id="frame"></iframe></section>

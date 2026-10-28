@@ -37,3 +37,27 @@ async function loadM3U() {
 }
 async function mirror() { $('mv').srcObject = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true }); }
 function stopMirror() { const s = $('mv').srcObject; s && s.getTracks().forEach((t) => t.stop()); $('mv').srcObject = null; }
+
+let plugs = [];
+fetch('/plugins').then((r) => r.json()).then((p) => { plugs = p; $('pl').innerHTML = p.map((x) => `<option value="${x.id}">${esc(x.name)}</option>`).join(''); plPick(); });
+function plPick() {
+  const p = plugs.find((x) => x.id === $('pl').value); if (!p) return;
+  $('plf').innerHTML = p.fields.map((f) => `<input data-f="${f.name}" placeholder="${esc(f.placeholder || f.label)}" title="${esc(f.label)}" value="${esc(f.default || '')}">`).join('');
+}
+const plParams = () => Object.fromEntries([...document.querySelectorAll('#plf input')].map((i) => [i.dataset.f, i.value]));
+const plq = (path, extra) => fetch(path + '?' + new URLSearchParams({ id: $('pl').value, params: JSON.stringify(extra || plParams()) })).then(async (r) => { const j = await r.json(); if (j.error) throw new Error(j.error); return j; });
+async function plList() {
+  const l = $('pllist'); l.textContent = ''; $('plst').textContent = 'Loading...';
+  try {
+    const items = await plq('/plugin/list'); $('plst').textContent = items.length + ' items';
+    items.forEach((it) => {
+      const e = document.createElement('div'); e.textContent = it.name;
+      e.onclick = async () => {
+        let url = it.url || (await plq('/plugin/resolve', it.resolve)).url;
+        if ($('tc').checked) url = it.transcodeSrc ? '/transcode?file=' + encodeURIComponent(it.transcodeSrc) : '/transcode?src=' + encodeURIComponent(url);
+        play(url);
+      };
+      l.append(e);
+    });
+  } catch (e) { $('plst').textContent = 'Error: ' + e.message; }
+}

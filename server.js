@@ -1,5 +1,6 @@
 // EYE3-VISION: zero-dependency server. Serves the UI and proxies Stalker/MAG portal + M3U requests (avoids CORS).
-const http = require('http'), fs = require('fs'), path = require('path');
+const http = require('http'), fs = require('fs'), path = require('path'), { spawn } = require('child_process');
+const MEDIA_DIR = path.resolve(process.env.MEDIA_DIR || path.join(__dirname, 'media'));
 const PORT = process.env.PORT || 8080, HOST = process.env.HOST || '127.0.0.1';
 const DEFAULT_MAC = '00:1A:79:EC:5F:08'; // virtual MAC (normalised from 00:1A:79:EC5F:08)
 const MAC_RE = /^([0-9A-F]{2}:){5}[0-9A-F]{2}$/;
@@ -45,10 +46,49 @@ async function api(req, res, q) {
   send(res, 400, { error: 'Unknown action' });
 }
 
+// ---- Plugin / connector system: every plugins/*.js exports {id,name,description,fields,list(params,ctx),resolve?(r,ctx)}
+const ctx = { portal, normMac, mediaDir: MEDIA_DIR, fetchText: async (url) => { const u = httpUrl(url); if (!u) throw new Error('Invalid URL'); return (await fetch(u, { signal: AbortSignal.timeout(20000) })).text(); } };
+const plugins = {};
+for (const f of fs.readdirSync(path.join(__dirname, 'plugins')).filter((x) => x.endsWith('.js'))) {
+  try { const p = require(path.join(__dirname, 'plugins', f)); plugins[p.id] = p; } catch (e) { console.error('plugin', f, e.message); }
+}
+function inMedia(rel) { const f = path.resolve(MEDIA_DIR, rel); return f.startsWith(MEDIA_DIR + path.sep) ? f : null; }
+async function pluginApi(u, res) {
+  if (u.pathname === '/plugins') return send(res, 200, Object.values(plugins).map(({ id, name, description, fields }) => ({ id, name, description, fields })));
+  const q = u.searchParams, p = plugins[q.get('id')]; if (!p) return send(res, 404, { error: 'Unknown plugin' });
+  const params = JSON.parse(q.get('params') || '{}');
+  if (u.pathname === '/plugin/list') return send(res, 200, await p.list(params, ctx));
+  if (u.pathname === '/plugin/resolve' && p.resolve) return send(res, 200, await p.resolve(params, ctx));
+  send(res, 400, { error: 'Unsupported' });
+}
+function serveMedia(req, res, rel) {
+  const f = inMedia(rel); if (!f || !fs.existsSync(f) || !fs.statSync(f).isFile()) return send(res, 404, 'Not found', 'text/plain');
+  const size = fs.statSync(f).size, m = /bytes=(\d*)-(\d*)/.exec(req.headers.range || '');
+  const mime = { '.mp4': 'video/mp4', '.webm': 'video/webm', '.mkv': 'video/x-matroska', '.mp3': 'audio/mpeg' }[path.extname(f).toLowerCase()] || 'application/octet-stream';
+  let s = 0, e = size - 1; if (m) { s = m[1] ? +m[1] : 0; e = m[2] ? Math.min(+m[2], size - 1) : size - 1; }
+  if (s > e || s >= size) { res.writeHead(416, { 'Content-Range': `bytes */${size}` }); return res.end(); }
+  res.writeHead(m ? 206 : 200, { 'Content-Type': mime, 'Accept-Ranges': 'bytes', 'Content-Length': e - s + 1, ...(m ? { 'Content-Range': `bytes ${s}-${e}/${size}` } : {}) });
+  fs.createReadStream(f, { start: s, end: e }).pipe(res);
+}
+// FFmpeg transcode connector: fixed, allow-listed args (no user flags) -> fragmented MP4 (H.264/AAC) playable on most TV browsers.
+function transcode(req, res, q) {
+  let src = q.get('src'); const lf = q.get('file');
+  if (lf) { src = inMedia(lf); if (!src) return send(res, 400, { error: 'Bad file' }); } else if (!httpUrl(src)) return send(res, 400, { error: 'Bad source' });
+  const height = { 480: 480, 720: 720, 1080: 1080 }[q.get('h')] || 720;
+  const args = ['-hide_banner', '-loglevel', 'error', '-i', src, '-vf', `scale=-2:${height}`, '-c:v', 'libx264', '-preset', 'veryfast', '-c:a', 'aac', '-movflags', 'frag_keyframe+empty_moov', '-f', 'mp4', 'pipe:1'];
+  const ff = spawn('ffmpeg', args, { stdio: ['ignore', 'pipe', 'ignore'] });
+  ff.on('error', () => { if (!res.headersSent) send(res, 501, { error: 'ffmpeg not installed' }); });
+  res.writeHead(200, { 'Content-Type': 'video/mp4' }); ff.stdout.pipe(res);
+  res.on('close', () => ff.kill('SIGKILL'));
+}
+
 http.createServer(async (req, res) => {
   const u = new URL(req.url, 'http://x');
   try {
     if (u.pathname === '/api') return await api(req, res, u.searchParams);
+    if (u.pathname.startsWith('/plugin')) return await pluginApi(u, res);
+    if (u.pathname.startsWith('/media/')) return serveMedia(req, res, decodeURIComponent(u.pathname.slice(7)));
+    if (u.pathname === '/transcode') return transcode(req, res, u.searchParams);
     if (u.pathname === '/config') return send(res, 200, { mac: DEFAULT_MAC });
     const file = path.join(__dirname, 'public', u.pathname === '/' ? 'index.html' : path.normalize(u.pathname).replace(/^(\.\.[\/\\])+/, ''));
     if (!file.startsWith(path.join(__dirname, 'public'))) return send(res, 403, 'Forbidden', 'text/plain');
