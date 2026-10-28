@@ -1,0 +1,408 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#10100f">
+    <meta name="description" content="EYE3 Vision — a visual workspace concept for image inspection.">
+    <title>EYE3 Vision — Visual workspace</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #10100f;
+        --surface: #181817;
+        --surface-raised: #1e1e1c;
+        --line: #30302d;
+        --text: #f4f1eb;
+        --muted: #93918a;
+        --orange: #ff762e;
+        --orange-soft: #ff9a61;
+        --green: #97d8a4;
+        --sidebar: 246px;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      * { box-sizing: border-box; }
+      body { margin: 0; min-width: 320px; background: var(--bg); color: var(--text); }
+      button, a { font: inherit; }
+      button { color: inherit; }
+      a { color: inherit; text-decoration: none; }
+      button:focus-visible, a:focus-visible, [tabindex]:focus-visible {
+        outline: 2px solid var(--orange-soft);
+        outline-offset: 3px;
+      }
+
+      .app { min-height: 100vh; }
+      .sidebar {
+        position: fixed;
+        inset: 0 auto 0 0;
+        z-index: 3;
+        display: flex;
+        width: var(--sidebar);
+        flex-direction: column;
+        padding: 27px 18px 20px;
+        border-right: 1px solid var(--line);
+        background: #131312;
+      }
+      .brand { display: flex; align-items: center; gap: 12px; padding: 0 8px; }
+      .brand-mark { width: 42px; height: 42px; flex: 0 0 auto; }
+      .brand-name { font-size: 15px; font-weight: 750; letter-spacing: .16em; }
+      .brand-subtitle { margin-top: 3px; color: var(--muted); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; }
+      .nav-label { margin: 43px 10px 12px; color: #77756e; font-size: 10px; font-weight: 700; letter-spacing: .15em; text-transform: uppercase; }
+      .nav { display: grid; gap: 5px; }
+      .nav-link {
+        display: flex;
+        min-height: 43px;
+        align-items: center;
+        gap: 12px;
+        padding: 0 12px;
+        border: 1px solid transparent;
+        border-radius: 9px;
+        color: #aaa8a1;
+        font-size: 13px;
+        transition: .18s ease;
+      }
+      .nav-link:hover { background: #1c1c1a; color: var(--text); }
+      .nav-link.active { border-color: #3a2a20; background: #261b15; color: #ffab7b; }
+      .nav-icon { display: grid; width: 18px; place-items: center; color: currentColor; }
+      .sidebar-bottom { margin-top: auto; }
+      .status-card { padding: 14px; border: 1px solid var(--line); border-radius: 10px; background: #181817; }
+      .status-line { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 650; }
+      .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--orange); box-shadow: 0 0 12px #ff762e88; }
+      .status-card p { margin: 9px 0 0; color: var(--muted); font-size: 11px; line-height: 1.6; }
+      .version { padding: 15px 10px 0; color: #6f6d67; font-size: 10px; }
+
+      .main { min-height: 100vh; margin-left: var(--sidebar); }
+      .topbar {
+        display: flex;
+        min-height: 74px;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 42px;
+        border-bottom: 1px solid var(--line);
+      }
+      .breadcrumb { color: var(--muted); font-size: 12px; }
+      .breadcrumb strong { color: var(--text); font-weight: 600; }
+      .topbar-right { display: flex; align-items: center; gap: 16px; }
+      .prototype-tag { padding: 6px 9px; border: 1px solid #433021; border-radius: 20px; color: #ffb078; font-size: 10px; font-weight: 650; letter-spacing: .04em; }
+      .avatar { display: grid; width: 30px; height: 30px; place-items: center; border: 1px solid #553720; border-radius: 50%; background: #302016; color: #ffc08e; font-size: 11px; font-weight: 700; }
+      .content { width: min(1120px, 100%); margin: 0 auto; padding: 42px; }
+      .eyebrow { display: flex; align-items: center; gap: 8px; color: var(--orange-soft); font-size: 10px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; }
+      .eyebrow::before { width: 18px; height: 1px; background: var(--orange); content: ""; }
+      h1 { margin: 14px 0 8px; font-size: clamp(30px, 4vw, 43px); font-weight: 650; letter-spacing: -.045em; }
+      .intro { max-width: 580px; margin: 0; color: var(--muted); font-size: 13px; line-height: 1.75; }
+      .hero {
+        position: relative;
+        display: flex;
+        min-height: 238px;
+        align-items: center;
+        justify-content: space-between;
+        gap: 30px;
+        overflow: hidden;
+        margin-top: 28px;
+        padding: 30px 34px;
+        border: 1px solid #3c2b20;
+        border-radius: 15px;
+        background:
+          radial-gradient(ellipse at 87% 45%, #a6441825 0, transparent 39%),
+          linear-gradient(115deg, #211a16, #181716 64%);
+      }
+      .hero-copy { position: relative; z-index: 1; max-width: 510px; }
+      .hero h2 { margin: 0 0 8px; font-size: 20px; font-weight: 620; letter-spacing: -.02em; }
+      .hero p { margin: 0; color: #aaa69f; font-size: 12px; line-height: 1.7; }
+      .hero-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 19px; }
+      .meta-chip { padding: 6px 9px; border: 1px solid #44352a; border-radius: 6px; color: #c9b5a5; font-size: 10px; }
+      .eye-art { width: 250px; max-width: 35%; flex: 0 0 auto; opacity: .94; filter: drop-shadow(0 0 22px #ff762e28); }
+
+      .section-heading { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin: 37px 0 15px; }
+      .section-heading h2 { margin: 0; font-size: 16px; font-weight: 650; letter-spacing: -.02em; }
+      .section-heading p { margin: 5px 0 0; color: var(--muted); font-size: 11px; }
+      .text-link { color: var(--orange-soft); font-size: 11px; }
+      .tool-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 13px; }
+      .tool-card {
+        display: flex;
+        min-height: 168px;
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 17px;
+        border: 1px solid var(--line);
+        border-radius: 11px;
+        background: var(--surface);
+        text-align: left;
+        cursor: pointer;
+        transition: transform .18s ease, border-color .18s ease, background .18s ease;
+      }
+      .tool-card:hover, .tool-card.selected { transform: translateY(-2px); border-color: #75472c; background: #201b17; }
+      .tool-icon { display: grid; width: 34px; height: 34px; place-items: center; border: 1px solid #49301f; border-radius: 9px; background: #2a1d15; color: var(--orange-soft); }
+      .tool-name { margin-top: 13px; font-size: 12px; font-weight: 650; }
+      .tool-description { margin-top: 5px; color: var(--muted); font-size: 10px; line-height: 1.55; }
+      .tool-arrow { margin-top: auto; padding-top: 12px; color: #d18454; font-size: 10px; }
+
+      .workspace { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(225px, .8fr); gap: 13px; margin-top: 30px; }
+      .panel { min-width: 0; padding: 18px; border: 1px solid var(--line); border-radius: 11px; background: var(--surface); }
+      .panel-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+      .panel-title h2 { margin: 0; font-size: 13px; font-weight: 650; }
+      .panel-title span { color: var(--muted); font-size: 10px; }
+      .dropzone {
+        display: flex;
+        min-height: 142px;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        margin-top: 15px;
+        padding: 18px;
+        border: 1px dashed #51463b;
+        border-radius: 9px;
+        background: #171615;
+        text-align: center;
+        transition: .18s ease;
+      }
+      .dropzone.drag-over { border-color: var(--orange); background: #241a14; }
+      .upload-icon { display: grid; width: 35px; height: 35px; place-items: center; border-radius: 10px; background: #2b1d15; color: var(--orange-soft); }
+      .dropzone strong { margin-top: 11px; font-size: 11px; font-weight: 600; }
+      .dropzone p { margin: 5px 0 11px; color: var(--muted); font-size: 10px; }
+      .upload-button { padding: 7px 11px; border: 1px solid #69412a; border-radius: 6px; background: #322116; color: #ffc094; font-size: 10px; font-weight: 650; cursor: pointer; }
+      .upload-button:hover { background: #482b19; }
+      .file-input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; clip-path: inset(50%); }
+      .file-list { display: grid; gap: 7px; margin-top: 11px; }
+      .file-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 10px; border: 1px solid var(--line); border-radius: 7px; background: #151514; font-size: 10px; }
+      .file-name { overflow: hidden; color: #d6d2ca; text-overflow: ellipsis; white-space: nowrap; }
+      .file-size { flex: 0 0 auto; color: var(--muted); }
+      .activity-empty { display: grid; min-height: 169px; align-content: center; justify-items: center; text-align: center; }
+      .activity-symbol { color: #6f6d66; font-size: 23px; }
+      .activity-empty strong { margin-top: 8px; font-size: 11px; font-weight: 600; }
+      .activity-empty p { max-width: 180px; margin: 5px 0 0; color: var(--muted); font-size: 10px; line-height: 1.55; }
+      .footnote { margin: 18px 0 0; color: #74716a; font-size: 10px; line-height: 1.6; }
+      .toast { position: fixed; right: 24px; bottom: 24px; z-index: 5; max-width: min(380px, calc(100vw - 32px)); padding: 12px 15px; transform: translateY(12px); border: 1px solid #573b28; border-radius: 8px; background: #241b15; color: #f3c6a4; font-size: 11px; opacity: 0; pointer-events: none; transition: .2s ease; }
+      .toast.visible { transform: translateY(0); opacity: 1; }
+
+      @media (max-width: 900px) {
+        :root { --sidebar: 205px; }
+        .content { padding: 32px 26px; }
+        .topbar { padding: 0 26px; }
+        .tool-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      }
+      @media (max-width: 640px) {
+        :root { --sidebar: 0px; }
+        .sidebar { position: sticky; inset: 0 0 auto; width: 100%; height: auto; padding: 12px 16px; border-right: 0; border-bottom: 1px solid var(--line); }
+        .brand { padding: 0; }
+        .brand-mark { width: 35px; height: 35px; }
+        .brand-name { font-size: 13px; }
+        .nav-label, .sidebar-bottom { display: none; }
+        .nav { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 3px; margin-top: 12px; }
+        .nav-link { min-height: 35px; justify-content: center; gap: 6px; padding: 0 4px; font-size: 10px; }
+        .nav-icon { width: auto; }
+        .main { margin-left: 0; }
+        .topbar { min-height: 54px; padding: 0 18px; }
+        .content { padding: 27px 18px; }
+        .hero { min-height: 210px; padding: 23px; }
+        .eye-art { position: absolute; right: 9px; bottom: 8px; width: 170px; max-width: 45%; opacity: .36; }
+        .hero-copy { max-width: 100%; }
+        .workspace { grid-template-columns: 1fr; }
+      }
+      @media (max-width: 390px) {
+        .tool-grid { grid-template-columns: 1fr; }
+        .tool-card { min-height: 145px; }
+        .prototype-tag { font-size: 9px; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar" aria-label="Main sidebar">
+        <a class="brand" href="#overview" aria-label="EYE3 Vision home">
+          <svg class="brand-mark" viewBox="0 0 48 48" role="img" aria-label="Three-eye mark">
+            <path d="M5 18c5-7 12-7 17 0-5 7-12 7-17 0Z" fill="none" stroke="#ff762e" stroke-width="1.8"/>
+            <path d="M26 18c5-7 12-7 17 0-5 7-12 7-17 0Z" fill="none" stroke="#ff762e" stroke-width="1.8"/>
+            <path d="M15.5 31c5-7 12-7 17 0-5 7-12 7-17 0Z" fill="none" stroke="#ff9a61" stroke-width="1.8"/>
+            <circle cx="13.5" cy="18" r="2" fill="#ff9a61"/><circle cx="34.5" cy="18" r="2" fill="#ff9a61"/>
+            <circle cx="24" cy="31" r="2" fill="#ff9a61"/>
+          </svg>
+          <span><span class="brand-name">EYE3 VISION</span><span class="brand-subtitle">Visual intelligence</span></span>
+        </a>
+
+        <div class="nav-label">Workspace</div>
+        <nav class="nav" aria-label="Workspace navigation">
+          <a class="nav-link active" href="#overview" aria-current="page"><span class="nav-icon">⌂</span>Overview</a>
+          <a class="nav-link" href="#tools"><span class="nav-icon">◈</span>Vision tools</a>
+          <a class="nav-link" href="#inspector"><span class="nav-icon">▧</span>Inspector</a>
+          <a class="nav-link" href="#activity"><span class="nav-icon">◷</span>Activity</a>
+        </nav>
+
+        <div class="sidebar-bottom">
+          <div class="status-card">
+            <div class="status-line"><span class="status-dot"></span>Prototype workspace</div>
+            <p>Your files stay in this browser demo. Image analysis is not connected yet.</p>
+          </div>
+          <div class="version">EYE3 VISION · INTERFACE CONCEPT</div>
+        </div>
+      </aside>
+
+      <main class="main" id="overview">
+        <header class="topbar">
+          <div class="breadcrumb">Workspace <span aria-hidden="true">/</span> <strong>Overview</strong></div>
+          <div class="topbar-right"><span class="prototype-tag">DESIGN PREVIEW</span><div class="avatar" aria-label="Guest profile">G</div></div>
+        </header>
+
+        <div class="content">
+          <div class="eyebrow">See beyond the surface</div>
+          <h1>Welcome to EYE3.</h1>
+          <p class="intro">A focused visual workspace concept for inspecting images, comparing details, and organizing what you see.</p>
+
+          <section class="hero" aria-labelledby="hero-title">
+            <div class="hero-copy">
+              <h2 id="hero-title">Three perspectives. One clear view.</h2>
+              <p>The three-eye symbol is an original abstract mark inspired by the idea of expanded vision. A warm orange signal cuts through a calm, dark workspace.</p>
+              <div class="hero-meta"><span class="meta-chip">01 &nbsp; Inspect</span><span class="meta-chip">02 &nbsp; Compare</span><span class="meta-chip">03 &nbsp; Organize</span></div>
+            </div>
+            <svg class="eye-art" viewBox="0 0 300 180" role="img" aria-label="Abstract arrangement of three orange eyes">
+              <defs>
+                <linearGradient id="eyeStroke" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0" stop-color="#ffb176"/><stop offset="1" stop-color="#f25d20"/>
+                </linearGradient>
+              </defs>
+              <g fill="none" stroke="url(#eyeStroke)" stroke-width="2">
+                <path d="M18 54c30-36 79-36 109 0-30 36-79 36-109 0Z"/>
+                <path d="M173 54c30-36 79-36 109 0-30 36-79 36-109 0Z"/>
+                <path d="M96 128c30-36 79-36 109 0-30 36-79 36-109 0Z"/>
+                <circle cx="72.5" cy="54" r="10"/><circle cx="227.5" cy="54" r="10"/><circle cx="150.5" cy="128" r="10"/>
+              </g>
+              <g fill="#ff9a61"><circle cx="72.5" cy="54" r="3.5"/><circle cx="227.5" cy="54" r="3.5"/><circle cx="150.5" cy="128" r="3.5"/></g>
+              <g stroke="#ff762e" stroke-width="1" opacity=".22"><path d="M72 18v-12M228 18v-12M150 91V79"/></g>
+            </svg>
+          </section>
+
+          <section id="tools" aria-labelledby="tools-title">
+            <div class="section-heading">
+              <div><h2 id="tools-title">Vision tools</h2><p>Choose a workspace to get started.</p></div>
+              <a class="text-link" href="#inspector">Open inspector <span aria-hidden="true">→</span></a>
+            </div>
+            <div class="tool-grid">
+              <button class="tool-card selected" type="button" data-tool="Image inspector">
+                <span class="tool-icon" aria-hidden="true">⌕</span><span class="tool-name">Image inspector</span>
+                <span class="tool-description">Review an image and its basic file details.</span><span class="tool-arrow">Select tool ↗</span>
+              </button>
+              <button class="tool-card" type="button" data-tool="Side-by-side compare">
+                <span class="tool-icon" aria-hidden="true">◫</span><span class="tool-name">Side-by-side compare</span>
+                <span class="tool-description">Prepare two images for a visual comparison.</span><span class="tool-arrow">Select tool ↗</span>
+              </button>
+              <button class="tool-card" type="button" data-tool="Visual library">
+                <span class="tool-icon" aria-hidden="true">▤</span><span class="tool-name">Visual library</span>
+                <span class="tool-description">A starting point for keeping image work organized.</span><span class="tool-arrow">Select tool ↗</span>
+              </button>
+            </div>
+          </section>
+
+          <section class="workspace" id="inspector" aria-label="Image workspace">
+            <div class="panel">
+              <div class="panel-title"><h2 id="upload-title">Image inspector</h2><span>Local preview</span></div>
+              <div class="dropzone" id="dropzone" tabindex="0" role="group" aria-label="Choose or drop image files">
+                <span class="upload-icon" aria-hidden="true">↑</span>
+                <strong>Drop an image here</strong>
+                <p>PNG, JPG, WEBP, or GIF · files are not uploaded</p>
+                <label class="upload-button" for="file-input">Choose image</label>
+                <input class="file-input" id="file-input" type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple>
+              </div>
+              <div class="file-list" id="file-list" aria-live="polite"></div>
+              <p class="footnote">This interface is a design prototype. It does not run image recognition or send files to a server.</p>
+            </div>
+            <div class="panel" id="activity">
+              <div class="panel-title"><h2>Recent activity</h2><span>Session</span></div>
+              <div class="activity-empty">
+                <div class="activity-symbol" aria-hidden="true">◷</div>
+                <strong>No activity yet</strong>
+                <p>Your selected files appear only in this browser demo.</p>
+              </div>
+            </div>
+          </section>
+        </div>
+      </main>
+      <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    </div>
+    <script>
+      const fileInput = document.querySelector("#file-input");
+      const dropzone = document.querySelector("#dropzone");
+      const fileList = document.querySelector("#file-list");
+      const toast = document.querySelector("#toast");
+      const uploadTitle = document.querySelector("#upload-title");
+      let toastTimer;
+
+      function showToast(message) {
+        toast.textContent = message;
+        toast.classList.add("visible");
+        window.clearTimeout(toastTimer);
+        toastTimer = window.setTimeout(() => toast.classList.remove("visible"), 2800);
+      }
+
+      function formatSize(bytes) {
+        if (bytes < 1024) return `${bytes} B`;
+        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+        return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+      }
+
+      function displayFiles(files) {
+        const images = Array.from(files).filter((file) => file.type.startsWith("image/"));
+        if (!images.length) {
+          showToast("Choose an image file to preview it here.");
+          return;
+        }
+        fileList.replaceChildren();
+        images.slice(0, 5).forEach((file) => {
+          const row = document.createElement("div");
+          row.className = "file-row";
+          const name = document.createElement("span");
+          name.className = "file-name";
+          name.textContent = file.name;
+          const size = document.createElement("span");
+          size.className = "file-size";
+          size.textContent = formatSize(file.size);
+          row.append(name, size);
+          fileList.append(row);
+        });
+        if (images.length > 5) showToast(`Showing 5 of ${images.length} selected images.`);
+      }
+
+      fileInput.addEventListener("change", (event) => displayFiles(event.target.files));
+      ["dragenter", "dragover"].forEach((eventName) => {
+        dropzone.addEventListener(eventName, (event) => {
+          event.preventDefault();
+          dropzone.classList.add("drag-over");
+        });
+      });
+      ["dragleave", "drop"].forEach((eventName) => {
+        dropzone.addEventListener(eventName, (event) => {
+          event.preventDefault();
+          dropzone.classList.remove("drag-over");
+        });
+      });
+      dropzone.addEventListener("drop", (event) => displayFiles(event.dataTransfer.files));
+      dropzone.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          fileInput.click();
+        }
+      });
+      document.querySelectorAll(".tool-card").forEach((card) => {
+        card.addEventListener("click", () => {
+          document.querySelectorAll(".tool-card").forEach((item) => item.classList.remove("selected"));
+          card.classList.add("selected");
+          uploadTitle.textContent = card.dataset.tool;
+          showToast(`${card.dataset.tool} selected. Tools are visual concepts in this prototype.`);
+        });
+      });
+      document.querySelectorAll(".nav-link").forEach((link) => {
+        link.addEventListener("click", () => {
+          document.querySelectorAll(".nav-link").forEach((item) => {
+            item.classList.remove("active");
+            item.removeAttribute("aria-current");
+          });
+          link.classList.add("active");
+          link.setAttribute("aria-current", "page");
+        });
+      });
+    </script>
+  </body>
+</html>
