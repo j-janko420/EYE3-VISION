@@ -6,7 +6,7 @@ Sources (repeat --src to change them; default: both):
   https://raw.githubusercontent.com/Free-TV/IPTV/master/playlist.m3u8   (group-title = country)
 Reads each source, keeps only
 free public HLS streams, drops adult channels and streams that need special HTTP
-headers, probes every stream and keeps the ones that answer with a real playlist.
+headers, probes every stream (playlist, then its newest video segment) and keeps only the ones that really deliver video.
 
 Writes (into --out, default "iptv"):
   eye3-full.m3u     every working channel, grouped by category, for SS IPTV / Smart STB / TiviMate
@@ -15,7 +15,7 @@ Writes (into --out, default "iptv"):
 
 Standard library only. Never run with credentials; it needs no keys.
 """
-import argparse, json, re, sys, time, urllib.request
+import argparse, json, re, sys, time, urllib.parse, urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 
@@ -146,13 +146,44 @@ def dedupe(channels):
     return list(best.values())
 
 
+def get(url, timeout, limit):
+    req = urllib.request.Request(url, headers={"User-Agent": UA})
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        if resp.status not in (200, 206):
+            raise ValueError("HTTP %d" % resp.status)
+        return resp.read(limit), resp.geturl()
+
+
+def expired_token(url, now=None):
+    """Signed links carry an expiry (…exp=1765449000…); an expired one can never play again."""
+    now = now or time.time()
+    return any(1_000_000_000 < int(v) < now for v in re.findall(r"(?:[?&~]|^)(?:exp|expires|e)=(\d{10})\b", url))
+
+
 def alive(url, timeout):
+    """True only if the stream really delivers video: playlist -> (variant playlist) -> newest segment."""
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": UA})
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
-            if resp.status != 200:
-                return False
-            return b"#EXTM3U" in resp.read(2048)[:200]
+        text, base = get(url, timeout, 400_000)
+        text = text.decode("utf-8", "replace")
+        if "#EXTM3U" not in text[:200]:
+            return False
+        lines = [ln.strip() for ln in text.replace("\r", "").split("\n") if ln.strip()]
+        for i, ln in enumerate(lines):  # master playlist: follow its first variant
+            if ln.startswith("#EXT-X-STREAM-INF"):
+                nxt = next((x for x in lines[i + 1:] if not x.startswith("#")), None)
+                if not nxt:
+                    return False
+                text, base = get(urllib.parse.urljoin(base, nxt), timeout, 400_000)
+                text = text.decode("utf-8", "replace")
+                if "#EXTM3U" not in text[:200]:
+                    return False
+                lines = [x.strip() for x in text.replace("\r", "").split("\n") if x.strip()]
+                break
+        segments = [x for x in lines if not x.startswith("#")]
+        if not segments:
+            return False
+        chunk, _ = get(urllib.parse.urljoin(base, segments[-1]), timeout, 2048)
+        return len(chunk) > 0
     except Exception:
         return False
 
@@ -235,7 +266,10 @@ def main():
         raw.extend(part)
         used.append(src)
     cleaned = [c for c in (clean(r) for r in raw) if c]
-    unique = dedupe(cleaned)
+    fresh = [c for c in cleaned if not expired_token(c["url"])]
+    if len(fresh) != len(cleaned):
+        print("dropped %d links whose signed token has expired" % (len(cleaned) - len(fresh)), flush=True)
+    unique = dedupe(fresh)
     if a.limit:
         unique = unique[:a.limit]
     print("parsed %d entries, %d usable, %d after dedupe" % (len(raw), len(cleaned), len(unique)), flush=True)

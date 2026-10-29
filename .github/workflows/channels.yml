@@ -1,7 +1,7 @@
 name: Channel catalogue
 
 # Rebuilds iptv/eye3-full.m3u and iptv/channels.json from the public iptv-org index.
-# Only free public HLS streams that answer a real playlist request are kept; adult
+# Only free public HLS streams that really deliver video (playlist + a real segment) are kept; adult
 # channels and streams that need special headers are dropped (see scripts/build_channels.py).
 # Runs weekly, on demand, and when the builder changes on a claude/** branch.
 on:
