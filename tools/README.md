@@ -30,6 +30,12 @@ EYE3 does **not** include a VPN: a VPN needs servers and software that a web pag
 - If your VPN app offers a local **HTTP proxy** mode, point EYE3 Link at it: `python3 eye3-link.py --proxy http://127.0.0.1:PORT`. Everything EYE3 Link fetches for your own accounts then goes through it. (SOCKS proxies are not supported.)
 - Check the terms of your provider and of the broadcaster before using either.
 
+## Check which channels work from YOUR connection
+The weekly list is tested from a server in another country, so some channels that only allow viewers from their own country may be missing or may not work for you. In EYE3 Home → Live TV, press **Check from my connection**. EYE3 Link then tests every channel in the list from your computer (and through your VPN or proxy, if you use one) and, with **hide failed** ticked, hides the ones that do not work for you. Results are remembered for 24 hours. **Where is my connection?** (IPTV accounts screen) tells you which country your connection appears to be in; it asks ipinfo.io once when you press it.
+
+## Explicit (18+) section
+Hidden on purpose: double-click the eye logo at the top left of EYE3 Home (or press Shift+X). Confirm you are 18 or older, optionally set a PIN, and an "Explicit (18+)" category appears in Live TV. It shows adult groups from **your own** accounts and playlists only; EYE3 provides no adult channels. It locks again when you reload the page, when the screensaver starts, or when the sleep timer ends. A PIN only stops casual use.
+
 ## Problems
 - "EYE3 Link is not running": start it (above), then press **Check again**.
 - "The server rejected this username or password": check them with your provider.

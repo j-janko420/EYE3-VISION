@@ -47,6 +47,10 @@ class Mock(BaseHTTPRequestHandler):
                 return self.reply([{"name": "Xtream One", "stream_id": 11, "category_id": "1", "stream_icon": "i.png"},
                                    {"name": "Hidden", "stream_id": 12, "category_id": "2"}])
             return self.reply({"user_info": {"auth": 1, "status": "Expired" if q.get("username") == "old" else "Active", "exp_date": "1893456000", "max_connections": "2"}})
+        if u.path == "/where":
+            return self.reply("AE\n", "text/plain")
+        if u.path == "/forbidden/index.m3u8":
+            return self.reply("denied", "text/plain", 403)
         if u.path == "/hls/index.m3u8":
             return self.reply('#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-KEY:METHOD=AES-128,URI="key.bin"\n#EXT-X-TARGETDURATION:4\n#EXTINF:4,\nseg1.ts\n#EXTINF:4,\n%s/abs/seg2.ts\n' % host, "application/vnd.apple.mpegurl")
         if u.path in ("/hls/seg1.ts", "/abs/seg2.ts"):
@@ -145,7 +149,8 @@ class LinkTests(unittest.TestCase):
         code, _, body = self.api("/api/m3u", url=self.up_url + "/pl.m3u")
         d = json.loads(body)
         names = [c["n"] for c in d["channels"]]
-        self.assertEqual(names, ["Good News", "Sport 1"])
+        self.assertEqual(names, ["Good News", "Bad One", "Sport 1"])
+        self.assertEqual([c.get("x", False) for c in d["channels"]], [False, True, False])  # adult is flagged, not dropped
         self.assertIn("/stream?", d["channels"][0]["u"])
         self.assertIn("7.m3u8", up.unquote(d["channels"][0]["u"]))  # Xtream .ts rewritten to .m3u8
         self.assertEqual(d["channels"][0]["l"], "http://x/l.png")
@@ -155,7 +160,8 @@ class LinkTests(unittest.TestCase):
     def test_xtream(self):
         code, _, body = self.api("/api/xtream", server=self.up_url + "/c/", user="u", **{"pass": "p"})
         d = json.loads(body)
-        self.assertEqual([c["n"] for c in d["channels"]], ["Xtream One"])
+        self.assertEqual([c["n"] for c in d["channels"]], ["Xtream One", "Hidden"])
+        self.assertTrue(d["channels"][1]["x"] and not d["channels"][0].get("x"))
         self.assertIn("11.m3u8", up.unquote(d["channels"][0]["u"]))
         self.assertEqual(d["account"]["status"], "Active")
         self.assertEqual(d["account"]["expires"], "2030-01-01")
@@ -173,7 +179,8 @@ class LinkTests(unittest.TestCase):
         code, _, body = self.api("/api/stalker", portal=self.up_url + "/c/", mac=MAC.lower().replace(":", "-"))
         d = json.loads(body)
         self.assertEqual(code, 200, body)
-        self.assertEqual([c["n"] for c in d["channels"]], ["Stalker Cinema"])
+        self.assertEqual([c["n"] for c in d["channels"]], ["Stalker Cinema", "Spicy"])
+        self.assertTrue(d["channels"][1]["x"] and not d["channels"][0].get("x"))
         self.assertEqual(d["channels"][0]["c"], "Movies")
         self.assertEqual(d["account"]["mac"], MAC)
         self.assertIn("MAG250", Mock.seen["xua"])
@@ -227,6 +234,39 @@ class LinkTests(unittest.TestCase):
         code, _, body = get(self.port, p.path + "?" + p.query)
         self.assertEqual(code, 502)
         self.assertIn("error", json.loads(body))
+
+
+class CheckTests(unittest.TestCase):
+    """Does a stream play from THIS connection?"""
+    setUpClass = classmethod(LinkTests.setUpClass.__func__)
+    tearDownClass = classmethod(LinkTests.tearDownClass.__func__)
+    api = LinkTests.api
+
+    def probe(self, path):
+        code, _, body = self.api("/api/probe", u=self.up_url + path)
+        self.assertEqual(code, 200)
+        return json.loads(body)
+
+    def test_probe_says_ok_only_for_real_video(self):
+        self.assertEqual(self.probe("/hls/index.m3u8"), {"ok": True, "why": ""})
+
+    def test_probe_names_the_problem(self):
+        self.assertEqual(self.probe("/nothing.m3u8")["why"], "dead")
+        self.assertEqual(self.probe("/where")["why"], "not a video playlist")  # answers, but it is not a stream
+        self.assertEqual(self.probe("/forbidden/index.m3u8")["why"], "blocked")
+        self.assertEqual(link.probe_stream("http://127.0.0.1:1/x.m3u8")["why"], "unreachable")
+
+    def test_probe_needs_an_allowed_origin(self):
+        self.assertEqual(get(self.port, "/api/probe?u=" + up.quote(self.up_url + "/hls/index.m3u8"), {"Origin": "https://evil.example"})[0], 403)
+
+    def test_where_am_i_reports_a_country_through_the_current_route(self):
+        link.STATE["where_url"] = self.up_url + "/where"
+        try:
+            self.assertEqual(json.loads(self.api("/api/where")[2]), {"country": "AE", "viaProxy": False})
+            link.STATE["where_url"] = self.up_url + "/hls/seg1.ts"
+            self.assertEqual(self.api("/api/where")[0], 502)
+        finally:
+            link.STATE["where_url"] = ""
 
 
 class ProxyHandler(BaseHTTPRequestHandler):

@@ -18,7 +18,7 @@ proxy you already have:  python3 eye3-link.py --proxy http://127.0.0.1:PORT   (H
 
 Run:   python3 eye3-link.py          (Windows: py eye3-link.py)      Stop: Ctrl+C
 """
-import argparse, hashlib, json, re, secrets, ssl, sys, time
+import argparse, hashlib, json, os, re, secrets, ssl, sys, time
 import urllib.error as ue
 import urllib.parse as up
 import urllib.request as ur
@@ -89,6 +89,60 @@ def stream_url(upstream):
     return link_url("/stream", u=upstream)
 
 
+# ------------------------------------------------------------------------ check from this connection
+def classify(exc):
+    if isinstance(exc, LinkError):
+        m = str(exc)
+        if "HTTP 403" in m or "HTTP 451" in m:
+            return "blocked"
+        if "HTTP 404" in m or "HTTP 410" in m:
+            return "dead"
+        if "timed out" in m:
+            return "timeout"
+        return "unreachable"
+    return "unreachable"
+
+
+def probe_stream(url):
+    """Does this stream really deliver video from THIS connection? Returns {"ok": bool, "why": str}."""
+    stage = "playlist"
+    try:
+        body, base, _ = fetch(url, timeout=9, limit=400_000)
+        text = body.decode("utf-8", "replace")
+        if "#EXTM3U" not in text[:200]:
+            return {"ok": False, "why": "not a video playlist"}
+        lines = [ln.strip() for ln in text.replace("\r", "").split("\n") if ln.strip()]
+        for i, ln in enumerate(lines):  # master playlist: follow its first variant
+            if ln.startswith("#EXT-X-STREAM-INF"):
+                nxt = next((x for x in lines[i + 1:] if not x.startswith("#")), None)
+                if not nxt:
+                    return {"ok": False, "why": "no video segments"}
+                stage = "variant"
+                body, base, _ = fetch(up.urljoin(base, nxt), timeout=9, limit=400_000)
+                text = body.decode("utf-8", "replace")
+                if "#EXTM3U" not in text[:200]:
+                    return {"ok": False, "why": "not a video playlist"}
+                lines = [x.strip() for x in text.replace("\r", "").split("\n") if x.strip()]
+                break
+        segments = [x for x in lines if not x.startswith("#")]
+        if not segments:
+            return {"ok": False, "why": "no video segments"}
+        stage = "segment"
+        chunk, _, _ = fetch(up.urljoin(base, segments[-1]), timeout=9, limit=2048)
+        return {"ok": True, "why": ""} if chunk else {"ok": False, "why": "empty video"}
+    except Exception as exc:
+        return {"ok": False, "why": classify(exc), "stage": stage}
+
+
+def where_am_i():
+    """The country this computer (or its proxy/VPN) appears to be in. Called only when the viewer asks."""
+    body, _, _ = fetch(STATE.get("where_url") or "https://ipinfo.io/country", timeout=10, limit=64)
+    code = body.decode("utf-8", "replace").strip().upper()
+    if not re.fullmatch(r"[A-Z]{2}", code):
+        raise LinkError("Could not work out the country.")
+    return {"country": code, "viaProxy": bool(STATE["proxy"])}
+
+
 # --------------------------------------------------------------------------------------- M3U
 def attr(line, name):
     m = re.search(name + r'="([^"]*)"', line)
@@ -108,10 +162,12 @@ def parse_m3u(text):
         elif info is not None and re.match(r"^(https?)://", line, re.I):
             name = info.rsplit(",", 1)[-1].strip() or "Channel"
             group = attr(info, "group-title").strip() or "Other"
-            if not BAD.search(name + " " + group):
-                # Xtream "...live/user/pass/123.ts" also exists as .m3u8, which browsers can play
-                url = re.sub(r"(/live/[^/]+/[^/]+/\d+)\.ts$", r"\1.m3u8", line)
-                out.append({"n": name, "c": group, "u": stream_url(url), "l": attr(info, "tvg-logo")})
+            # Xtream "...live/user/pass/123.ts" also exists as .m3u8, which browsers can play
+            url = re.sub(r"(/live/[^/]+/[^/]+/\d+)\.ts$", r"\1.m3u8", line)
+            ch = {"n": name, "c": group, "u": stream_url(url), "l": attr(info, "tvg-logo")}
+            if BAD.search(name + " " + group):
+                ch["x"] = True  # adult: EYE3 Home shows it only after the viewer unlocks the hidden Explicit section
+            out.append(ch)
             info = None
         else:
             info = None
@@ -154,10 +210,13 @@ def channels_from_xtream(server, user, password):
     for s in fetch_json(api + "&action=get_live_streams") or []:
         name = str(s.get("name") or "Channel").strip()
         cat = cats.get(str(s.get("category_id")), "Other")
-        if BAD.search(name + " " + cat) or not s.get("stream_id"):
+        if not s.get("stream_id"):
             continue
         direct = "%s/live/%s/%s/%s.m3u8" % (base, up.quote(user, safe=""), up.quote(password, safe=""), s["stream_id"])
-        chans.append({"n": name, "c": cat, "u": stream_url(direct), "l": str(s.get("stream_icon") or "")})
+        ch = {"n": name, "c": cat, "u": stream_url(direct), "l": str(s.get("stream_icon") or "")}
+        if BAD.search(name + " " + cat):
+            ch["x"] = True
+        chans.append(ch)
     if not chans:
         raise LinkError("The account connected but has no live channels.")
     exp = ui.get("exp_date")
@@ -257,10 +316,13 @@ class Stalker:
         for ch in data or []:
             name = str(ch.get("name") or "").strip()
             cat = genres.get(str(ch.get("tv_genre_id")), "Other")
-            if not name or not ch.get("cmd") or BAD.search(name + " " + cat):
+            if not name or not ch.get("cmd"):
                 continue
-            out.append({"n": name, "c": cat, "u": link_url("/stalker/play", sid=sid, cmd=ch["cmd"]),
-                        "l": str(ch.get("logo") or ch.get("screenshot_uri") or "")})
+            row = {"n": name, "c": cat, "u": link_url("/stalker/play", sid=sid, cmd=ch["cmd"]),
+                   "l": str(ch.get("logo") or ch.get("screenshot_uri") or "")}
+            if BAD.search(name + " " + cat):
+                row["x"] = True
+            out.append(row)
         if not out:
             raise LinkError("The portal connected but returned no channels. Is the MAC address active on this portal?")
         return {"channels": out, "account": {"status": "Connected", "mac": self.mac}}
@@ -372,6 +434,10 @@ class Handler(BaseHTTPRequestHandler):
 
     def api(self, path, q):
         one = lambda k: (q.get(k, [""])[0]).strip()
+        if path == "/api/probe":
+            return self.send_json(200, probe_stream(one("u")))
+        if path == "/api/where":
+            return self.send_json(200, where_am_i())
         if path == "/api/m3u":
             return self.send_json(200, channels_from_m3u(one("url")))
         if path == "/api/xtream":
@@ -467,6 +533,7 @@ def main():
         print("The proxy must look like http://127.0.0.1:8080 (SOCKS proxies are not supported by this helper).")
         return 1
     STATE.update(port=a.port, insecure=a.insecure, verbose=a.verbose, proxy=a.proxy)
+    STATE["where_url"] = os.environ.get("EYE3_WHERE_URL", "")  # for tests only
     STATE["origins"] += a.origin
     try:
         srv = ThreadingHTTPServer(("127.0.0.1", a.port), Handler)
