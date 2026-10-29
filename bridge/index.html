@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#10141d">
+  <meta name="description" content="TV Bridge helps you check TV compatibility, find official update guidance, and set up a supported streaming device.">
+  <title>EYE3 Bridge — Safe TV Setup</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b0e14;
+      --panel: #121823;
+      --panel-2: #182131;
+      --border: #293448;
+      --text: #eef3fb;
+      --muted: #a5b1c4;
+      --accent: #ff9a61;
+      --accent-2: #ffb078;
+      --warning: #ffd58a;
+      --danger: #ff9c9c;
+      --radius: 18px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background:
+        radial-gradient(ellipse at 10% 0%, rgba(90, 120, 190, .16), transparent 36%),
+        radial-gradient(ellipse at 95% 10%, rgba(70, 200, 180, .10), transparent 30%), var(--bg);
+      color: var(--text); line-height: 1.55;
+    }
+    a { color: var(--accent); text-underline-offset: 3px; }
+    button, input, select { font: inherit; }
+    button, .button {
+      border: 1px solid transparent; border-radius: 12px; padding: 12px 16px;
+      background: var(--accent); color: #071511; font-weight: 750; cursor: pointer;
+      text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    button.secondary, .button.secondary { background: var(--panel-2); border-color: var(--border); color: var(--text); }
+    button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible { outline: 3px solid var(--accent-2); outline-offset: 3px; }
+    button:disabled { opacity: .45; cursor: not-allowed; }
+    .shell { width: min(1120px, calc(100% - 32px)); margin: 0 auto; }
+    header { padding: 22px 0; display: flex; justify-content: space-between; align-items: center; gap: 16px; border-bottom: 1px solid rgba(150,170,200,.12); }
+    .brand { display: flex; align-items: center; gap: 11px; font-weight: 850; letter-spacing: -.04em; font-size: 1.2rem; }
+    .logo { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 12px; background: linear-gradient(135deg, var(--accent), #8baaff); color: #071511; font-weight: 950; }
+    .pill { display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--border); border-radius: 99px; padding: 5px 10px; font-size: .78rem; color: var(--muted); }
+    .pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--warning); }
+    .hero { padding: 56px 0 30px; display: grid; grid-template-columns: 1.25fr .75fr; gap: 28px; align-items: center; }
+    .eyebrow { text-transform: uppercase; letter-spacing: .16em; color: var(--accent); font-size: .75rem; font-weight: 800; }
+    h1 { font-size: clamp(2.2rem, 5vw, 4rem); letter-spacing: -.065em; line-height: 1.04; margin: 12px 0 18px; }
+    h2 { font-size: 1.35rem; letter-spacing: -.035em; margin: 0 0 12px; }
+    h3 { font-size: 1rem; margin: 0 0 6px; }
+    p { color: var(--muted); margin: 0 0 14px; }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+    .device-art { min-height: 260px; border: 1px solid var(--border); border-radius: 24px; background: linear-gradient(140deg, #192536, #10151e); padding: 24px; display: grid; place-items: center; position: relative; overflow: hidden; }
+    .tv { width: min(100%, 350px); aspect-ratio: 16/10; border: 8px solid #283343; border-bottom-width: 12px; border-radius: 12px; background: linear-gradient(145deg, #152b3b, #10141e 70%); box-shadow: 0 20px 60px #0008; padding: 15px; position: relative; }
+    .tv-screen { height: 100%; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+    .tile { border-radius: 8px; background: linear-gradient(145deg, #31576a, #1d2c3b); }
+    .tile:nth-child(2) { background: linear-gradient(145deg, #7661a0, #302a4d); }
+    .tile:nth-child(3) { background: linear-gradient(145deg, #b67c57, #48302a); }
+    .tile:nth-child(4) { background: linear-gradient(145deg, #347f78, #1d373b); }
+    .tile:nth-child(5) { background: linear-gradient(145deg, #4569a2, #1d2a43); }
+    .tile:nth-child(6) { background: linear-gradient(145deg, #817d50, #383720); }
+    .tv-stand { width: 80px; height: 16px; border-bottom: 5px solid #283343; border-left: 12px solid transparent; border-right: 12px solid transparent; margin: 0 auto; }
+    .section { margin: 22px 0; }
+    .panel { border: 1px solid var(--border); background: rgba(18,24,35,.88); border-radius: var(--radius); padding: 22px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+    .feature { border: 1px solid var(--border); background: var(--panel); border-radius: 16px; padding: 18px; }
+    .feature-icon { font-size: 1.4rem; margin-bottom: 10px; }
+    .wizard-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+    .progress { height: 6px; background: #263044; border-radius: 9px; overflow: hidden; margin: 14px 0 24px; }
+    .progress > div { height: 100%; width: 0; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width .2s ease; }
+    .step { display: none; }
+    .step.active { display: block; }
+    .fields { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    label { color: #dce5f3; font-size: .9rem; font-weight: 650; }
+    input, select { width: 100%; border: 1px solid var(--border); background: #0d121b; color: var(--text); border-radius: 10px; padding: 12px; min-height: 46px; }
+    .hint { font-size: .82rem; color: var(--muted); }
+    .wizard-actions { display: flex; justify-content: space-between; gap: 10px; margin-top: 24px; }
+    .notice { padding: 14px 16px; border: 1px solid rgba(255,213,138,.3); border-radius: 12px; background: rgba(255,213,138,.07); color: #ffe3b1; margin: 16px 0; font-size: .9rem; }
+    .notice.good { border-color: rgba(124,224,207,.3); background: rgba(124,224,207,.07); color: #b9f5e9; }
+    .result { border: 1px solid var(--border); border-radius: 14px; padding: 16px; margin-top: 12px; background: #0e141e; }
+    .status { display: inline-block; border-radius: 99px; padding: 4px 9px; font-size: .78rem; font-weight: 800; margin-bottom: 8px; }
+    .status.supported { background: #143e36; color: #a6f2df; }
+    .status.limited { background: #44391f; color: #ffe1a3; }
+    .status.unsupported { background: #46282e; color: #ffc0c4; }
+    .status.unknown { background: #27344a; color: #c6d8ff; }
+    .report-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+    footer { border-top: 1px solid rgba(150,170,200,.12); padding: 25px 0 38px; margin-top: 40px; color: var(--muted); font-size: .85rem; }
+    @media (max-width: 760px) {
+      .hero { grid-template-columns: 1fr; padding-top: 36px; }
+      .device-art { min-height: 210px; }
+      .grid-3 { grid-template-columns: 1fr; }
+      .fields { grid-template-columns: 1fr; }
+      header { align-items: flex-start; flex-direction: column; }
+      .panel { padding: 17px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="shell">
+    <div class="brand"><div class="logo">i3</div><span>EYE3 Bridge</span></div>
+    <span class="pill">by i3 Design · safe setup, no flashing</span>
+  </header>
+
+  <main class="shell">
+    <section class="hero">
+      <div>
+        <div class="eyebrow">Know your TV. Choose a safe upgrade.</div>
+        <h1>Make your TV work smarter.</h1>
+        <p>Check compatibility, find official update guidance, and follow a clear path to Android TV features where your hardware supports it.</p>
+        <div class="hero-actions">
+          <a class="button" href="#wizard">Start compatibility check ↗</a>
+          <a class="button secondary" href="#how-it-works">How it works</a>
+        </div>
+        <p class="hint" style="margin-top:14px">No automatic firmware flashing. No unsupported OS replacement. No fake device scanning.</p>
+      </div>
+      <div class="device-art" aria-label="Illustration of a television screen">
+        <div>
+          <div class="tv"><div class="tv-screen"><div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div></div></div>
+          <div class="tv-stand"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid-3 section" id="how-it-works">
+      <article class="feature"><div class="feature-icon">⌕</div><h3>Identify your TV</h3><p>Enter the brand, exact model, region and current operating system.</p></article>
+      <article class="feature"><div class="feature-icon">✓</div><h3>Check safe options</h3><p>Separate official update guidance from model-dependent or unsupported changes.</p></article>
+      <article class="feature"><div class="feature-icon">▣</div><h3>Plan an upgrade</h3><p>When Android cannot run on the TV itself, use a compatible HDMI streaming device.</p></article>
+    </section>
+
+    <section class="panel section" id="wizard">
+      <div class="wizard-head">
+        <div><div class="eyebrow">Guided setup</div><h2 style="margin-top:5px">TV compatibility check</h2></div>
+        <span class="pill" id="step-label">Step 1 of 3</span>
+      </div>
+      <div class="progress" aria-hidden="true"><div id="progress-fill"></div></div>
+
+      <form id="tv-form">
+        <div class="step active" data-step="0">
+          <h3>1. Tell us about your TV</h3>
+          <p>Use the model number printed on the back label or shown in Settings → About.</p>
+          <div class="fields">
+            <div class="field"><label for="brand">TV brand</label>
+              <select id="brand" required>
+                <option value="">Choose a brand</option><option selected>Philips</option><option>Samsung</option><option>LG</option><option>Sony</option><option>TCL</option><option>Hisense</option><option>Panasonic</option><option>Other / not sure</option>
+              </select>
+            </div>
+            <div class="field"><label for="model">Exact model number (if known)</label><input id="model" placeholder="e.g. 50PUT6103/56" value="50PUT6103/56 (TPM186E)" autocomplete="off"></div>
+            <div class="field"><label for="region">Country / region</label><select id="region"><option value="">Choose region</option><option value="AE" selected>United Arab Emirates</option><option value="IN">India</option><option value="GB">United Kingdom</option><option value="US">United States</option><option value="EU">Europe / other EU</option><option value="other">Other / not sure</option></select></div>
+            <div class="field"><label for="os">Current operating system</label>
+              <select id="os"><option value="">Not sure</option><option value="googletv">Google TV / Android TV</option><option value="tizen">Samsung Tizen</option><option value="webos">LG webOS</option><option value="saphi" selected>Philips Saphi</option><option value="titan">Philips Titan OS</option><option value="philips-other">Other / unknown Philips OS</option><option value="roku">Roku TV</option><option value="firetv">Fire TV</option><option value="other">Other / not sure</option></select>
+            </div>
+          </div>
+          <div class="notice">This template provides general guidance. Exact compatibility requires checking the official documentation for your specific model and region.</div>
+        </div>
+
+        <div class="step" data-step="1">
+          <h3>2. What would you like to do?</h3>
+          <p>Choose your main goal. This wizard does not write firmware or change TV software.</p>
+          <div class="fields">
+            <div class="field"><label for="goal">Upgrade goal</label><select id="goal"><option value="check">Check what my TV supports</option><option value="firmware">Find an official firmware update</option><option value="android">Get Android TV apps / launcher</option><option value="control">Use phone as a TV remote</option><option value="network">Connect devices on the same Wi-Fi</option></select></div>
+            <div class="field"><label for="connection">Preferred upgrade path</label><select id="connection"><option value="unsure">Not sure yet</option><option value="native">Use built-in TV features</option><option value="hdmi">External HDMI streaming device</option></select></div>
+          </div>
+          <div class="notice">For a non-Android TV, an HDMI streaming device is usually the practical way to add Android TV or Google TV apps without replacing the TV's operating system.</div>
+        </div>
+
+        <div class="step" data-step="2">
+          <h3>3. Review your safe next steps</h3>
+          <p>Your result is generated from general rules in this template, not a live manufacturer database.</p>
+          <div id="results" aria-live="polite"></div>
+          <div class="report-actions">
+            <button type="button" class="secondary" id="copy-report">Copy report</button>
+            <button type="button" class="secondary" id="print-report">Print / save PDF</button>
+          </div>
+        </div>
+
+        <div class="wizard-actions">
+          <button type="button" class="secondary" id="back" disabled>← Back</button>
+          <button type="button" id="next">Continue →</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="panel section">
+      <h2>EYE3 links to use on your TV</h2>
+      <div class="grid-3">
+        <div><h3>EYE3 TV portal</h3><p>Open in the TV browser or add in Smart STB.</p><p><a href="https://j-janko420.github.io/EYE3-VISION/portal/c/">.../portal/c/</a></p></div>
+        <div><h3>EYE3 channel playlist (M3U)</h3><p>Add as a playlist in Smart STB or any IPTV app.</p><p><a href="https://j-janko420.github.io/EYE3-VISION/iptv/eye3.m3u">.../iptv/eye3.m3u</a></p></div>
+        <div><h3>Full EYE3 app</h3><p>All AI tools; best on a modern browser or an HDMI stick.</p><p><a href="https://j-janko420.github.io/EYE3-VISION/">EYE3 Vision</a></p></div>
+      </div>
+    </section>
+
+    <section class="panel section">
+      <h2>Safety principles</h2>
+      <div class="grid-3">
+        <div><h3>Official firmware only</h3><p>Match the exact model and region. Do not use third-party firmware files or guessed download links.</p></div>
+        <div><h3>Do not interrupt updates</h3><p>Use stable power and follow the manufacturer's instructions. Never power off during an update.</p></div>
+        <div><h3>No false promises</h3><p>Unsupported OS replacement may permanently disable a TV. Compatibility must be verified before any change.</p></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="shell">
+    <strong>EYE3 Bridge</strong> · by i3 Design. Safe guidance only: it does not scan your network, control the TV, download firmware, or reprogram anything. Firmware updates are done by you, on the TV, using official Philips software. Verify the exact model and region on philips.com/support before updating.
+  </footer>
+
+  <script>
+    (() => {
+      const form = document.getElementById('tv-form');
+      const steps = [...document.querySelectorAll('.step')];
+      const next = document.getElementById('next');
+      const back = document.getElementById('back');
+      const stepLabel = document.getElementById('step-label');
+      const progressFill = document.getElementById('progress-fill');
+      let current = 0;
+      let reportText = '';
+
+      const get = id => document.getElementById(id).value.trim();
+      const isPhilipsNonAndroid = () => ['saphi', 'titan', 'philips-other'].includes(get('os'));
+      const hasAndroid = () => get('os') === 'googletv';
+
+      function updateNav() {
+        steps.forEach((step, i) => step.classList.toggle('active', i === current));
+        stepLabel.textContent = `Step ${current + 1} of ${steps.length}`;
+        progressFill.style.width = `${((current + 1) / steps.length) * 100}%`;
+        back.disabled = current === 0;
+        next.textContent = current === steps.length - 1 ? 'Start over ↻' : 'Continue →';
+      }
+
+      function compatibilityCard(status, title, body) {
+        return `<div class="result"><span class="status ${status}">${status.toUpperCase()}</span><h3>${title}</h3><p>${body}</p></div>`;
+      }
+
+      function buildReport() {
+        const brand = get('brand') || 'Not provided';
+        const model = get('model') || 'Not provided';
+        const region = get('region') || 'Not provided';
+        const os = get('os') || 'Unknown';
+        const goal = get('goal');
+        const connection = get('connection');
+        const philips = isPhilipsNonAndroid() || (brand === 'Philips' && !hasAndroid());
+        const results = [];
+        const osLabel = document.querySelector('#os option:checked').textContent;
+        results.push(compatibilityCard('unknown', 'Model verification needed', `Brand: ${brand}. Model: ${model}. Region: ${region}. OS: ${osLabel}. Check the official support page for the exact model and region before applying updates.`));
+
+        if (goal === 'firmware') {
+          results.push(compatibilityCard('limited', 'Official firmware update', 'Use the TV settings update feature or the official manufacturer support website. This template does not have a verified live manufacturer database, so it will not invent a firmware URL.'));
+          results.push(compatibilityCard('unknown', 'Before updating', 'Confirm exact model and region, use official firmware only, keep power stable, and never interrupt an update.'));
+        }
+
+        if (goal === 'android') {
+          if (hasAndroid()) {
+            results.push(compatibilityCard('supported', 'Android TV / Google TV platform detected', 'Your selected OS is Android TV / Google TV. App and launcher options still depend on your specific model, region and manufacturer restrictions.'));
+          } else {
+            results.push(compatibilityCard('unsupported', 'Android cannot be assumed installable on this TV', 'Do not flash Android firmware unless the manufacturer explicitly supports it for this exact model. The practical alternative is a compatible external Android TV / Google TV HDMI device.'));
+          }
+        }
+
+        if (goal === 'control') {
+          results.push(compatibilityCard('limited', 'Phone remote support is model-dependent', 'Use the official manufacturer app or documented remote-control feature for your exact TV model. Both devices may need to be on the same Wi-Fi; network isolation can prevent discovery.'));
+        }
+
+        if (goal === 'network') {
+          results.push(compatibilityCard('limited', 'Same-Wi-Fi connection', 'This HTML page cannot scan the local network or control devices by itself. Real discovery requires a supported native companion app, permission and compatible network protocols.'));
+        }
+
+        if (philips) {
+          results.push(compatibilityCard('limited', 'Philips Saphi — no Android on the TV itself', 'Your TV runs Philips\' own Saphi system (not Android). Apps cannot be side-loaded and Android firmware cannot be flashed onto it. This is a hardware limit, not an EYE3 one. Do not use third-party firmware: it can permanently disable the TV.'));
+          results.push(compatibilityCard('supported', 'Safe: update to the latest official Philips software', 'On the TV: Settings -> Update software -> Search for updates -> Internet. Keep the TV powered on until it restarts. Your channels and settings stay. On the TPM186E platform the newest version is 018.005.036.001 (Sep 2020), which adds the built-in Internet browser app and Miracast fixes. If the online search finds nothing, download the file for 50PUT6103/56 from philips.com/support, copy it to a USB stick, then Settings -> Update software -> USB. Never power off during an update.'));
+          results.push(compatibilityCard('supported', 'Then: run EYE3 in the TV\'s own browser', 'After updating, open Home -> Apps -> Internet browser and go to the EYE3 TV portal. Or add the EYE3 channel playlist in your Smart STB app. Links are below. If the browser is not present even after the update, use the HDMI streaming-device path.'));
+        }
+
+        if (connection === 'hdmi' || (goal === 'android' && !hasAndroid())) {
+          results.push(compatibilityCard('supported', 'External HDMI streaming device path', 'A compatible Android TV / Google TV stick or box can provide its own apps and interface through HDMI. The television keeps its original operating system. Check HDMI availability, power requirements, regional app availability and device compatibility.'));
+        }
+
+        if (goal === 'check') {
+          results.push(compatibilityCard('unknown', 'Next step', 'Confirm the exact model number and consult official manufacturer documentation. This prototype uses general guidance, not a verified compatibility database.'));
+        }
+
+        document.getElementById('results').innerHTML = results.join('');
+        reportText = [
+          'TV BRIDGE — TV COMPATIBILITY REPORT',
+          `Brand: ${brand}`, `Model: ${model}`, `Region: ${region}`, `Current OS: ${osLabel}`,
+          `Goal: ${document.querySelector('#goal option:checked').textContent}`,
+          `Preferred path: ${document.querySelector('#connection option:checked').textContent}`,
+          '',
+          ...[...document.querySelectorAll('#results .result')].map(el => `${el.querySelector('h3').textContent}\n${el.querySelector('p').textContent}`),
+          '',
+          'Safety: use official firmware only; verify exact model and region; do not attempt unsupported OS replacement.'
+        ].join('\n\n');
+      }
+
+      next.addEventListener('click', () => {
+        if (current === 0 && !get('brand')) {
+          document.getElementById('brand').focus();
+          document.getElementById('brand').reportValidity?.();
+          return;
+        }
+        if (current < steps.length - 1) {
+          if (current === 1) buildReport();
+          current++;
+        } else {
+          form.reset();
+          current = 0;
+          document.getElementById('results').innerHTML = '';
+        }
+        updateNav();
+      });
+      back.addEventListener('click', () => { if (current > 0) current--; updateNav(); });
+      document.getElementById('copy-report').addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(reportText);
+          document.getElementById('copy-report').textContent = 'Copied ✓';
+        } catch {
+          window.prompt('Copy your report:', reportText);
+        }
+      });
+      document.getElementById('print-report').addEventListener('click', () => window.print());
+      updateNav();
+    })();
+  </script>
+</body>
+</html>
