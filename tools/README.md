@@ -24,6 +24,12 @@ EYE3 Home runs in your browser. IPTV providers (Xtream Codes, MAG/Stalker portal
 
 Your channels appear in Live TV under the account's name, with a group filter for the provider's own groups.
 
+## Channels blocked in your country (VPN / proxy)
+EYE3 does **not** include a VPN: a VPN needs servers and software that a web page or this small helper cannot provide, and pretending otherwise would be unsafe. Options:
+- Use a VPN you are allowed to use on this computer. EYE3 Home and EYE3 Link then use it automatically.
+- If your VPN app offers a local **HTTP proxy** mode, point EYE3 Link at it: `python3 eye3-link.py --proxy http://127.0.0.1:PORT`. Everything EYE3 Link fetches for your own accounts then goes through it. (SOCKS proxies are not supported.)
+- Check the terms of your provider and of the broadcaster before using either.
+
 ## Problems
 - "EYE3 Link is not running": start it (above), then press **Check again**.
 - "The server rejected this username or password": check them with your provider.

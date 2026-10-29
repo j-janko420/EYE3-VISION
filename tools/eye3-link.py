@@ -13,6 +13,8 @@ What it does (all on your machine, nothing is sent anywhere except to the provid
 Safety: it listens on 127.0.0.1 only, answers only EYE3's own pages (see ALLOWED ORIGINS), and every play
 link carries a secret token created when it starts, so other websites cannot use it as a proxy.
 Use it only with accounts and playlists you are entitled to watch. Standard library only, Python 3.8+.
+This program is not a VPN. For channels blocked in your country you can send its traffic through a VPN or
+proxy you already have:  python3 eye3-link.py --proxy http://127.0.0.1:PORT   (HTTP proxies only).
 
 Run:   python3 eye3-link.py          (Windows: py eye3-link.py)      Stop: Ctrl+C
 """
@@ -35,7 +37,7 @@ class LinkError(Exception):
     """An error whose message is safe and useful to show to the viewer."""
 
 
-STATE = {"token": secrets.token_urlsafe(24), "port": 0, "insecure": False, "origins": list(ALLOWED_ORIGINS), "sessions": {}}
+STATE = {"token": secrets.token_urlsafe(24), "port": 0, "insecure": False, "proxy": "", "origins": list(ALLOWED_ORIGINS), "sessions": {}}
 
 
 def ssl_context():
@@ -46,13 +48,21 @@ def ssl_context():
     return ctx
 
 
+def open_url(req, timeout):
+    """Open a request, through the viewer's own HTTP proxy/VPN (--proxy) when one is set."""
+    handlers = [ur.HTTPSHandler(context=ssl_context())]
+    if STATE["proxy"]:
+        handlers.insert(0, ur.ProxyHandler({"http": STATE["proxy"], "https": STATE["proxy"]}))
+    return ur.build_opener(*handlers).open(req, timeout=timeout)
+
+
 def fetch(url, headers=None, timeout=25, limit=MAX_PLAYLIST):
     """GET a URL; returns (body_bytes, final_url, response_headers)."""
     if not re.match(r"^https?://", url, re.I):
         raise LinkError("Only http:// and https:// addresses are supported.")
     req = ur.Request(url, headers=headers or {"User-Agent": UA_PLAYER})
     try:
-        with ur.urlopen(req, timeout=timeout, context=ssl_context()) as r:
+        with open_url(req, timeout) as r:
             return r.read(limit), r.geturl(), dict(r.headers)
     except ue.HTTPError as e:
         raise LinkError("The server answered HTTP %d." % e.code)
@@ -326,11 +336,11 @@ class Handler(BaseHTTPRequestHandler):
         q = up.parse_qs(u.query)
         try:
             if u.path == "/ping":
-                return self.send_json(200, {"ok": True, "name": "EYE3 Link", "version": VERSION})
+                return self.send_json(200, {"ok": True, "name": "EYE3 Link", "version": VERSION, "proxy": bool(STATE["proxy"])})
             if u.path == "/api/hello":
                 if not origin_allowed(self.origin()):
                     return self.send_error_json(403, "This page is not allowed to use EYE3 Link.")
-                return self.send_json(200, {"ok": True, "token": STATE["token"], "version": VERSION})
+                return self.send_json(200, {"ok": True, "token": STATE["token"], "version": VERSION, "proxy": bool(STATE["proxy"])})
             if u.path.startswith("/api/"):
                 if not (origin_allowed(self.origin()) or self.token_ok(q)):
                     return self.send_error_json(403, "This page is not allowed to use EYE3 Link.")
@@ -384,7 +394,7 @@ class Handler(BaseHTTPRequestHandler):
             headers["Range"] = self.headers["Range"]
         req = ur.Request(target, headers=headers)
         try:
-            resp = ur.urlopen(req, timeout=25, context=ssl_context())
+            resp = open_url(req, 25)
         except ue.HTTPError as e:
             return self.send_error_json(502, "The stream server answered HTTP %d." % e.code)
         except Exception as e:
@@ -449,10 +459,14 @@ def main():
     ap = argparse.ArgumentParser(description="EYE3 Link: helper for EYE3 Home (runs on this computer only).")
     ap.add_argument("--port", type=int, default=8765)
     ap.add_argument("--insecure", action="store_true", help="accept providers with an invalid HTTPS certificate")
+    ap.add_argument("--proxy", default="", help="send everything through this HTTP proxy, e.g. http://127.0.0.1:40000 (a VPN app's proxy mode)")
     ap.add_argument("--verbose", action="store_true")
     ap.add_argument("--origin", action="append", default=[], help="also allow this web page origin (for your own copy of EYE3)")
     a = ap.parse_args()
-    STATE.update(port=a.port, insecure=a.insecure, verbose=a.verbose)
+    if a.proxy and not re.match(r"^https?://[^/\s]+$", a.proxy):
+        print("The proxy must look like http://127.0.0.1:8080 (SOCKS proxies are not supported by this helper).")
+        return 1
+    STATE.update(port=a.port, insecure=a.insecure, verbose=a.verbose, proxy=a.proxy)
     STATE["origins"] += a.origin
     try:
         srv = ThreadingHTTPServer(("127.0.0.1", a.port), Handler)
@@ -461,6 +475,8 @@ def main():
         return 1
     srv.daemon_threads = True
     print("EYE3 Link %s is running at http://127.0.0.1:%d" % (VERSION, a.port))
+    if a.proxy:
+        print("All traffic goes through your proxy: %s" % re.sub(r"//[^@/]*@", "//", a.proxy))
     print("Leave this window open while you watch. Press Ctrl+C to stop.")
     try:
         srv.serve_forever()

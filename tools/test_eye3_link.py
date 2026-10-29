@@ -229,5 +229,64 @@ class LinkTests(unittest.TestCase):
         self.assertIn("error", json.loads(body))
 
 
+class ProxyHandler(BaseHTTPRequestHandler):
+    """A tiny HTTP proxy: maps the made-up host 'provider.test' to the mock provider and counts what it carries."""
+    protocol_version = "HTTP/1.1"
+    hits = []
+    target_port = 0
+
+    def log_message(self, *a):
+        pass
+
+    def do_GET(self):
+        ProxyHandler.hits.append(self.path)
+        u = up.urlparse(self.path)
+        c = http.client.HTTPConnection("127.0.0.1", ProxyHandler.target_port, timeout=10)
+        c.request("GET", u.path + ("?" + u.query if u.query else ""))
+        r = c.getresponse()
+        body = r.read()
+        c.close()
+        self.send_response(r.status)
+        self.send_header("Content-Type", r.getheader("Content-Type", "text/plain"))
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+
+class ProxyTests(unittest.TestCase):
+    def test_traffic_goes_through_the_viewers_proxy(self):
+        mock = serve(Mock)
+        proxy = serve(ProxyHandler)
+        ProxyHandler.target_port = mock.server_port
+        ProxyHandler.hits.clear()
+        link.STATE["proxy"] = "http://127.0.0.1:%d" % proxy.server_port
+        try:
+            body, _, _ = link.fetch("http://provider.test:%d/pl.m3u" % mock.server_port)
+            self.assertIn(b"Good News", body)
+            self.assertEqual(len(ProxyHandler.hits), 1)
+            self.assertTrue(ProxyHandler.hits[0].startswith("http://provider.test:"))
+            # the stream proxy uses it too
+            srv = serve(link.Handler)
+            link.STATE["port"] = srv.server_port
+            p = up.urlparse(link.stream_url("http://provider.test:%d/hls/seg1.ts" % mock.server_port))
+            code, _, data = get(srv.server_port, p.path + "?" + p.query)
+            self.assertEqual((code, data), (200, SEGMENT))
+            self.assertEqual(len(ProxyHandler.hits), 2)
+            self.assertTrue(json.loads(get(srv.server_port, "/ping")[2])["proxy"])
+            srv.shutdown()
+        finally:
+            link.STATE["proxy"] = ""
+            mock.shutdown()
+            proxy.shutdown()
+
+    def test_without_a_proxy_nothing_is_routed_and_ping_says_so(self):
+        link.STATE["proxy"] = ""
+        srv = serve(link.Handler)
+        try:
+            self.assertFalse(json.loads(get(srv.server_port, "/ping")[2])["proxy"])
+        finally:
+            srv.shutdown()
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

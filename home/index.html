@@ -864,7 +864,7 @@
   function paintLinkStatus() {
     var up = linkUp && linkUp.ok;
     $("link-dot").className = "dot" + (up ? "" : " off");
-    $("link-text").textContent = up ? "EYE3 Link is running (version " + linkUp.version + ")" : linkUp === false ? "EYE3 Link is not running on this computer" : "Checking EYE3 Link…";
+    $("link-text").textContent = up ? "EYE3 Link is running (version " + linkUp.version + (linkUp.proxy ? ", through your proxy" : "") + ")" : linkUp === false ? "EYE3 Link is not running on this computer" : "Checking EYE3 Link…";
     $("link-help").hidden = !!up || linkUp === null;
   }
   function checkLink() { linkUp = null; paintLinkStatus(); return linkHello().then(paintLinkStatus, paintLinkStatus); }
@@ -920,6 +920,47 @@
     add("Playlist: small starter list", "A short, hand-picked list for a first test.", ORIGIN + "iptv/eye3.m3u");
     add("Phone remote for EYE3 Home", "Open on your phone after turning on Settings → Phone remote.", ORIGIN + "remote/");
     nodes.push(para("Your own Xtream or MAG subscription: add it under IPTV accounts here on the laptop, or enter it directly in the TV's own IPTV app. A web page on the TV itself cannot log in to those providers."));
+    rowsHtml($("info-body"), nodes);
+    openOverlay("ov-info");
+    setTimeout(function () { try { first.focus(); } catch (e) {} }, 60);
+  }
+
+  // ---- Help: why a channel will not play, VPN guidance, and a few free tools ----
+  var TOOLS = [
+    ["iptv-org", "The open channel lists EYE3 builds on.", "https://github.com/iptv-org/iptv"],
+    ["Free-TV / IPTV", "Free, legal channels grouped by country.", "https://github.com/Free-TV/IPTV"],
+    ["IPTV Player Web App", "A simple web player for any M3U link. Handy on a phone or a second device.", "https://afzafri.github.io/IPTV-Player-Web-App/"],
+    ["IPTVnator", "A free desktop IPTV player with a programme guide (Windows, Mac, Linux).", "https://github.com/4gray/iptvnator"],
+    ["VLC", "Plays any playlist or file. A good fallback when a browser cannot play something.", "https://www.videolan.org/vlc/"],
+    ["Jellyfin", "A free media server for your own films, music and photos on a PC, NAS or Raspberry Pi.", "https://jellyfin.org/"],
+    ["Threadfin", "A self-hosted manager that merges M3U playlists and guides into one tidy list.", "https://github.com/Threadfin/Threadfin"],
+    ["awesome-selfhosted", "An index of free self-hosted apps.", "https://awesome-selfhosted.net/"]
+  ];
+  function openHelp() {
+    $("info-title").textContent = "Help, VPN & useful tools";
+    var nodes = [make("h3", "", "A channel will not play")];
+    [
+      "Free channels change or go offline now and then. Press the next channel, or search for another. The list is re-checked every week.",
+      "A message ending “Is EYE3 Link still running?” means one of your own accounts lost its helper. Start EYE3 Link again and press Reload on the account.",
+      "A stream that keeps stopping is usually a weak internet connection. A cable connection helps."
+    ].forEach(function (t) { nodes.push(para("• " + t)); });
+    nodes.push(make("h3", "", "Channels blocked in your country"));
+    [
+      "Some broadcasters only allow viewers in their own country. EYE3 cannot change that, and it does not include a VPN: a VPN needs servers and software that a web page cannot provide.",
+      "If you already use a VPN you are allowed to use, turn it on for this computer: the browser and EYE3 Home then use it automatically.",
+      "For your own IPTV accounts only, EYE3 Link can send its traffic through a proxy you already have: python3 eye3-link.py --proxy http://127.0.0.1:PORT (HTTP proxies only). Check your provider’s and the broadcaster’s terms first."
+    ].forEach(function (t) { nodes.push(para("• " + t)); });
+    nodes.push(make("h3", "", "Useful free tools"));
+    nodes.push(para("These are separate projects, not part of EYE3. They open in a new tab."));
+    var first = null;
+    TOOLS.forEach(function (t) {
+      var row = make("div", "copyrow"), a = make("a", "btn", t[0]);
+      a.href = t[2]; a.target = "_blank"; a.rel = "noopener noreferrer";
+      row.appendChild(a); row.appendChild(make("span", "", t[1]));
+      row.lastChild.style.flex = "1 1 18rem"; row.lastChild.style.color = "var(--muted)";
+      nodes.push(row);
+      if (!first) first = a;
+    });
     rowsHtml($("info-body"), nodes);
     openOverlay("ov-info");
     setTimeout(function () { try { first.focus(); } catch (e) {} }, 60);
@@ -1180,7 +1221,9 @@
     ac.type = "button"; ac.addEventListener("click", function () { closeOverlays(); openAccounts(); });
     var ts = make("button", "btn", "Connect your TV (addresses)");
     ts.type = "button"; ts.addEventListener("click", openTvSetup);
-    var kv = make("div", "kv"); kv.appendChild(fs); kv.appendChild(ac); kv.appendChild(ts); kv.appendChild(rc); kv.appendChild(sl); kv.appendChild(sv); kv.appendChild(pl); kv.appendChild(inst); kv.appendChild(setup); kv.appendChild(ph);
+    var hp = make("button", "btn", "Help, VPN & useful tools");
+    hp.type = "button"; hp.addEventListener("click", openHelp);
+    var kv = make("div", "kv"); kv.appendChild(fs); kv.appendChild(ac); kv.appendChild(ts); kv.appendChild(hp); kv.appendChild(rc); kv.appendChild(sl); kv.appendChild(sv); kv.appendChild(pl); kv.appendChild(inst); kv.appendChild(setup); kv.appendChild(ph);
     rowsHtml(body, [
       para("EYE3 Home runs in this browser and shows on the TV over HDMI. For the best look, press F or use the button below to go fullscreen."),
       kv,
