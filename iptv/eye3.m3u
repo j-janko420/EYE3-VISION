@@ -1,6 +1,8 @@
 #EXTM3U
-#EXTINF:-1 tvg-id="AlJazeeraEnglish" tvg-name="Al Jazeera English" group-title="EYE3 · News",Al Jazeera English
-https://live-hls-web-aje.getaj.net/AJE/index.m3u8
+#EXTINF:-1 tvg-id="ArirangTV" tvg-name="Arirang TV" group-title="EYE3 · News",Arirang TV (English)
+http://amdlive-ch01.ctnd.com.edgesuite.net/arirang_1ch/smil:arirang_1ch.smil/playlist.m3u8
+#EXTINF:-1 tvg-id="AlArabiya" tvg-name="Al Arabiya" group-title="EYE3 · News",Al Arabiya (Arabic)
+https://live.alarabiya.net/alarabiapublish/alarabiya.smil/playlist.m3u8
 #EXTINF:-1 tvg-id="DWEnglish" tvg-name="DW English" group-title="EYE3 · News",DW English
 https://dwamdstream102.akamaized.net/hls/live/2015525/dwstream102/index.m3u8
 #EXTINF:-1 tvg-id="France24English" tvg-name="France 24 English" group-title="EYE3 · News",France 24 English

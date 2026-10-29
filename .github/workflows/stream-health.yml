@@ -1,0 +1,67 @@
+name: Stream health
+
+# Probes the channels in iptv/eye3.m3u and a sample of free public iptv-org news
+# channels from a GitHub runner, then prints which ones answer. Read-only: it
+# never writes to the repo.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 5 * * 1'
+  push:
+    branches: ['claude/**']
+    paths: ['.github/workflows/stream-health.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Probe one stream (helper)
+        run: |
+          cat > probe.sh <<'EOF'
+          #!/usr/bin/env bash
+          # usage: probe.sh "<name>" <url>   -> prints "OK|FAIL<TAB>code<TAB>name<TAB>url"
+          if [ $# -eq 1 ]; then name="${1%%$'\t'*}"; url="${1#*$'\t'}"; else name="$1"; url="$2"; fi
+          body=$(mktemp)
+          code=$(curl -sL --max-time 12 -A 'Mozilla/5.0' -o "$body" -w '%{http_code}' "$url" || true)
+          if [ "$code" = "200" ] && head -c 7 "$body" | grep -q '#EXTM3U'; then status=OK; else status=FAIL; fi
+          printf '%s\t%s\t%s\t%s\n' "$status" "$code" "$name" "$url"
+          rm -f "$body"
+          EOF
+          chmod +x probe.sh
+
+      - name: Probe iptv/eye3.m3u
+        run: |
+          echo "== iptv/eye3.m3u =="
+          grep -A1 '^#EXTINF' iptv/eye3.m3u | grep -v '^--' | paste - - | \
+            while IFS=$'\t' read -r info url; do
+              name="${info##*,}"
+              ./probe.sh "$name" "$url"
+            done | tee eye3-results.tsv
+
+      - name: Probe free iptv-org news sample
+        run: |
+          echo "== iptv-org news sample (alive only) =="
+          curl -sL --max-time 30 https://iptv-org.github.io/iptv/categories/news.m3u -o news.m3u || true
+          if [ ! -s news.m3u ]; then echo "could not download iptv-org news list"; exit 0; fi
+          tr -d '\r' < news.m3u | awk '
+            /^#EXTINF/ { info = $0; next }
+            /^#/ { next }
+            /^https?:/ && info != "" {
+              n = info; sub(/^.*,/, "", n)
+              if (tolower(info) !~ /adult|xxx|18\+|porn/ && cnt < 150) { printf "%s\t%s\n", n, $0; cnt++ }
+              info = ""
+            }' | xargs -d '\n' -n1 -P 20 ./probe.sh | sort | tee news-results.tsv | grep '^OK' || true
+          echo "alive: $(grep -c '^OK' news-results.tsv || true) / $(wc -l < news-results.tsv)"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: stream-health
+          path: |
+            eye3-results.tsv
+            news-results.tsv
