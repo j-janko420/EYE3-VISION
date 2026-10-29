@@ -64,7 +64,7 @@
   .wordmark { margin: 0; font-size: clamp(22px, 2.5vw, 38px); font-weight: 800; letter-spacing: .06em; line-height: 1; }
   .wordmark b { color: var(--accent); font-weight: 800; }
   .tagline { margin: 6px 0 0; color: var(--muted); font-size: clamp(9px, .85vw, 13px); letter-spacing: .32em; text-transform: uppercase; }
-  .clock { text-align: right; }
+  .clock { text-align: end; }
   .clock .t { font-size: clamp(28px, 3.6vw, 56px); font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
   .clock .d { margin-top: 4px; color: var(--muted); font-size: clamp(12px, 1.05vw, 17px); }
 
@@ -76,14 +76,17 @@
     box-shadow: inset 0 0 0 1px rgba(255, 20, 45, .16), inset 0 -50px 80px rgba(0, 0, 0, .4), 0 0 34px rgba(255, 0, 35, .12);
   }
   .hero::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, rgba(0, 0, 0, .7), rgba(0, 0, 0, .4) 40%, rgba(0, 0, 0, .06) 78%); }
-  .hero-art { position: absolute; z-index: -2; right: 3%; top: 0; bottom: 0; width: 46%; }
-  .orb { position: absolute; width: clamp(130px, 21vh, 290px); aspect-ratio: 1; border-radius: 50%; right: 8%; top: 50%; transform: translateY(-50%);
+  [dir="rtl"] .hero::before { background: linear-gradient(270deg, rgba(0, 0, 0, .7), rgba(0, 0, 0, .4) 40%, rgba(0, 0, 0, .06) 78%); }
+  [dir="rtl"] .kicker, [dir="rtl"] .hero h1, [dir="rtl"] .tagline, [dir="rtl"] .wordmark, [dir="rtl"] .bigcode { letter-spacing: 0; }   /* tracked text breaks Arabic letter joining */
+  [dir="rtl"] .ov-top h2, [dir="rtl"] .splash-title, [dir="rtl"] .splash-sub, [dir="rtl"] .splash-by { letter-spacing: 0; text-indent: 0; }
+  .hero-art { position: absolute; z-index: -2; inset-inline-end: 3%; top: 0; bottom: 0; width: 46%; }
+  .orb { position: absolute; width: clamp(130px, 21vh, 290px); aspect-ratio: 1; border-radius: 50%; inset-inline-end: 8%; top: 50%; transform: translateY(-50%);
     background: radial-gradient(circle at 35% 28%, #fff5f6 0, #ff5265 8%, #c20a28 31%, #560817 60%, #160306 72%);
     box-shadow: 0 0 70px rgba(255, 38, 63, .3), inset -22px -22px 40px rgba(4, 0, 2, .5); }
   .orb::before, .orb::after { content: ""; position: absolute; border-radius: 50%; border: 1px solid rgba(255, 160, 170, .42); transform: rotate(-25deg); }
   .orb::before { inset: -13%; border-width: 2px; }
   .orb::after { inset: 15%; border-color: rgba(255, 255, 255, .13); }
-  .sat { position: absolute; width: 20px; height: 20px; border-radius: 50%; right: 52%; top: 22%; background: linear-gradient(135deg, #ffb4bc, #ff5265); box-shadow: 0 0 26px rgba(255, 38, 63, .55); }
+  .sat { position: absolute; width: 20px; height: 20px; border-radius: 50%; inset-inline-end: 52%; top: 22%; background: linear-gradient(135deg, #ffb4bc, #ff5265); box-shadow: 0 0 26px rgba(255, 38, 63, .55); }
   .hero-content { max-width: 58%; }
   .kicker { display: flex; align-items: center; gap: 10px; color: #ffb1bb; letter-spacing: .17em; font-size: clamp(9px, .8vw, 13px); font-weight: 800; text-transform: uppercase; }
   .live { background: #ff203f; color: #fff; padding: 4px 8px; border-radius: 3px; letter-spacing: .1em; font-size: .85em; box-shadow: 0 0 14px rgba(255, 0, 35, .42); }
@@ -100,7 +103,7 @@
     position: relative; display: flex; flex-direction: column; justify-content: space-between;
     min-height: clamp(104px, 19.5vh, 220px); padding: clamp(14px, 1.4vw, 22px);
     border: 1px solid var(--edge); border-radius: 6px; background: var(--panel); box-shadow: inset 0 1px rgba(255, 255, 255, .03);
-    cursor: pointer; transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease; text-align: left;
+    cursor: pointer; transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease; text-align: start;
   }
   .tile:focus, .btn:focus, .ch:focus, .act:focus { outline: none; }
   .tile .ico { display: grid; place-items: center; width: clamp(38px, 3.6vw, 56px); aspect-ratio: 1; border-radius: 5px; background: rgba(255, 38, 63, .1); border: 1px solid rgba(255, 38, 63, .22); font-size: clamp(20px, 2.2vw, 34px); line-height: 1; }
@@ -120,7 +123,7 @@
   .ov.open { display: flex; }
   .ov-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: clamp(12px, 2vh, 22px); padding-bottom: 12px; border-bottom: 1px solid rgba(255, 30, 55, .32); }
   .ov-top h2 { margin: 0; font-size: clamp(18px, 2.2vw, 32px); font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
-  .ov-top h2 small { margin-left: 12px; color: var(--muted); font-size: .5em; font-weight: 500; letter-spacing: .04em; text-transform: none; }
+  .ov-top h2 small { margin-inline-start: 12px; color: var(--muted); font-size: .5em; font-weight: 500; letter-spacing: .04em; text-transform: none; }
   .btn { padding: 10px 18px; border: 1px solid rgba(255, 35, 60, .3); border-radius: 5px; background: rgba(20, 6, 9, .85); font-size: clamp(13px, 1.05vw, 17px); font-weight: 650; cursor: pointer; transition: box-shadow .18s, border-color .18s; }
   .btn.on, .btn:hover, .btn:focus-visible { outline: none; border-color: var(--accent); background: rgba(255, 38, 63, .16); color: #fff; box-shadow: 0 0 0 3px rgba(255, 38, 63, .14), 0 0 18px rgba(255, 38, 63, .22); }
 
@@ -152,16 +155,16 @@
   .rows h3 { margin: 6px 0 -4px; font-size: clamp(14px, 1.2vw, 20px); letter-spacing: .04em; text-transform: uppercase; color: var(--ink); }
   .tv-filters .tv-search { display: inline-block; width: min(22rem, 100%); padding: 9px 14px; font-size: clamp(13px, 1.05vw, 17px); }
   .ch .num { min-width: 2.4em; color: var(--accent); font-variant-numeric: tabular-nums; font-weight: 750; }
-  .ch .fav { margin-left: 8px; color: #ffd27a; font-style: normal; }
-  .chlist { overflow: auto; padding-right: 6px; scrollbar-width: thin; scrollbar-color: rgba(255, 38, 63, .5) transparent; }
+  .ch .fav { margin-inline-start: 8px; color: #ffd27a; font-style: normal; }
+  .chlist { overflow: auto; padding-inline-end: 6px; scrollbar-width: thin; scrollbar-color: rgba(255, 38, 63, .5) transparent; }
   .ch { display: flex; align-items: center; gap: 12px; padding: 12px 16px; margin-bottom: 8px; border: 1px solid transparent; border-radius: 6px; background: var(--panel); font-size: clamp(14px, 1.2vw, 20px); cursor: pointer; }
-  .ch small { margin-left: auto; color: var(--muted); font-size: .75em; }
+  .ch small { margin-inline-start: auto; color: var(--muted); font-size: .75em; }
   .ch.action { color: var(--orange-soft); }
   .ch.on, .ch:hover { border-color: var(--accent); background: rgba(255, 38, 63, .14); color: #fff; box-shadow: 0 0 18px rgba(255, 38, 63, .15); }
   .screen { position: relative; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255, 35, 60, .4); border-radius: 8px; background: #000; overflow: hidden; box-shadow: 0 0 30px rgba(255, 0, 35, .1); }
   .screen video, .screen iframe { width: 100%; height: 100%; border: 0; background: #000; }
   .screen .idle { color: var(--muted); font-size: clamp(14px, 1.3vw, 20px); text-align: center; padding: 20px; }
-  .screen .label { position: absolute; left: 16px; bottom: 16px; padding: 8px 16px; border: 1px solid var(--accent); border-radius: 5px; background: rgba(8, 2, 3, .88); font-size: clamp(13px, 1.1vw, 18px); font-weight: 650; }
+  .screen .label { position: absolute; inset-inline-start: 16px; bottom: 16px; padding: 8px 16px; border: 1px solid var(--accent); border-radius: 5px; background: rgba(8, 2, 3, .88); font-size: clamp(13px, 1.1vw, 18px); font-weight: 650; }
   .screen .label.err { border-color: #ffb020; color: #ffd27a; }
 
   .pane { flex: 1; display: flex; flex-direction: column; gap: 16px; min-height: 0; }
@@ -176,7 +179,7 @@
   .screen img { max-width: 100%; max-height: 100%; object-fit: contain; }
   .screen .now { padding: 20px; text-align: center; font-size: clamp(18px, 2.2vw, 36px); font-weight: 650; line-height: 1.4; }
   .screen .now small { display: block; margin-top: 8px; color: var(--muted); font-size: .55em; font-weight: 500; }
-  select.btn { appearance: none; padding-right: 18px; }
+  select.btn { appearance: none; padding-inline-end: 18px; }
   select.btn option { background: #120507; color: var(--ink); }
   .toast { position: fixed; left: 50%; bottom: 8%; z-index: 60; transform: translateX(-50%); padding: 12px 22px; border: 1px solid var(--accent); border-radius: 6px; background: rgba(8, 2, 3, .94); box-shadow: 0 0 26px var(--glow); font-size: clamp(14px, 1.4vw, 22px); font-weight: 650; display: none; }
   .toast.on { display: block; }
@@ -223,7 +226,7 @@
       <ellipse cx="80" cy="80" rx="8" ry="18" fill="#020001"/>
       <circle cx="80" cy="80" r="35" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".65"/>
     </svg>
-    <h1 class="splash-title"><span>EYE3</span> VISION</h1>
+    <h1 class="splash-title" translate="no"><span>EYE3</span> VISION</h1>
     <p class="splash-sub">See beyond</p>
     <p class="splash-by">Designed by i3 Design</p>
   </div>
@@ -238,9 +241,9 @@
       <ellipse cx="80" cy="80" rx="8" ry="18" fill="#020001"/>
       <circle cx="80" cy="80" r="35" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".65"/>
     </svg>
-      <div><div class="wordmark"><b>EYE3</b> VISION</div><p class="tagline">See beyond · by i3 Design</p></div>
+      <div><div class="wordmark" translate="no"><b>EYE3</b> VISION</div><p class="tagline">See beyond · by i3 Design</p></div>
     </div>
-    <div class="clock"><div class="t" id="clock">--:--</div><div class="d" id="date"></div></div>
+    <div class="clock"><div class="t" id="clock" translate="no">--:--</div><div class="d" id="date" translate="no"></div></div>
   </div>
 
   <section class="hero" aria-label="Welcome">
@@ -311,10 +314,10 @@
     <div style="display:grid;gap:18px;align-content:start;min-height:0;overflow:auto">
       <form class="acct-form" id="mk-form" autocomplete="off">
         <label>Channel name <input class="field" id="mk-name" type="text" maxlength="80" required></label>
-        <label>Stream link <input class="field" id="mk-url" type="url" placeholder="https://…/playlist.m3u8"></label>
+        <label>Stream link <input class="field" id="mk-url" translate="no" type="url" placeholder="https://…/playlist.m3u8"></label>
         <label>Group (optional) <input class="field" id="mk-group" type="text" maxlength="60" placeholder="News, Sports, Family…"></label>
-        <label>Logo link (optional) <input class="field" id="mk-logo" type="url"></label>
-        <label>Guide id, tvg-id (optional) <input class="field" id="mk-tvgid" type="text" maxlength="80"></label>
+        <label>Logo link (optional) <input class="field" id="mk-logo" translate="no" type="url"></label>
+        <label>Guide id, tvg-id (optional) <input class="field" id="mk-tvgid" translate="no" type="text" maxlength="80"></label>
         <button class="btn on" type="submit">Add channel</button>
       </form>
       <div class="acct-form">
@@ -342,11 +345,11 @@
   <div class="acct">
     <div class="acct-col">
       <div class="linkstat"><span class="dot off" id="link-dot"></span><span id="link-text">Checking EYE3 Link…</span>
-        <button class="btn" id="link-where" type="button" style="margin-left:auto" title="Asks ipinfo.io which country this connection appears to be in">Where is my connection?</button></div>
+        <button class="btn" id="link-where" type="button" style="margin-inline-start:auto" title="Asks ipinfo.io which country this connection appears to be in">Where is my connection?</button></div>
       <p class="acct-note" id="link-where-text" hidden></p>
       <div class="linkhelp" id="link-help" hidden>
         Your provider cannot be read straight from a web page, so a small helper runs on <b>this computer</b>.
-        <ol style="margin:8px 0 0;padding-left:20px">
+        <ol style="margin:8px 0 0;padding-inline-start:20px">
           <li>Install Python 3 if you do not have it (python.org).</li>
           <li><a href="../tools/eye3-link.py" download="eye3-link.py">Download eye3-link.py</a></li>
           <li>Run <code>python3 eye3-link.py</code> (Windows: <code>py eye3-link.py</code>) and leave that window open.</li>
@@ -365,15 +368,15 @@
         </select>
       </label>
       <label>Name <input class="field" id="acct-name" type="text" maxlength="40" placeholder="My IPTV" required></label>
-      <div class="acct-form" data-for="m3u"><label>M3U link <input class="field" id="acct-url" type="url" placeholder="http://provider.example/get.php?username=…&password=…&type=m3u_plus"></label></div>
+      <div class="acct-form" data-for="m3u"><label>M3U link <input class="field" id="acct-url" translate="no" type="url" placeholder="http://provider.example/get.php?username=…&password=…&type=m3u_plus"></label></div>
       <div class="acct-form" data-for="xtream" hidden>
-        <label>Server <input class="field" id="acct-server" type="text" placeholder="http://provider.example:8080"></label>
+        <label>Server <input class="field" id="acct-server" translate="no" type="text" placeholder="http://provider.example:8080"></label>
         <label>Username <input class="field" id="acct-user" type="text" autocomplete="off" spellcheck="false"></label>
         <label>Password <input class="field" id="acct-pass" type="password" autocomplete="new-password"></label>
       </div>
       <div class="acct-form" data-for="stalker" hidden>
-        <label>Portal address <input class="field" id="acct-portal" type="text" placeholder="http://portal.example.com/c/"></label>
-        <label>MAC address <input class="field" id="acct-mac" type="text" placeholder="00:1A:79:AB:CD:EF" spellcheck="false"></label>
+        <label>Portal address <input class="field" id="acct-portal" translate="no" type="text" placeholder="http://portal.example.com/c/"></label>
+        <label>MAC address <input class="field" id="acct-mac" translate="no" type="text" placeholder="00:1A:79:AB:CD:EF" spellcheck="false"></label>
       </div>
       <button class="btn on" type="submit" id="acct-save">Save &amp; load</button>
       <p class="acct-note" id="acct-msg">Saved on this computer only. Use accounts you are entitled to watch. Adult groups stay hidden.</p>
@@ -499,9 +502,102 @@
   ];
 
   var $ = function (id) { return document.getElementById(id); };
+  function nt(el) { el.setAttribute("translate", "no"); return el; }   // data (channel/account names): never translated
   function make(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
   function get(key) { try { return localStorage.getItem(key); } catch (e) { return null; } }
   function set(key, val) { try { if (val == null) localStorage.removeItem(key); else localStorage.setItem(key, val); } catch (e) {} }
+
+
+  // ---- Language: English, Français, العربية. Text is translated as screens are built; switching back restores the English exactly. ----
+  var LANG_KEY = "eye3.home.lang", LANGS = { en: "English", fr: "Français", ar: "العربية" };
+  var lang = "en", dict = null;
+  window.EYE3_I18N = window.EYE3_I18N || {};
+  var NO_TRANSLATE = { SCRIPT: 1, STYLE: 1, CODE: 1, TEXTAREA: 1 };
+  function wsNorm(t) { return String(t).replace(/\s+/g, " ").replace(/^ | $/g, ""); }
+  function lookup(core) {
+    if (!dict) return null;
+    var t = dict.exact[core];
+    if (t != null) return t;
+    for (var i = 0; i < dict.patterns.length; i++) {
+      var m = dict.patterns[i][0].exec(core);
+      if (m) return dict.patterns[i][1](m, function (x) { var r = lookup(x); return r == null ? x : r; });
+    }
+    if (core.slice(0, 2) === "• ") { var rb = lookup(core.slice(2)); if (rb != null) return "• " + rb; }   // bullet lists
+    if (core.indexOf(" · ") > -1) {   // "Xtream Codes · 3 channels · Active": translate each part
+      var changed = false, out = core.split(" · ").map(function (p) { var r = lookup(p); if (r != null && r !== p) { changed = true; return r; } return p; });
+      if (changed) return out.join(" · ");
+    }
+    return null;
+  }
+  function tr(en) { var t = lookup(wsNorm(en)); return t == null ? en : t; }   // for browser dialogs (prompt/alert)
+  function skipped(el) { return !el || NO_TRANSLATE[el.tagName] || (el.closest && el.closest('[translate="no"]')); }
+  function xText(n, forceFrom) {
+    var p = n.parentElement;
+    if (skipped(p)) return;
+    var cur = forceFrom != null ? forceFrom : n.nodeValue;
+    if (forceFrom == null && n.__tr === cur) return;            // our own output
+    n.__en = cur; n.__tr = undefined;
+    if (forceFrom != null) n.nodeValue = cur;
+    var core = wsNorm(cur);
+    if (!core || !dict) return;
+    var t = lookup(core);
+    if (t == null) return;
+    n.__tr = /^\s*/.exec(cur)[0] + t + /\s*$/.exec(cur)[0];   // also recorded when identical, so it is not mistaken for a missing translation
+    if (n.__tr !== cur) n.nodeValue = n.__tr;
+  }
+  var I18N_ATTRS = ["placeholder", "title", "aria-label", "alt"];
+  function xAttr(el, a, restore) {
+    if (skipped(el)) return;
+    var cur = el.getAttribute(a);
+    if (cur == null) return;
+    el.__en = el.__en || {}; el.__tr = el.__tr || {};
+    if (!restore && el.__tr[a] === cur) return;
+    var en = restore && el.__en[a] != null ? el.__en[a] : cur;
+    el.__en[a] = en; el.__tr[a] = undefined;
+    if (restore) el.setAttribute(a, en);
+    var t = dict ? lookup(wsNorm(en)) : null;
+    if (t != null) { el.__tr[a] = t; if (t !== en) el.setAttribute(a, t); }
+  }
+  function walkI18n(node, restore) {
+    if (node.nodeType === 3) { xText(node, restore ? (node.__en != null ? node.__en : node.nodeValue) : null); return; }
+    if (node.nodeType !== 1 || NO_TRANSLATE[node.tagName]) return;
+    I18N_ATTRS.forEach(function (a) { if (node.hasAttribute(a)) xAttr(node, a, restore); });
+    for (var c = node.firstChild; c; c = c.nextSibling) walkI18n(c, restore);
+  }
+  new MutationObserver(function (recs) {
+    recs.forEach(function (r) {
+      if (r.type === "characterData") xText(r.target, null);
+      else if (r.type === "attributes") xAttr(r.target, r.attributeName, false);
+      else [].forEach.call(r.addedNodes, function (nd) { walkI18n(nd, false); });
+    });
+  }).observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: I18N_ATTRS });
+  function applyLang(code) {
+    dict = code === "en" ? null : window.EYE3_I18N[code] || null;
+    lang = dict ? code : "en";
+    document.documentElement.lang = lang;
+    document.documentElement.dir = (dict && dict.dir) || "ltr";
+    walkI18n(document.body, true);
+    try { regionNames = new Intl.DisplayNames([lang], { type: "region" }); } catch (e) {}
+    tick();
+    if (typeof refreshLists === "function") refreshLists();
+  }
+  function setLang(code) {
+    if (!LANGS[code]) return Promise.resolve();
+    set(LANG_KEY, code);
+    if (code === "en" || window.EYE3_I18N[code]) { applyLang(code); return Promise.resolve(); }
+    return new Promise(function (resolve) {
+      var sc = document.createElement("script");
+      sc.src = "i18n-" + code + ".js";
+      sc.onload = function () { applyLang(code); resolve(); };
+      sc.onerror = function () { toast("Could not load that language (offline?)"); resolve(); };
+      document.head.appendChild(sc);
+    });
+  }
+  function startLang() {
+    var saved = get(LANG_KEY), pick = LANGS[saved] ? saved : (navigator.language || "en").slice(0, 2).toLowerCase();
+    if (!LANGS[pick] || pick === "en") return;
+    setLang(pick);
+  }
 
   // ---- personal i3 photo theme (shared with the main app) ----
   (function applyTheme() {
@@ -516,7 +612,7 @@
     var now = new Date(), h = now.getHours();
     var pad = function (n) { return (n < 10 ? "0" : "") + n; };
     $("clock").textContent = pad(h) + ":" + pad(now.getMinutes());
-    $("date").textContent = now.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" });
+    $("date").textContent = now.toLocaleDateString(lang === "en" ? undefined : lang, { weekday: "long", day: "numeric", month: "long" });
     var part = h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
     $("greet").innerHTML = part + ". <span>What shall we watch?</span>";
   }
@@ -598,7 +694,7 @@
   try { favs = JSON.parse(get(FAV_KEY) || "[]") || []; } catch (e) { favs = []; }
   try { var sf = JSON.parse(get(FILTER_KEY) || "null"); if (sf && typeof sf.cat === "string") tvFilter = { cat: sf.cat, country: sf.country || "", group: "", q: "" }; } catch (e) {}
   var regionNames = null;
-  try { regionNames = new Intl.DisplayNames(undefined, { type: "region" }); } catch (e) {}
+  try { regionNames = new Intl.DisplayNames([lang], { type: "region" }); } catch (e) {}
   function countryName(code) { try { return (regionNames && regionNames.of(code === "UK" ? "GB" : code)) || code; } catch (e) { return code; } }
   function isFav(url) { return favs.indexOf(url) > -1; }
   function toggleFav(url) {
@@ -686,7 +782,7 @@
     channels.forEach(function (c, i) {
       var row = make("div", "ch");
       row.appendChild(make("b", "num", String(i + 1)));
-      row.appendChild(make("span", "", c.name));
+      row.appendChild(nt(make("span", "", c.name)));
       var meta = [c.q ? c.q + "p" : "", c.country, c.sub || (tvFilter.cat === "All" || tvFilter.cat === FAVS ? c.grp : "")].filter(Boolean).join(" · ");
       if (meta) row.appendChild(make("small", "", meta));
       if (isFav(c.url)) row.appendChild(make("i", "fav", "★"));
@@ -836,10 +932,10 @@
   $("tv-accts").addEventListener("click", openAccounts);
   $("tv-add").addEventListener("click", function () {
     var cur = get(PLAYLIST_KEY) || "";
-    var v = window.prompt("Paste your M3U or Xtream playlist link (saved on this computer only):", cur);
+    var v = window.prompt(tr("Paste your M3U or Xtream playlist link (saved on this computer only):"), cur);
     if (v == null) return;
     v = v.replace(/^\s+|\s+$/g, "");
-    if (!v) { set(PLAYLIST_KEY, null); } else if (/^https?:\/\//i.test(v)) { set(PLAYLIST_KEY, v); focusCat = "My playlist"; } else { window.alert("Link must start with http:// or https://"); return; }
+    if (!v) { set(PLAYLIST_KEY, null); } else if (/^https?:\/\//i.test(v)) { set(PLAYLIST_KEY, v); focusCat = "My playlist"; } else { window.alert(tr("Link must start with http:// or https://")); return; }
     openTV();
   });
   // Channel numbers: type digits on the keyboard or phone, the jump happens after a short pause (or on OK).
@@ -912,7 +1008,7 @@
     if (!accounts.length) list.appendChild(make("div", "ch action", "No accounts yet. Add one on the right."));
     accounts.forEach(function (a) {
       var st = acctState[a.id] || {}, row = make("div", "acct-row"), who = make("div", "who");
-      who.appendChild(make("b", "", a.name));
+      who.appendChild(nt(make("b", "", a.name)));
       who.appendChild(make("small", st.bad ? "bad" : "", TYPE_LABEL[a.type] + " · " + (st.loading ? "loading…" : st.text || "not loaded yet")));
       row.appendChild(who);
       var reload = make("button", "btn", "Reload"); reload.type = "button"; reload.addEventListener("click", function () { delete acctChannels[a.id]; loadAccount(a); });
@@ -968,8 +1064,8 @@
   // ---- Connect your TV: the addresses to type into a MAG box, Smart STB or an IPTV app ----
   function copyText(text) {
     var done = function () { toast("Copied"); };
-    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, function () { window.prompt("Copy this:", text); });
-    else window.prompt("Copy this:", text);
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, function () { window.prompt(tr("Copy this:"), text); });
+    else window.prompt(tr("Copy this:"), text);
   }
   function openTvSetup() {
     $("info-title").textContent = "Connect your TV";
@@ -1120,7 +1216,7 @@
       if (!explicitUnlocked && ADULT_RX.test((c.g || "") + " " + c.n)) return;   // locked: adult names are not even listed
       shown++;
       var row = make("div", "acct-row"), who = make("div", "who");
-      who.appendChild(make("b", "", c.n)); who.appendChild(make("small", "", c.g || "no group"));
+      who.appendChild(nt(make("b", "", c.n))); who.appendChild(c.g ? nt(make("small", "", c.g)) : make("small", "", "no group"));
       var rm = make("button", "btn", "Remove"); rm.type = "button";
       rm.addEventListener("click", function () { myChannels.splice(i, 1); saveMy(); paintMaker(); refreshLists(); });
       row.appendChild(who); row.appendChild(rm); list.appendChild(row);
@@ -1217,7 +1313,7 @@
     nodes.push(para("These are separate projects, not part of EYE3. They open in a new tab."));
     var first = null;
     TOOLS.forEach(function (t) {
-      var row = make("div", "copyrow"), a = make("a", "btn", t[0]);
+      var row = make("div", "copyrow"), a = nt(make("a", "btn", t[0]));
       a.href = t[2]; a.target = "_blank"; a.rel = "noopener noreferrer";
       row.appendChild(a); row.appendChild(make("span", "", t[1]));
       row.lastChild.style.flex = "1 1 18rem"; row.lastChild.style.color = "var(--muted)";
@@ -1246,7 +1342,7 @@
     while (list.firstChild) list.removeChild(list.firstChild);
     stations.forEach(function (st, i) {
       var row = make("div", "ch" + (i === rIndex ? " on" : st.status ? " action" : ""));
-      row.appendChild(make("span", "", st.name));
+      row.appendChild(st.status ? make("span", "", st.name) : nt(make("span", "", st.name)));
       if (st.country) row.appendChild(make("small", "", st.country));
       if (!st.status) row.addEventListener("click", function () { rIndex = i; paintStations(); playStation(i); });
       list.appendChild(row);
@@ -1281,7 +1377,8 @@
   function playStation(i) {
     var st = stations[i]; if (!st || !st.url) return;
     var a = $("audio");
-    $("r-now").textContent = st.name;
+    $("r-now").textContent = "";
+    $("r-now").appendChild(nt(make("span", "", st.name)));
     var sub = make("small", "", "Connecting…"); $("r-now").appendChild(sub);
     a.onplaying = function () { sub.textContent = "Playing" + (st.country ? " · " + st.country : ""); };
     a.onerror = function () { sub.textContent = "This station can't be played right now. Try another."; };
@@ -1317,7 +1414,7 @@
     while (list.firstChild) list.removeChild(list.firstChild);
     media.forEach(function (m, i) {
       var row = make("div", "ch" + (i === mIndex ? " on" : ""));
-      row.appendChild(make("span", "", m.name.replace(/^.*\//, "")));
+      row.appendChild(nt(make("span", "", m.name.replace(/^.*\//, ""))));
       row.appendChild(make("small", "", m.kind === "image" ? "photo" : "play"));
       row.addEventListener("click", function () { mIndex = i; paintMedia(); playMedia(i); });
       list.appendChild(row);
@@ -1466,7 +1563,7 @@
     var ph = make("button", "btn", "Personalize (photo & theme) in EYE3 Vision");
     ph.type = "button"; ph.addEventListener("click", function () { location.href = ORIGIN + "index.html?tv=1"; });
     var inst = make("button", "btn", "Install EYE3 Home as an app");
-    inst.type = "button"; inst.addEventListener("click", function () { if (!window.__installApp || !window.__installApp()) window.alert("To install: in your browser menu choose \"Install app\" or \"Add to Home screen\". On iPhone Safari: Share then Add to Home Screen."); });
+    inst.type = "button"; inst.addEventListener("click", function () { if (!window.__installApp || !window.__installApp()) window.alert(tr("To install: in your browser menu choose \"Install app\" or \"Add to Home screen\". On iPhone Safari: Share then Add to Home Screen.")); });
     var setup = make("button", "btn", "Turn a spare device into an EYE3 box");
     setup.type = "button"; setup.addEventListener("click", function () { location.href = "setup.html"; });
     var sv = make("button", "btn", "");
@@ -1485,9 +1582,12 @@
     ac.type = "button"; ac.addEventListener("click", function () { closeOverlays(); openAccounts(); });
     var ts = make("button", "btn", "Connect your TV (addresses)");
     ts.type = "button"; ts.addEventListener("click", openTvSetup);
+    var lg = make("button", "btn", "Language: " + LANGS[lang]);
+    lg.type = "button";
+    lg.addEventListener("click", function () { var order = ["en", "fr", "ar"]; setLang(order[(order.indexOf(lang) + 1) % order.length]).then(openSettings); });
     var hp = make("button", "btn", "Help, VPN & useful tools");
     hp.type = "button"; hp.addEventListener("click", openHelp);
-    var kv = make("div", "kv"); kv.appendChild(fs); kv.appendChild(ac); kv.appendChild(ts); kv.appendChild(hp); kv.appendChild(rc); kv.appendChild(sl); kv.appendChild(sv); kv.appendChild(pl); kv.appendChild(inst); kv.appendChild(setup); kv.appendChild(ph);
+    var kv = make("div", "kv"); kv.appendChild(fs); kv.appendChild(ac); kv.appendChild(ts); kv.appendChild(hp); kv.appendChild(lg); kv.appendChild(rc); kv.appendChild(sl); kv.appendChild(sv); kv.appendChild(pl); kv.appendChild(inst); kv.appendChild(setup); kv.appendChild(ph);
     rowsHtml(body, [
       para("EYE3 Home runs in this browser and shows on the TV over HDMI. For the best look, press F or use the button below to go fullscreen."),
       kv,
@@ -1721,9 +1821,9 @@
     var link = ORIGIN + "remote/" + (code ? "#c=" + code : "");
     if (code) {
       nodes.push(para("On your phone (same internet is enough — no Wi-Fi pairing), open:"));
-      var l = make("p", "", link); l.style.color = "var(--orange-soft)"; l.style.overflowWrap = "anywhere"; nodes.push(l);
+      var l = nt(make("p", "", link)); l.style.color = "var(--orange-soft)"; l.style.overflowWrap = "anywhere"; nodes.push(l);
       nodes.push(para("or open " + ORIGIN + "remote/ and type this code:"));
-      nodes.push(make("div", "bigcode", rcPretty(code)));
+      nodes.push(nt(make("div", "bigcode", rcPretty(code))));
       nodes.push(para("Arrows, OK, Back, Home, channel and station up/down, number keys, TV · Radio · My media, volume, mute, play/pause and a sleep timer. Keep this page open."));
     } else {
       nodes.push(para("Turn this on to control EYE3 Home from your phone. It creates a private 8-character code; only navigation buttons are sent."));
@@ -1753,6 +1853,7 @@
   };
 
   window.addEventListener("pagehide", stopPlayback);
+  startLang();
 })();
 </script>
 </body>
