@@ -614,7 +614,7 @@
   var splashOpen = true;
   var featuredIndex = 0;
   var DASH_IDS = ['nav-home', 'nav-apps', 'nav-live', 'nav-settings', 'feature-prev', 'feature-next', 'watch-now', 'apps-open', 'phone-open', 'queue-open', 'live-open'];
-  var dashFocus = 0;
+  var dashFocus = 6;
   function updateFeatured() {
     var channel = FREE[featuredIndex];
     setText($('feature-title'), channel.name);
@@ -653,7 +653,12 @@
     if (splashOpen) {
       if (code === 37 || code === 38) { focusDashboard(-1); return false; }
       if (code === 39 || code === 40) { focusDashboard(1); return false; }
-      if (code === 13) { try { $(DASH_IDS[dashFocus]).click(); } catch (e) { hideSplash(); } return false; }
+      if (code === 13) {
+        var target = $(DASH_IDS[dashFocus]);
+        if (target && typeof target.onclick === 'function') { try { target.onclick(); } catch (e) { hideSplash(); } }
+        else { hideSplash(); }
+        return false;
+      }
       if (isBack(code) || code === 77) { hideSplash(); return false; }
       return true;
     }
@@ -728,7 +733,12 @@
   updateDashboard();
   tick();
   setInterval(tick, 30000);
-  setTimeout(function () { try { $('nav-home').focus(); } catch (e) { /* focus is optional on older TV browsers */ } }, 0);
+  // Open straight into the channel menu: the key-driven list works on every box, the dashboard is one key (H) away.
+  hideSplash();
+  openSection(0);
+  state.zone = 'menu';
+  render();
+  try { window.focus(); } catch (e) { /* optional */ }
 })();
 </script>
 </body>
