@@ -19,6 +19,7 @@ FILES = {
     "/deadseg/seg.ts": ("nope", 404),
     "/empty/media.m3u8": ("#EXTM3U\n#EXT-X-ENDLIST\n", 200),
     "/html/page.m3u8": ("<html>not a playlist</html>", 200),
+    "/forbidden/media.m3u8": ("denied", 403),
     "/zerobyte/media.m3u8": ("#EXTM3U\n#EXTINF:4,\nseg.ts\n", 200),
     "/zerobyte/seg.ts": ("", 200),
 }
@@ -67,6 +68,41 @@ class Tests(unittest.TestCase):
         self.assertFalse(bc.expired_token("https://x/y.m3u8?token=abc&quality=1080"))
         self.assertTrue(bc.expired_token("https://x/y.m3u8?expires=1700000000", now=1_790_000_000))
         self.assertFalse(bc.expired_token("https://x/y.m3u8?e=12345"))  # not a timestamp
+
+    def test_failure_reasons_are_specific(self):
+        r = lambda path: bc.alive_reason(self.base + path, 3)
+        self.assertEqual(r("/live/media.m3u8"), (True, ""))
+        self.assertEqual(r("/forbidden/media.m3u8"), (False, "http_403_451"))
+        self.assertEqual(r("/nothing.m3u8"), (False, "http_404_410"))
+        self.assertEqual(r("/html/page.m3u8"), (False, "not_a_playlist"))
+        self.assertEqual(r("/empty/media.m3u8"), (False, "no_segments"))
+        self.assertEqual(r("/deadseg/media.m3u8"), (False, "segment:http_404_410"))
+        self.assertEqual(r("/badvariant/master.m3u8"), (False, "variant:http_404_410"))
+        self.assertEqual(r("/zerobyte/media.m3u8"), (False, "empty_segment"))
+        self.assertEqual(bc.alive_reason("http://127.0.0.1:1/x.m3u8", 2)[1], "connection")
+
+    def test_report_explains_why_channels_were_dropped(self):
+        import tempfile, sys
+        src = os.path.join(tempfile.mkdtemp(), "in.m3u")
+        rows = ["#EXTM3U"]
+        for i in range(55):
+            rows += ['#EXTINF:-1 tvg-id="Ok%d.it" group-title="News",Ok %d' % (i, i), self.base + "/live/media.m3u8?c=%d" % i]
+        for i in range(3):
+            rows += ['#EXTINF:-1 tvg-id="Blocked%d.it" group-title="News",Blocked %d' % (i, i), self.base + "/forbidden/media.m3u8?c=%d" % i]
+        rows += ['#EXTINF:-1 tvg-id="Dead.fr" group-title="News",Dead', self.base + "/nothing.m3u8"]
+        open(src, "w").write("\n".join(rows) + "\n")
+        out = tempfile.mkdtemp()
+        old = sys.argv
+        sys.argv = ["x", "--src", src, "--out", out, "--workers", "8", "--timeout", "3"]
+        try:
+            self.assertEqual(bc.main(), 0)
+        finally:
+            sys.argv = old
+        rep = open(os.path.join(out, "channels-report.txt")).read()
+        self.assertIn("checked 59 streams, kept 55", rep)
+        self.assertRegex(rep, r"3\s+refused / blocked")
+        self.assertRegex(rep, r"1\s+not found")
+        self.assertRegex(rep, r"IT\s+3")  # the blocked ones are Italian
 
     def test_end_to_end_keeps_only_working_channels(self):
         import json, tempfile

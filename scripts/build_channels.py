@@ -15,7 +15,7 @@ Writes (into --out, default "iptv"):
 
 Standard library only. Never run with credentials; it needs no keys.
 """
-import argparse, json, re, sys, time, urllib.parse, urllib.request
+import argparse, collections, json, re, socket, ssl, sys, time, urllib.error, urllib.parse, urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 
@@ -160,45 +160,85 @@ def expired_token(url, now=None):
     return any(1_000_000_000 < int(v) < now for v in re.findall(r"(?:[?&~]|^)(?:exp|expires|e)=(\d{10})\b", url))
 
 
-def alive(url, timeout):
-    """True only if the stream really delivers video: playlist -> (variant playlist) -> newest segment."""
+def classify(exc):
+    """Short reason code for a failed request. 403/451 usually means a country block from the runner's (US) address."""
+    if isinstance(exc, urllib.error.HTTPError):
+        c = exc.code
+        if c in (403, 451):
+            return "http_403_451"
+        if c in (404, 410):
+            return "http_404_410"
+        return "http_5xx" if c >= 500 else "http_other"
+    if isinstance(exc, urllib.error.URLError):
+        r = exc.reason
+        if isinstance(r, (socket.timeout, TimeoutError)) or "timed out" in str(r):
+            return "timeout"
+        if isinstance(r, ssl.SSLError) or "CERTIFICATE" in str(r).upper():
+            return "ssl"
+        return "connection"  # DNS failure, refused, reset
+    if isinstance(exc, (socket.timeout, TimeoutError)):
+        return "timeout"
+    if isinstance(exc, ssl.SSLError):
+        return "ssl"
+    return "other"
+
+
+def alive_reason(url, timeout):
+    """('ok', '') only if the stream really delivers video: playlist -> (variant playlist) -> newest segment.
+    Otherwise (False, reason) so the report can say why channels were dropped."""
+    stage = "playlist"
     try:
         text, base = get(url, timeout, 400_000)
         text = text.decode("utf-8", "replace")
         if "#EXTM3U" not in text[:200]:
-            return False
+            return False, "not_a_playlist"
         lines = [ln.strip() for ln in text.replace("\r", "").split("\n") if ln.strip()]
         for i, ln in enumerate(lines):  # master playlist: follow its first variant
             if ln.startswith("#EXT-X-STREAM-INF"):
                 nxt = next((x for x in lines[i + 1:] if not x.startswith("#")), None)
                 if not nxt:
-                    return False
+                    return False, "no_segments"
+                stage = "variant"
                 text, base = get(urllib.parse.urljoin(base, nxt), timeout, 400_000)
                 text = text.decode("utf-8", "replace")
                 if "#EXTM3U" not in text[:200]:
-                    return False
+                    return False, "not_a_playlist"
                 lines = [x.strip() for x in text.replace("\r", "").split("\n") if x.strip()]
                 break
         segments = [x for x in lines if not x.startswith("#")]
         if not segments:
-            return False
+            return False, "no_segments"
+        stage = "segment"
         chunk, _ = get(urllib.parse.urljoin(base, segments[-1]), timeout, 2048)
-        return len(chunk) > 0
-    except Exception:
-        return False
+        return (True, "") if chunk else (False, "empty_segment")
+    except Exception as exc:
+        why = classify(exc)
+        return False, why if stage == "playlist" else "%s:%s" % (stage, why)
+
+
+def alive(url, timeout):
+    return alive_reason(url, timeout)[0]
 
 
 def probe(channels, workers, timeout):
+    """Returns (working_channels, stats) where stats counts why the others were dropped."""
     ok, done, t0 = [], 0, time.time()
+    reasons, blocked = collections.Counter(), collections.Counter()
     with ThreadPoolExecutor(max_workers=workers) as ex:
-        futs = {ex.submit(alive, c["url"], timeout): c for c in channels}
+        futs = {ex.submit(alive_reason, c["url"], timeout): c for c in channels}
         for f in as_completed(futs):
             done += 1
-            if f.result():
-                ok.append(futs[f])
+            good, why = f.result()
+            c = futs[f]
+            if good:
+                ok.append(c)
+            else:
+                reasons[why] += 1
+                if why.endswith("http_403_451"):
+                    blocked[c["country"] or "??"] += 1
             if done % 500 == 0:
                 print("probed %d/%d, %d alive, %ds" % (done, len(channels), len(ok), time.time() - t0), flush=True)
-    return ok
+    return ok, {"reasons": reasons, "blocked": blocked, "tested": len(channels)}
 
 
 def cat_rank(cat):
@@ -209,7 +249,7 @@ def esc(s):
     return s.replace('"', "'")
 
 
-def write_outputs(channels, out, source):
+def write_outputs(channels, out, source, stats=None):
     channels.sort(key=lambda c: (cat_rank(c["cat"]), c["cat"], c["country"], c["name"].lower()))
     with open(out + "/eye3-full.m3u", "w", encoding="utf-8") as fh:
         fh.write("#EXTM3U\n")
@@ -238,6 +278,21 @@ def write_outputs(channels, out, source):
             data["updated"], source, len(channels), sum(1 for c in channels if c["url"].startswith("https"))))
         for k in sorted(cats, key=lambda k: (cat_rank(k), k)):
             fh.write("  %-16s %d\n" % (k, cats[k]))
+        if stats:
+            fh.write("\nchecked %d streams, kept %d. Why the others were dropped\n" % (stats["tested"], len(channels)))
+            names = {"http_403_451": "refused / blocked (403, 451: often a country block from the US test server)",
+                     "http_404_410": "not found (404, 410: link is dead)", "http_5xx": "server error (5xx)",
+                     "http_other": "other HTTP answer", "timeout": "no answer in time", "connection": "cannot connect (DNS / refused / reset)",
+                     "ssl": "invalid HTTPS certificate", "not_a_playlist": "answered, but not a video playlist",
+                     "no_segments": "playlist has no video segments", "empty_segment": "video segment was empty", "other": "other problem"}
+            for k, v in sorted(stats["reasons"].items(), key=lambda kv: -kv[1]):
+                base = k.split(":")[-1]
+                label = names.get(base, base) + (" [at the %s step]" % k.split(":")[0] if ":" in k else "")
+                fh.write("  %5d  %s\n" % (v, label))
+            if stats["blocked"]:
+                fh.write("\ncountries with the most refused/blocked streams (likely geo-restricted)\n")
+                for k, v in stats["blocked"].most_common(12):
+                    fh.write("  %-4s %d\n" % (k, v))
         fh.write("\nby country (top 40)\n")
         for k, v in sorted(countries.items(), key=lambda kv: -kv[1])[:40]:
             fh.write("  %-4s %d\n" % (k, v))
@@ -273,11 +328,15 @@ def main():
     if a.limit:
         unique = unique[:a.limit]
     print("parsed %d entries, %d usable, %d after dedupe" % (len(raw), len(cleaned), len(unique)), flush=True)
-    kept = unique if a.no_probe else probe(unique, a.workers, a.timeout)
+    stats = None
+    if a.no_probe:
+        kept = unique
+    else:
+        kept, stats = probe(unique, a.workers, a.timeout)
     if not a.no_probe and len(kept) < 50:
         print("refusing to publish: only %d channels answered (network problem?)" % len(kept), file=sys.stderr)
         return 1
-    data = write_outputs(kept, a.out, " + ".join(x if re.match(r"^https?://", x) else "local test file" for x in used))
+    data = write_outputs(kept, a.out, stats=stats, source=" + ".join(x if re.match(r"^https?://", x) else "local test file" for x in used))
     print("wrote %d channels (%d categories)" % (data["count"], len(data["categories"])))
     return 0
 
