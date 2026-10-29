@@ -38,6 +38,8 @@ Published free on **GitHub Pages**: `.github/workflows/pages.yml` deploys `index
 - **Mirroring:** Miracast from an Android phone (Cast / Smart View) or a Windows PC (`Win + K`); AirPlay from an iPhone or Mac to an Apple TV or AirPlay TV.
 - **TV browsers:** where a TV or stick has a browser, open the EYE3 link there and TV mode turns on automatically.
 
+**EYE3 Bridge (safe TV setup helper):** `https://j-janko420.github.io/EYE3-VISION/bridge/` is a guided compatibility page (adapted from the uploaded TV Bridge template) pre-filled for the Philips 50PUT6103/56 (TPM186E, Saphi). It gives the official Philips update path, explains honestly that Android cannot be flashed onto a Saphi TV, and links to the EYE3 portal, playlist and app. No firmware flashing, no network scanning, no device control.
+
 **Smart STB playlist (works in Smart STB's built-in TV screens):** add `https://j-janko420.github.io/EYE3-VISION/iptv/eye3.m3u` as a portal or M3U playlist in smart-stb.tv. It contains EYE3's free public channels. Smart STB also accepts the open iptv-org playlists directly, for example `https://iptv-org.github.io/iptv/categories/news.m3u`. To make a portal open by default on the TV: Smart STB **Settings → Portals → turn on multiportal mode → set Portal 1 as default → reboot the app**.
 
 **EYE3 TV portal (Smart STB / MAG, Philips Saphi):** in smart-stb.tv add a portal with the URL `https://j-janko420.github.io/EYE3-VISION/portal/c/`. It opens with the i3 Design welcome screen, then a remote-controlled IPTV menu:
