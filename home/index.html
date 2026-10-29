@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#08122b">
+<meta name="theme-color" content="#050101">
 <meta name="description" content="EYE3 Home — a fullscreen TV home screen by i3 Design. Runs on your laptop or PC and shows on the TV over HDMI: Live TV, Vision tools, YouTube, web and cast.">
 <title>EYE3 Home</title>
 <link rel="manifest" href="manifest.webmanifest">
@@ -16,123 +16,223 @@
 <style>
   :root {
     color-scheme: dark;
-    --bg: #08122b;
-    --ink: #eef3fb;
-    --muted: #9fb0cc;
-    --line: rgba(239, 233, 220, .14);
-    --panel: rgba(12, 24, 54, .72);
-    --orange: #ff9a61;
-    --orange-soft: #ffb078;
-    --cream: #efe9dc;
+    --bg: #050101;
+    --ink: #fff5f6;
+    --muted: #b9a9ac;
+    --line: rgba(255, 255, 255, .11);
+    --edge: rgba(255, 38, 63, .28);
+    --panel: linear-gradient(145deg, rgba(26, 7, 11, .94), rgba(7, 4, 5, .96));
+    --accent: #ff263f;
+    --accent-2: #a9001c;
+    --glow: rgba(255, 38, 63, .34);
+    /* legacy names still referenced from script */
+    --orange: var(--accent);
+    --orange-soft: #ff7a8a;
+    --cream: #fff5f6;
     font-family: Outfit, Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; height: 100%; }
   body {
-    min-height: 100vh; min-height: 100dvh; color: var(--ink); overflow: hidden;
-    background:
-      radial-gradient(circle at 24% 16%, rgba(29, 58, 122, .9) 0, transparent 46%),
-      radial-gradient(circle at 82% 86%, rgba(22, 48, 106, .8) 0, transparent 44%),
-      var(--bg);
+    min-height: 100vh; min-height: 100dvh; color: var(--ink); overflow: hidden; background-color: var(--bg);
     background-image:
-      linear-gradient(180deg, rgba(6, 14, 34, .62), rgba(6, 14, 34, .82)), var(--i3-photo, none),
-      radial-gradient(circle at 24% 16%, rgba(29, 58, 122, .9) 0, transparent 46%),
-      radial-gradient(circle at 82% 86%, rgba(22, 48, 106, .8) 0, transparent 44%),
-      linear-gradient(180deg, var(--bg), var(--bg));
+      linear-gradient(180deg, rgba(5, 1, 1, .55), rgba(5, 1, 1, .8)), var(--i3-photo, none),
+      radial-gradient(ellipse at 18% -8%, rgba(255, 38, 63, .22), transparent 38%),
+      radial-gradient(ellipse at 104% 30%, rgba(255, 38, 63, .12), transparent 36%),
+      radial-gradient(ellipse at 60% 120%, rgba(169, 0, 28, .2), transparent 45%);
     background-size: cover; background-position: center; background-attachment: fixed;
   }
-  button, input { font: inherit; color: inherit; }
+  /* star field + faint scanlines, pure CSS */
+  body::before, body::after { content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+  body::before {
+    opacity: .55;
+    background-image:
+      radial-gradient(1.2px 1.2px at 12% 22%, #fff 50%, transparent 52%), radial-gradient(1px 1px at 33% 71%, #ffd2d8 50%, transparent 52%),
+      radial-gradient(1.4px 1.4px at 58% 14%, #fff 50%, transparent 52%), radial-gradient(1px 1px at 81% 58%, #ffb4bd 50%, transparent 52%),
+      radial-gradient(1px 1px at 91% 12%, #fff 50%, transparent 52%), radial-gradient(1.2px 1.2px at 7% 86%, #ffd2d8 50%, transparent 52%),
+      radial-gradient(1px 1px at 47% 93%, #fff 50%, transparent 52%), radial-gradient(1px 1px at 70% 36%, #fff 50%, transparent 52%);
+    background-size: 520px 460px;
+  }
+  body::after { opacity: .14; background: repeating-linear-gradient(0deg, transparent 0 4px, rgba(255, 0, 38, .06) 5px, transparent 6px); }
+  button, input, select { font: inherit; color: inherit; }
   a { color: inherit; text-decoration: none; }
 
-  .home { display: flex; flex-direction: column; height: 100vh; height: 100dvh; padding: clamp(18px, 3vw, 46px); }
+  .home { position: relative; z-index: 1; display: flex; flex-direction: column; height: 100vh; height: 100dvh; padding: clamp(16px, 2.6vw, 42px); }
   .top { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
-  .brand { display: flex; align-items: center; gap: 16px; }
-  .badge { display: grid; place-items: center; width: clamp(48px, 5vw, 74px); aspect-ratio: 1; border: 4px solid var(--cream); border-radius: 14px; background: #0b1a3a; color: var(--cream); font-weight: 800; line-height: .95; text-align: center; }
-  .badge b { font-size: clamp(20px, 2.4vw, 34px); }
-  .badge span { font-size: clamp(7px, .8vw, 11px); letter-spacing: 2px; }
-  .brand h1 { margin: 0; font-size: clamp(20px, 2.4vw, 34px); font-weight: 750; letter-spacing: .14em; color: var(--orange); }
-  .brand p { margin: 2px 0 0; color: var(--muted); font-size: clamp(11px, 1vw, 15px); letter-spacing: .04em; }
+  .brand { display: flex; align-items: center; gap: clamp(10px, 1.2vw, 16px); }
+  .mark { width: clamp(44px, 4.4vw, 66px); height: clamp(44px, 4.4vw, 66px); color: var(--accent); flex-shrink: 0; filter: drop-shadow(0 0 10px rgba(255, 0, 35, .7)); }
+  .wordmark { margin: 0; font-size: clamp(22px, 2.5vw, 38px); font-weight: 800; letter-spacing: .06em; line-height: 1; }
+  .wordmark b { color: var(--accent); font-weight: 800; }
+  .tagline { margin: 6px 0 0; color: var(--muted); font-size: clamp(9px, .85vw, 13px); letter-spacing: .32em; text-transform: uppercase; }
   .clock { text-align: right; }
-  .clock .t { font-size: clamp(30px, 4vw, 60px); font-weight: 700; line-height: 1; }
-  .clock .d { margin-top: 4px; color: var(--muted); font-size: clamp(12px, 1.1vw, 18px); }
+  .clock .t { font-size: clamp(28px, 3.6vw, 56px); font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+  .clock .d { margin-top: 4px; color: var(--muted); font-size: clamp(12px, 1.05vw, 17px); }
 
-  .greet { margin: clamp(18px, 3vh, 44px) 0 clamp(14px, 2vh, 26px); font-size: clamp(20px, 2.6vw, 40px); font-weight: 650; letter-spacing: -.02em; }
+  .hero {
+    position: relative; isolation: isolate; overflow: hidden; display: flex; align-items: center;
+    margin: clamp(14px, 2.4vh, 30px) 0; min-height: clamp(150px, 27vh, 300px); padding: clamp(18px, 2.6vw, 40px);
+    border: 1px solid rgba(255, 32, 58, .6); border-radius: 8px;
+    background: linear-gradient(105deg, #180306 0%, #3a050d 46%, #1d0409 100%);
+    box-shadow: inset 0 0 0 1px rgba(255, 20, 45, .16), inset 0 -50px 80px rgba(0, 0, 0, .4), 0 0 34px rgba(255, 0, 35, .12);
+  }
+  .hero::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, rgba(0, 0, 0, .7), rgba(0, 0, 0, .4) 40%, rgba(0, 0, 0, .06) 78%); }
+  .hero-art { position: absolute; z-index: -2; right: 3%; top: 0; bottom: 0; width: 46%; }
+  .orb { position: absolute; width: clamp(130px, 21vh, 290px); aspect-ratio: 1; border-radius: 50%; right: 8%; top: 50%; transform: translateY(-50%);
+    background: radial-gradient(circle at 35% 28%, #fff5f6 0, #ff5265 8%, #c20a28 31%, #560817 60%, #160306 72%);
+    box-shadow: 0 0 70px rgba(255, 38, 63, .3), inset -22px -22px 40px rgba(4, 0, 2, .5); }
+  .orb::before, .orb::after { content: ""; position: absolute; border-radius: 50%; border: 1px solid rgba(255, 160, 170, .42); transform: rotate(-25deg); }
+  .orb::before { inset: -13%; border-width: 2px; }
+  .orb::after { inset: 15%; border-color: rgba(255, 255, 255, .13); }
+  .sat { position: absolute; width: 20px; height: 20px; border-radius: 50%; right: 52%; top: 22%; background: linear-gradient(135deg, #ffb4bc, #ff5265); box-shadow: 0 0 26px rgba(255, 38, 63, .55); }
+  .hero-content { max-width: 58%; }
+  .kicker { display: flex; align-items: center; gap: 10px; color: #ffb1bb; letter-spacing: .17em; font-size: clamp(9px, .8vw, 13px); font-weight: 800; text-transform: uppercase; }
+  .live { background: #ff203f; color: #fff; padding: 4px 8px; border-radius: 3px; letter-spacing: .1em; font-size: .85em; box-shadow: 0 0 14px rgba(255, 0, 35, .42); }
+  .hero h1 { margin: 10px 0 8px; font-size: clamp(30px, 4.2vw, 68px); font-weight: 800; letter-spacing: .02em; line-height: 1; text-transform: uppercase; text-shadow: 0 0 26px rgba(255, 0, 35, .3); }
+  .greet { margin: 0 0 clamp(10px, 1.8vh, 20px); color: #e9dcdf; font-size: clamp(15px, 1.7vw, 27px); font-weight: 600; letter-spacing: -.01em; }
   .greet span { color: var(--orange-soft); }
+  .hero-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+  .act { display: inline-flex; align-items: center; gap: 9px; padding: 11px 18px; border: 1px solid rgba(255, 30, 55, .4); border-radius: 5px; background: rgba(0, 0, 0, .6); font-size: clamp(12px, 1vw, 16px); font-weight: 750; cursor: pointer; transition: box-shadow .18s, border-color .18s; }
+  .act.primary { border-color: transparent; background: linear-gradient(135deg, #ff334d, var(--accent-2)); color: #fff; box-shadow: 0 0 22px rgba(255, 0, 35, .32); }
+  .act:hover, .act:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(255, 38, 63, .2), 0 0 26px var(--glow); }
 
-  .dock { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: clamp(12px, 1.4vw, 22px); }
+  .dock { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: clamp(10px, 1.2vw, 18px); }
   .tile {
     position: relative; display: flex; flex-direction: column; justify-content: space-between;
-    min-height: clamp(130px, 22vh, 240px); padding: clamp(16px, 1.6vw, 26px);
-    border: 2px solid var(--line); border-radius: 20px; background: var(--panel);
-    cursor: pointer; transition: transform .18s ease, border-color .18s ease, background .18s ease;
-    text-align: left;
+    min-height: clamp(104px, 19.5vh, 220px); padding: clamp(14px, 1.4vw, 22px);
+    border: 1px solid var(--edge); border-radius: 6px; background: var(--panel); box-shadow: inset 0 1px rgba(255, 255, 255, .03);
+    cursor: pointer; transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease; text-align: left;
   }
-  .tile .ico { font-size: clamp(26px, 3vw, 46px); line-height: 1; }
-  .tile .name { font-size: clamp(15px, 1.4vw, 24px); font-weight: 650; }
-  .tile .sub { margin-top: 4px; color: var(--muted); font-size: clamp(10px, .9vw, 14px); }
-  .tile.on, .tile:hover { transform: translateY(-4px) scale(1.02); border-color: var(--cream); background: rgba(28, 48, 96, .9); }
-  .tile.on { box-shadow: 0 0 0 3px rgba(255, 154, 97, .5), 0 18px 50px rgba(0, 0, 0, .5); border-color: var(--orange); }
+  .tile:focus, .btn:focus, .ch:focus, .act:focus { outline: none; }
+  .tile .ico { display: grid; place-items: center; width: clamp(38px, 3.6vw, 56px); aspect-ratio: 1; border-radius: 5px; background: rgba(255, 38, 63, .1); border: 1px solid rgba(255, 38, 63, .22); font-size: clamp(20px, 2.2vw, 34px); line-height: 1; }
+  .tile .name { font-size: clamp(14px, 1.3vw, 22px); font-weight: 700; letter-spacing: .01em; }
+  .tile .sub { margin-top: 4px; color: var(--muted); font-size: clamp(10px, .85vw, 14px); }
+  .tile.on, .tile:hover { transform: translateY(-3px) scale(1.025); border-color: var(--accent); box-shadow: 0 0 0 3px rgba(255, 38, 63, .16), 0 0 30px var(--glow), 0 18px 44px rgba(0, 0, 0, .5); }
+  .tile.on .ico { background: rgba(255, 38, 63, .22); box-shadow: 0 0 16px rgba(255, 38, 63, .35); }
 
-  .foot { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: auto; padding-top: clamp(14px, 2vh, 24px); color: var(--muted); font-size: clamp(11px, .95vw, 15px); }
+  .foot { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: auto; padding-top: clamp(12px, 1.8vh, 22px); color: var(--muted); font-size: clamp(11px, .95vw, 15px); }
   .hintkeys b { color: var(--ink); font-weight: 650; }
   .net { display: flex; align-items: center; gap: 8px; }
   .dot { width: 9px; height: 9px; border-radius: 50%; background: #58d6a0; box-shadow: 0 0 10px #58d6a0aa; }
-  .dot.off { background: #e5584f; box-shadow: 0 0 10px #e5584faa; }
+  .dot.off { background: #ffb020; box-shadow: 0 0 10px #ffb020aa; }
 
-  /* Overlay (Live TV, Web, Cast, Settings) */
-  .ov { position: fixed; inset: 0; z-index: 10; display: none; flex-direction: column; padding: clamp(18px, 3vw, 46px); background: rgba(5, 9, 20, .96); }
+  /* Overlay (Live TV, Radio, My media, Web, Cast, Settings) */
+  .ov { position: fixed; inset: 0; z-index: 10; display: none; flex-direction: column; padding: clamp(16px, 2.6vw, 42px); background: radial-gradient(ellipse at 15% -10%, rgba(255, 38, 63, .14), transparent 40%), #050101; }
   .ov.open { display: flex; }
-  .ov-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: clamp(14px, 2vh, 24px); }
-  .ov-top h2 { margin: 0; font-size: clamp(20px, 2.4vw, 34px); font-weight: 700; }
-  .ov-top h2 small { margin-left: 12px; color: var(--muted); font-size: .5em; font-weight: 500; }
-  .btn { padding: 10px 18px; border: 2px solid var(--line); border-radius: 12px; background: rgba(12, 24, 54, .8); font-size: clamp(13px, 1.1vw, 17px); font-weight: 650; cursor: pointer; }
-  .btn.on, .btn:hover { border-color: var(--orange); background: #2a1d15; color: #fff; }
+  .ov-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: clamp(12px, 2vh, 22px); padding-bottom: 12px; border-bottom: 1px solid rgba(255, 30, 55, .32); }
+  .ov-top h2 { margin: 0; font-size: clamp(18px, 2.2vw, 32px); font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+  .ov-top h2 small { margin-left: 12px; color: var(--muted); font-size: .5em; font-weight: 500; letter-spacing: .04em; text-transform: none; }
+  .btn { padding: 10px 18px; border: 1px solid rgba(255, 35, 60, .3); border-radius: 5px; background: rgba(20, 6, 9, .85); font-size: clamp(13px, 1.05vw, 17px); font-weight: 650; cursor: pointer; transition: box-shadow .18s, border-color .18s; }
+  .btn.on, .btn:hover, .btn:focus-visible { outline: none; border-color: var(--accent); background: rgba(255, 38, 63, .16); color: #fff; box-shadow: 0 0 0 3px rgba(255, 38, 63, .14), 0 0 18px rgba(255, 38, 63, .22); }
 
   .tv { flex: 1; display: grid; grid-template-columns: minmax(240px, 30%) 1fr; gap: clamp(12px, 1.4vw, 22px); min-height: 0; }
-  .chlist { overflow: auto; padding-right: 6px; }
-  .ch { display: flex; align-items: center; gap: 12px; padding: 12px 16px; margin-bottom: 8px; border: 2px solid transparent; border-radius: 14px; background: rgba(12, 24, 54, .72); font-size: clamp(14px, 1.2vw, 20px); cursor: pointer; }
+  .chlist { overflow: auto; padding-right: 6px; scrollbar-width: thin; scrollbar-color: rgba(255, 38, 63, .5) transparent; }
+  .ch { display: flex; align-items: center; gap: 12px; padding: 12px 16px; margin-bottom: 8px; border: 1px solid transparent; border-radius: 6px; background: var(--panel); font-size: clamp(14px, 1.2vw, 20px); cursor: pointer; }
   .ch small { margin-left: auto; color: var(--muted); font-size: .75em; }
   .ch.action { color: var(--orange-soft); }
-  .ch.on, .ch:hover { border-color: var(--orange); background: #2a1d15; color: #fff; }
-  .screen { position: relative; display: flex; align-items: center; justify-content: center; border: 2px solid var(--line); border-radius: 18px; background: #000; overflow: hidden; }
+  .ch.on, .ch:hover { border-color: var(--accent); background: rgba(255, 38, 63, .14); color: #fff; box-shadow: 0 0 18px rgba(255, 38, 63, .15); }
+  .screen { position: relative; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255, 35, 60, .4); border-radius: 8px; background: #000; overflow: hidden; box-shadow: 0 0 30px rgba(255, 0, 35, .1); }
   .screen video, .screen iframe { width: 100%; height: 100%; border: 0; background: #000; }
   .screen .idle { color: var(--muted); font-size: clamp(14px, 1.3vw, 20px); text-align: center; padding: 20px; }
-  .screen .label { position: absolute; left: 16px; bottom: 16px; padding: 8px 16px; border: 2px solid var(--orange); border-radius: 10px; background: rgba(8, 18, 43, .85); font-size: clamp(13px, 1.1vw, 18px); font-weight: 650; }
-  .screen .label.err { border-color: #e5584f; color: #ffb3ad; }
+  .screen .label { position: absolute; left: 16px; bottom: 16px; padding: 8px 16px; border: 1px solid var(--accent); border-radius: 5px; background: rgba(8, 2, 3, .88); font-size: clamp(13px, 1.1vw, 18px); font-weight: 650; }
+  .screen .label.err { border-color: #ffb020; color: #ffd27a; }
 
   .pane { flex: 1; display: flex; flex-direction: column; gap: 16px; min-height: 0; }
-  .pane iframe { flex: 1; width: 100%; border: 2px solid var(--line); border-radius: 16px; background: #fff; }
-  .field { display: block; width: 100%; padding: 14px 18px; border: 2px solid var(--line); border-radius: 14px; background: #0d121b; color: var(--ink); font-size: clamp(15px, 1.3vw, 22px); }
+  .pane iframe { flex: 1; width: 100%; border: 1px solid rgba(255, 35, 60, .4); border-radius: 8px; background: #fff; }
+  .field { display: block; width: 100%; padding: 14px 18px; border: 1px solid rgba(255, 35, 60, .3); border-radius: 6px; background: #0b0506; color: var(--ink); font-size: clamp(15px, 1.3vw, 22px); }
+  .field:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(255, 38, 63, .16); }
   .rows { display: grid; gap: 12px; max-width: 760px; }
   .rows p { margin: 0; color: var(--muted); font-size: clamp(13px, 1.1vw, 18px); line-height: 1.6; }
   .rows .kv { display: flex; gap: 10px; flex-wrap: wrap; }
   .toolbar { display: flex; flex-wrap: wrap; gap: 10px; }
 
+  .screen img { max-width: 100%; max-height: 100%; object-fit: contain; }
+  .screen .now { padding: 20px; text-align: center; font-size: clamp(18px, 2.2vw, 36px); font-weight: 650; line-height: 1.4; }
+  .screen .now small { display: block; margin-top: 8px; color: var(--muted); font-size: .55em; font-weight: 500; }
+  select.btn { appearance: none; padding-right: 18px; }
+  select.btn option { background: #120507; color: var(--ink); }
+  .toast { position: fixed; left: 50%; bottom: 8%; z-index: 60; transform: translateX(-50%); padding: 12px 22px; border: 1px solid var(--accent); border-radius: 6px; background: rgba(8, 2, 3, .94); box-shadow: 0 0 26px var(--glow); font-size: clamp(14px, 1.4vw, 22px); font-weight: 650; display: none; }
+  .toast.on { display: block; }
+  .chip { padding: 3px 10px; border: 1px solid var(--edge); border-radius: 99px; color: var(--ink); font-size: .9em; }
+  .chip[hidden] { display: none; }
+  .foot .right { display: flex; align-items: center; gap: 12px; }
+  .bigcode { font-size: clamp(34px, 5vw, 76px); font-weight: 800; letter-spacing: .14em; color: var(--accent); text-shadow: 0 0 28px var(--glow); }
+  .saver { position: fixed; inset: 0; z-index: 50; display: none; background: #000; }
+  .saver.on { display: block; }
+  .saver .face { position: absolute; left: 8%; top: 18%; transition: left 12s linear, top 12s linear; }
+  .saver .t { font-size: clamp(64px, 15vw, 240px); font-weight: 700; line-height: 1; letter-spacing: -.02em; color: #ff4a5f; opacity: .8; text-shadow: 0 0 50px rgba(255, 38, 63, .35); }
+  .saver .d { margin-top: 8px; color: var(--muted); font-size: clamp(16px, 2vw, 34px); }
+
+  /* splash: logo ignites, then the home screen opens (once per session) */
+  .splash { position: fixed; inset: 0; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(14px, 2.4vh, 28px); background: radial-gradient(circle at 50% 46%, rgba(255, 0, 36, .14), transparent 48%), #020001; cursor: pointer; transition: opacity .5s ease, visibility .5s; }
+  .splash.leaving { opacity: 0; visibility: hidden; pointer-events: none; }
+  .splash::after { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .18; background: repeating-linear-gradient(0deg, transparent 0 4px, rgba(255, 0, 38, .06) 5px, transparent 6px); }
+  .splash-logo { position: relative; z-index: 1; width: clamp(96px, 13vw, 176px); color: #ff1738; filter: drop-shadow(0 0 10px rgba(255, 0, 35, .9)) drop-shadow(0 0 34px rgba(255, 0, 35, .5)); animation: ignite 1.6s ease-out both; }
+  .splash-title { position: relative; z-index: 1; margin: 0; font-size: clamp(24px, 3.3vw, 50px); font-weight: 650; letter-spacing: .2em; text-indent: .2em; text-transform: uppercase; text-shadow: 0 0 20px rgba(255, 0, 35, .3); animation: reveal 1.1s .35s ease-out both; }
+  .splash-title span { color: #ff1738; }
+  .splash-sub { position: relative; z-index: 1; margin: 0; color: #c5a7ad; font-size: clamp(10px, 1.1vw, 16px); letter-spacing: .5em; text-indent: .5em; text-transform: uppercase; animation: reveal 1.1s .7s ease-out both; }
+  .splash-by { position: absolute; z-index: 1; bottom: 5%; margin: 0; color: #8d777c; font-size: clamp(10px, .9vw, 14px); letter-spacing: .2em; text-transform: uppercase; }
+  @keyframes ignite { 0% { opacity: 0; transform: scale(.82); filter: drop-shadow(0 0 0 transparent); } 60% { opacity: 1; } 100% { transform: scale(1); } }
+  @keyframes reveal { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
   @media (max-width: 900px) {
+    .home { overflow-y: auto; }
     .dock { grid-template-columns: repeat(2, 1fr); }
     .tv { grid-template-columns: 1fr; }
+    .hero-content { max-width: 100%; }
+    .hero-art { opacity: .35; width: 80%; }
     .foot { flex-direction: column; align-items: flex-start; gap: 8px; }
   }
-  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
 </head>
 <body>
+<div class="splash" id="splash" role="button" tabindex="0" aria-label="EYE3 Vision. Press any key to continue">
+    <svg class="splash-logo" viewBox="0 0 160 160" aria-hidden="true">
+      <path d="M80 7 153 80 80 153 7 80Z" fill="none" stroke="currentColor" stroke-width="3.4"/>
+      <path d="M13 80Q80 18 147 80Q80 142 13 80Z" fill="#020001" stroke="currentColor" stroke-width="4.2"/>
+      <path d="M80 26 105 80 80 134 55 80Z" fill="none" stroke="currentColor" stroke-width="2" opacity=".8"/>
+      <circle cx="80" cy="80" r="24" fill="currentColor"/>
+      <ellipse cx="80" cy="80" rx="8" ry="18" fill="#020001"/>
+      <circle cx="80" cy="80" r="35" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".65"/>
+    </svg>
+    <h1 class="splash-title"><span>EYE3</span> VISION</h1>
+    <p class="splash-sub">See beyond</p>
+    <p class="splash-by">Designed by i3 Design</p>
+  </div>
 <main class="home" id="home">
   <div class="top">
     <div class="brand">
-      <div class="badge"><b>i3</b><span>DESIGN</span></div>
-      <div><h1>EYE3 HOME</h1><p>Your TV, on your terms · by i3 Design</p></div>
+      <svg class="mark" viewBox="0 0 160 160" aria-hidden="true">
+      <path d="M80 7 153 80 80 153 7 80Z" fill="none" stroke="currentColor" stroke-width="3.4"/>
+      <path d="M13 80Q80 18 147 80Q80 142 13 80Z" fill="#020001" stroke="currentColor" stroke-width="4.2"/>
+      <path d="M80 26 105 80 80 134 55 80Z" fill="none" stroke="currentColor" stroke-width="2" opacity=".8"/>
+      <circle cx="80" cy="80" r="24" fill="currentColor"/>
+      <ellipse cx="80" cy="80" rx="8" ry="18" fill="#020001"/>
+      <circle cx="80" cy="80" r="35" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".65"/>
+    </svg>
+      <div><div class="wordmark"><b>EYE3</b> VISION</div><p class="tagline">See beyond · by i3 Design</p></div>
     </div>
     <div class="clock"><div class="t" id="clock">--:--</div><div class="d" id="date"></div></div>
   </div>
 
-  <div class="greet" id="greet">Welcome back.</div>
+  <section class="hero" aria-label="Welcome">
+    <div class="hero-art" aria-hidden="true"><div class="orb"></div><div class="sat"></div></div>
+    <div class="hero-content">
+      <div class="kicker"><span class="live">Live</span><span>Your screen, your way</span></div>
+      <h1>See beyond</h1>
+      <p class="greet" id="greet">Welcome back.</p>
+      <div class="hero-actions">
+        <button class="act primary" type="button" data-go="tv" tabindex="-1">▶ Watch Live TV</button>
+        <button class="act" type="button" data-go="radio" tabindex="-1">📻 Radio</button>
+      </div>
+    </div>
+  </section>
 
   <div class="dock" id="dock"></div>
 
   <div class="foot">
-    <div class="hintkeys"><b>Arrows</b> move · <b>Enter</b> open · <b>Back/Esc</b> return · <b>F</b> fullscreen</div>
-    <div class="net"><span class="dot" id="netdot"></span><span id="netlabel">Online</span></div>
+    <div class="hintkeys"><b>Arrows</b> move · <b>Enter</b> open · <b>Back/Esc</b> return · <b>F</b> fullscreen · <b>S</b> screensaver · <b>Z</b> sleep timer</div>
+    <div class="right"><span class="chip" id="sleepchip" hidden></span><span class="chip" id="rcchip" hidden>📱 Phone remote on</span><div class="net"><span class="dot" id="netdot"></span><span id="netlabel">Online</span></div></div>
   </div>
 </main>
 
@@ -141,6 +241,14 @@
   <div class="ov-top">
     <h2>Live TV<small>EYE3 channels &amp; your playlist</small></h2>
     <div class="toolbar">
+      <select class="btn" id="tv-preset" aria-label="Add a free channel list">
+        <option value="">Add a free list…</option>
+        <option value="https://iptv-org.github.io/iptv/categories/news.m3u">iptv-org · News</option>
+        <option value="https://iptv-org.github.io/iptv/categories/documentary.m3u">iptv-org · Documentary</option>
+        <option value="https://iptv-org.github.io/iptv/categories/kids.m3u">iptv-org · Kids</option>
+        <option value="https://iptv-org.github.io/iptv/categories/music.m3u">iptv-org · Music</option>
+        <option value="https://m3upt.com/iptv">M3UPT · Portuguese (some need a Portuguese IP)</option>
+      </select>
       <button class="btn" id="tv-add" type="button">Add my playlist</button>
       <button class="btn" id="tv-close" type="button">Close</button>
     </div>
@@ -154,6 +262,50 @@
     </div>
   </div>
 </section>
+
+<!-- Radio -->
+<section class="ov" id="ov-radio" aria-label="Radio">
+  <div class="ov-top">
+    <h2>Radio<small>Free internet stations</small></h2>
+    <div class="toolbar" id="r-genres"></div>
+    <button class="btn" id="r-close" type="button">Close</button>
+  </div>
+  <div class="tv">
+    <div class="chlist" id="rlist"></div>
+    <div class="screen">
+      <div class="now" id="r-now">Pick a station and press OK.</div>
+      <audio id="audio"></audio>
+    </div>
+  </div>
+</section>
+
+<!-- My media (USB drive / local files) -->
+<section class="ov" id="ov-media" aria-label="My media">
+  <div class="ov-top">
+    <h2>My media<small>Play from a USB drive or this computer</small></h2>
+    <div class="toolbar">
+      <button class="btn" id="m-files" type="button">Choose files</button>
+      <button class="btn" id="m-folder" type="button">Choose folder</button>
+      <button class="btn" id="m-close" type="button">Close</button>
+    </div>
+  </div>
+  <input id="m-files-in" type="file" multiple accept="video/*,audio/*,image/*,.mkv,.ts,.flac" hidden>
+  <input id="m-folder-in" type="file" webkitdirectory multiple hidden>
+  <div class="tv">
+    <div class="chlist" id="mlist"></div>
+    <div class="screen">
+      <video id="mvideo" playsinline controls style="display:none"></video>
+      <img id="mimg" alt="" style="display:none">
+      <div class="idle" id="m-idle">Plug in a USB drive, press Choose folder, then pick it. Files stay on this computer.</div>
+      <div class="label" id="m-label" style="display:none"></div>
+    </div>
+  </div>
+</section>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<!-- Screensaver -->
+<div class="saver" id="saver" aria-hidden="true"><div class="face" id="saver-face"><div class="t" id="saver-t">--:--</div><div class="d" id="saver-d"></div></div></div>
 
 <!-- Web / YouTube -->
 <section class="ov" id="ov-web" aria-label="Web">
@@ -185,14 +337,25 @@
   var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   var FREE = [
-    { name: "Al Jazeera English", group: "News", url: "https://live-hls-web-aje.getaj.net/AJE/index.m3u8" },
     { name: "DW English", group: "News", url: "https://dwamdstream102.akamaized.net/hls/live/2015525/dwstream102/index.m3u8" },
     { name: "France 24 English", group: "News", url: "https://static.france24.com/live/F24_EN_LO_HLS/live_web.m3u8" },
     { name: "NASA TV", group: "Science", url: "https://ntv1.akamaized.net/hls/live/2014075/NASA-NTV1-HLS/master.m3u8" },
-    { name: "Red Bull TV", group: "Sports", url: "https://rbmn-live.akamaized.net/hls/live/590964/BoRB-AT/master.m3u8" }
+    { name: "Red Bull TV", group: "Sports", url: "https://rbmn-live.akamaized.net/hls/live/590964/BoRB-AT/master.m3u8" },
+    { name: "Arirang TV (English)", group: "News", url: "http://amdlive-ch01.ctnd.com.edgesuite.net/arirang_1ch/smil:arirang_1ch.smil/playlist.m3u8" },
+    { name: "Al Arabiya (Arabic)", group: "News", url: "https://live.alarabiya.net/alarabiapublish/alarabiya.smil/playlist.m3u8" }
   ];
+  var GENRES = [
+    { name: "News", tag: "news" }, { name: "Pop", tag: "pop" }, { name: "Jazz", tag: "jazz" },
+    { name: "Classical", tag: "classical" }, { name: "Talk", tag: "talk" }
+  ];
+  var RADIO_HOSTS = ["https://de1.api.radio-browser.info", "https://nl1.api.radio-browser.info", "https://at1.api.radio-browser.info"];
+  var SAVER_KEY = "eye3.home.saver";
+  var SAVER_STEPS = [0, 2, 5, 10, 30];
+  var MEDIA_EXT = /\.(mp4|m4v|webm|mkv|mov|ogv|ts|mp3|m4a|aac|flac|wav|ogg|opus|jpe?g|png|webp|gif|avif)$/i;
   var TILES = [
     { key: "tv", ico: "📺", name: "Live TV", sub: "News, sport, your playlist" },
+    { key: "radio", ico: "📻", name: "Radio", sub: "Free stations, all genres" },
+    { key: "media", ico: "💾", name: "My media", sub: "USB drive, photos, video" },
     { key: "vision", ico: "👁", name: "EYE3 Vision", sub: "AI image & camera tools" },
     { key: "youtube", ico: "▶", name: "YouTube", sub: "Big-screen player" },
     { key: "web", ico: "🌐", name: "Web", sub: "Search & browse" },
@@ -246,7 +409,11 @@
     tile.addEventListener("click", function () { focusIndex = i; paintFocus(); openTile(t.key); });
     dock.appendChild(tile);
   });
+  [].slice.call(document.querySelectorAll("[data-go]")).forEach(function (b) {
+    b.addEventListener("click", function () { var k = b.getAttribute("data-go"); focusIndex = tileIndex(k); paintFocus(); openTile(k); });
+  });
   var tiles = [].slice.call(dock.children);
+  function dockCols() { var n = getComputedStyle(dock).gridTemplateColumns.split(" ").length; return n > 0 ? n : 4; }
   function paintFocus() {
     tiles.forEach(function (el, i) { el.classList.toggle("on", i === focusIndex && !overlayOpen()); });
     if (!overlayOpen()) tiles[focusIndex].focus({ preventScroll: true });
@@ -274,6 +441,8 @@
   function openTile(key) {
     if (key === "vision") { location.href = ORIGIN + "index.html?tv=1"; return; }
     if (key === "tv") { openTV(); return; }
+    if (key === "radio") { openRadio(); return; }
+    if (key === "media") { openMedia(); return; }
     if (key === "youtube") { openWeb("YouTube", "https://www.youtube.com/tv", ""); return; }
     if (key === "web") { openWeb("Web", "", ""); return; }
     if (key === "cast") { openCast(); return; }
@@ -301,25 +470,30 @@
     }
     paintChannels();
   }
-  function fetchPlaylist(url) {
+  function fetchPlaylist(url, label) {
     var xhr = new XMLHttpRequest();
-    try { xhr.open("GET", url, true); } catch (e) { return; }
+    var fail = function (why) { channels = channels.filter(function (c) { return !c.status; }); channels.push({ name: (label || "Playlist") + ": " + why, group: "", status: true }); loadChannelsFromArray(); };
+    try { xhr.open("GET", url, true); } catch (e) { fail("bad link"); return; }
     xhr.onreadystatechange = function () {
-      if (xhr.readyState === 4 && xhr.status >= 200 && xhr.status < 300) {
-        var extra = parseM3U(xhr.responseText);
-        if (extra.length) { channels = channels.concat(extra); loadChannelsFromArray(); }
+      if (xhr.readyState !== 4) return;
+      if (xhr.status >= 200 && xhr.status < 300) {
+        var extra = parseM3U(xhr.responseText).slice(0, 500);
+        if (extra.length) { channels = channels.filter(function (c) { return !c.status; }).concat(extra); loadChannelsFromArray(); }
+        else fail("no playable channels in it");
+      } else {
+        fail("could not be loaded (the site may block browsers; try it in SS IPTV or Kodi)");
       }
     };
-    try { xhr.send(); } catch (e) {}
+    try { xhr.send(); } catch (e) { fail("could not be loaded"); }
   }
   function loadChannelsFromArray() {
     var list = $("chlist");
     while (list.firstChild) list.removeChild(list.firstChild);
     channels.forEach(function (c, i) {
-      var row = make("div", "ch");
+      var row = make("div", c.status ? "ch action" : "ch");
       row.appendChild(make("span", "", c.name));
       if (c.group) row.appendChild(make("small", "", c.group));
-      row.addEventListener("click", function () { chIndex = i; paintChannels(); playChannel(i); });
+      if (!c.status) row.addEventListener("click", function () { chIndex = i; paintChannels(); playChannel(i); });
       list.appendChild(row);
     });
     paintChannels();
@@ -372,10 +546,16 @@
     try { video.pause(); } catch (e) {}
     video.removeAttribute("src"); try { video.load(); } catch (e) {}
     $("idle").style.display = ""; $("chlabel").style.display = "none";
+    stopRadio(); stopMedia();
   }
   var tvFocus = "list";
   function openTV() { loadChannels(); tvFocus = "list"; chIndex = 0; openOverlay("ov-tv"); paintChannels(); }
   $("tv-close").addEventListener("click", closeOverlays);
+  $("tv-preset").addEventListener("change", function () {
+    var sel = $("tv-preset"), url = sel.value, label = sel.options[sel.selectedIndex].text;
+    sel.selectedIndex = 0;
+    if (url) fetchPlaylist(url, label);
+  });
   $("tv-add").addEventListener("click", function () {
     var cur = get(PLAYLIST_KEY) || "";
     var v = window.prompt("Paste your M3U or Xtream playlist link (saved on this computer only):", cur);
@@ -383,6 +563,195 @@
     v = v.replace(/^\s+|\s+$/g, "");
     if (!v) { set(PLAYLIST_KEY, null); } else if (/^https?:\/\//i.test(v)) { set(PLAYLIST_KEY, v); } else { window.alert("Link must start with http:// or https://"); return; }
     openTV();
+  });
+
+  // ---- Radio (radio-browser.info: free, open directory of internet stations) ----
+  var stations = [], rIndex = 0, rGenre = 0, rToken = 0;
+  function paintGenres() {
+    var box = $("r-genres");
+    while (box.firstChild) box.removeChild(box.firstChild);
+    GENRES.forEach(function (g, i) {
+      var b = make("button", "btn" + (i === rGenre ? " on" : ""), g.name);
+      b.type = "button";
+      b.addEventListener("click", function () { rGenre = i; loadStations(); });
+      box.appendChild(b);
+    });
+  }
+  function paintStations() {
+    var list = $("rlist");
+    while (list.firstChild) list.removeChild(list.firstChild);
+    stations.forEach(function (st, i) {
+      var row = make("div", "ch" + (i === rIndex ? " on" : st.status ? " action" : ""));
+      row.appendChild(make("span", "", st.name));
+      if (st.country) row.appendChild(make("small", "", st.country));
+      if (!st.status) row.addEventListener("click", function () { rIndex = i; paintStations(); playStation(i); });
+      list.appendChild(row);
+    });
+  }
+  function radioNote(text) { stations = [{ name: text, status: true }]; paintStations(); }
+  function loadStations() {
+    var token = ++rToken, g = GENRES[rGenre];
+    paintGenres(); rIndex = 0; radioNote("Loading " + g.name + " stations…");
+    var path = "/json/stations/search?tag=" + encodeURIComponent(g.tag) + "&limit=60&order=clickcount&reverse=true&hidebroken=true";
+    var tryHost = function (n) {
+      if (n >= RADIO_HOSTS.length) { if (token === rToken) radioNote("Could not reach the radio directory. Check the internet and try again."); return; }
+      var xhr = new XMLHttpRequest();
+      try { xhr.open("GET", RADIO_HOSTS[n] + path, true); } catch (e) { tryHost(n + 1); return; }
+      xhr.timeout = 12000;
+      xhr.onload = function () {
+        if (token !== rToken) return;
+        var data = [];
+        try { data = JSON.parse(xhr.responseText); } catch (e) {}
+        var seen = {}, out = [];
+        (data || []).forEach(function (r) {
+          var u = r.url_resolved || r.url || "";
+          if (/^https:\/\//i.test(u) && !/\.m3u8?($|\?)/i.test(u) && !seen[r.name]) { seen[r.name] = 1; out.push({ name: String(r.name || "Station").replace(/^\s+|\s+$/g, ""), country: r.countrycode || "", url: u }); }
+        });
+        if (out.length) { stations = out.slice(0, 40); paintStations(); } else if (xhr.status >= 200 && xhr.status < 300) radioNote("No stations found for this genre."); else tryHost(n + 1);
+      };
+      xhr.onerror = xhr.ontimeout = function () { tryHost(n + 1); };
+      try { xhr.send(); } catch (e) { tryHost(n + 1); }
+    };
+    tryHost(0);
+  }
+  function playStation(i) {
+    var st = stations[i]; if (!st || !st.url) return;
+    var a = $("audio");
+    $("r-now").textContent = st.name;
+    var sub = make("small", "", "Connecting…"); $("r-now").appendChild(sub);
+    a.onplaying = function () { sub.textContent = "Playing" + (st.country ? " · " + st.country : ""); };
+    a.onerror = function () { sub.textContent = "This station can't be played right now. Try another."; };
+    a.src = st.url;
+    var p = a.play(); if (p && p["catch"]) p["catch"](function (err) { sub.textContent = err && err.name === "NotAllowedError" ? "Press OK again to start playing." : "This station can't be played right now. Try another."; });
+  }
+  function stopRadio() {
+    var a = $("audio"); try { a.pause(); } catch (e) {}
+    a.removeAttribute("src"); try { a.load(); } catch (e) {}
+    $("r-now").textContent = "Pick a station and press OK.";
+  }
+  function openRadio() { rIndex = 0; openOverlay("ov-radio"); paintGenres(); loadStations(); }
+  $("r-close").addEventListener("click", closeOverlays);
+
+  // ---- My media: files from a USB drive or this computer. Nothing is uploaded; the browser plays them in place. ----
+  var media = [], mIndex = 0, mTimer = null;
+  function mediaKind(f) {
+    var t = f.type || "";
+    if (/^image\//.test(t) || /\.(jpe?g|png|webp|gif|avif)$/i.test(f.name)) return "image";
+    if (/^(video|audio)\//.test(t) || /\.(mp4|m4v|webm|mkv|mov|ogv|ts|mp3|m4a|aac|flac|wav|ogg|opus)$/i.test(f.name)) return "av";
+    return "";
+  }
+  function setMedia(fileList) {
+    media.forEach(function (m) { try { URL.revokeObjectURL(m.url); } catch (e) {} });
+    var arr = [].slice.call(fileList || []).filter(function (f) { return MEDIA_EXT.test(f.name) && mediaKind(f); });
+    arr.sort(function (a, b) { return (a.webkitRelativePath || a.name).localeCompare(b.webkitRelativePath || b.name, undefined, { numeric: true }); });
+    media = arr.map(function (f) { return { name: f.webkitRelativePath || f.name, kind: mediaKind(f), url: URL.createObjectURL(f) }; });
+    mIndex = 0; paintMedia();
+    $("m-idle").textContent = media.length ? "Pick a file on the left and press OK." : "No playable video, music or photos found there.";
+  }
+  function paintMedia() {
+    var list = $("mlist");
+    while (list.firstChild) list.removeChild(list.firstChild);
+    media.forEach(function (m, i) {
+      var row = make("div", "ch" + (i === mIndex ? " on" : ""));
+      row.appendChild(make("span", "", m.name.replace(/^.*\//, "")));
+      row.appendChild(make("small", "", m.kind === "image" ? "photo" : "play"));
+      row.addEventListener("click", function () { mIndex = i; paintMedia(); playMedia(i); });
+      list.appendChild(row);
+    });
+  }
+  function mLabel(text, isErr) { var l = $("m-label"); l.textContent = text; l.className = "label" + (isErr ? " err" : ""); l.style.display = "block"; }
+  function playMedia(i) {
+    var m = media[i]; if (!m) return;
+    clearTimeout(mTimer);
+    var v = $("mvideo"), img = $("mimg");
+    $("m-idle").style.display = "none";
+    mLabel(m.name.replace(/^.*\//, ""), false);
+    try { v.pause(); } catch (e) {}
+    if (m.kind === "image") {
+      v.style.display = "none"; img.style.display = ""; img.src = m.url;
+      if (i < media.length - 1) mTimer = setTimeout(function () { stepMedia(1); }, 8000);
+      return;
+    }
+    img.style.display = "none"; v.style.display = ""; v.src = m.url;
+    v.onerror = function () { mLabel(m.name.replace(/^.*\//, "") + " — this format isn't supported by the browser", true); };
+    v.onended = function () { stepMedia(1); };
+    var p = v.play(); if (p && p["catch"]) p["catch"](function () {});
+  }
+  function stepMedia(d) {
+    var n = mIndex + d;
+    if (n < 0 || n >= media.length) return;
+    mIndex = n; paintMedia(); playMedia(n); scrollList("mlist", mIndex);
+  }
+  function stopMedia() {
+    clearTimeout(mTimer);
+    var v = $("mvideo"); try { v.pause(); } catch (e) {}
+    v.removeAttribute("src"); v.style.display = "none"; try { v.load(); } catch (e) {}
+    $("mimg").style.display = "none"; $("mimg").removeAttribute("src");
+    $("m-label").style.display = "none"; $("m-idle").style.display = "";
+  }
+  function openMedia() { openOverlay("ov-media"); paintMedia(); setTimeout(function () { try { $("m-folder").focus(); } catch (e) {} }, 60); }
+  $("m-close").addEventListener("click", closeOverlays);
+  $("m-files").addEventListener("click", function () { $("m-files-in").click(); });
+  $("m-folder").addEventListener("click", function () { $("m-folder-in").click(); });
+  $("m-files-in").addEventListener("change", function () { setMedia(this.files); });
+  $("m-folder-in").addEventListener("change", function () { setMedia(this.files); });
+
+  // ---- Screensaver: a slow-drifting clock (protects the TV from burn-in); never starts while something is playing ----
+  var saverTimer = null, saverOn = false, driftTimer = null;
+  function saverMinutes() { var v = parseInt(get(SAVER_KEY), 10); return SAVER_STEPS.indexOf(v) > -1 ? v : 5; }
+  function anythingPlaying() {
+    return ["video", "audio", "mvideo"].some(function (id) { var el = $(id); return el && !el.paused && !el.ended && el.readyState > 2; }) || !!(media.length && $("mimg").style.display === "");
+  }
+  function drift() {
+    var f = $("saver-face"); if (!f) return;
+    f.style.left = (4 + Math.random() * 40) + "%"; f.style.top = (6 + Math.random() * 50) + "%";
+  }
+  function showSaver() {
+    if (saverOn || anythingPlaying()) { armSaver(); return; }
+    saverOn = true;
+    var now = new Date(), pad = function (n) { return (n < 10 ? "0" : "") + n; };
+    $("saver-t").textContent = pad(now.getHours()) + ":" + pad(now.getMinutes());
+    $("saver-d").textContent = now.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" });
+    $("saver").classList.add("on"); $("saver").setAttribute("aria-hidden", "false");
+    drift(); driftTimer = setInterval(function () {
+      var n = new Date(); $("saver-t").textContent = pad(n.getHours()) + ":" + pad(n.getMinutes()); drift();
+    }, reduceMotion ? 60000 : 12000);
+  }
+  function hideSaver() {
+    if (!saverOn) return false;
+    saverOn = false; clearInterval(driftTimer);
+    $("saver").classList.remove("on"); $("saver").setAttribute("aria-hidden", "true");
+    return true;
+  }
+  function armSaver() {
+    clearTimeout(saverTimer);
+    var m = saverMinutes(); if (!m) return;
+    saverTimer = setTimeout(showSaver, m * 60000);
+  }
+  ["mousemove", "pointerdown", "touchstart", "wheel"].forEach(function (ev) {
+    window.addEventListener(ev, function () { if (!hideSaver()) armSaver(); }, { passive: true });
+  });
+  // The key that wakes the screensaver is swallowed, so it doesn't also trigger whatever was focused.
+  document.addEventListener("keydown", function (e) {
+    if (hideSaver()) { e.preventDefault(); e.stopImmediatePropagation(); armSaver(); return; }
+    armSaver();
+  }, true);
+  armSaver();
+
+  // ---- keep the computer awake while something plays (so the TV picture doesn't drop out) ----
+  var wakeLock = null;
+  function keepAwake(on) {
+    try {
+      if (on && navigator.wakeLock && !wakeLock) {
+        navigator.wakeLock.request("screen").then(function (l) { wakeLock = l; l.addEventListener("release", function () { wakeLock = null; }); })["catch"](function () {});
+      } else if (!on && wakeLock) { wakeLock.release(); wakeLock = null; }
+    } catch (e) {}
+  }
+  ["video", "audio", "mvideo"].forEach(function (id) {
+    var el = $(id);
+    el.addEventListener("playing", function () { keepAwake(true); });
+    el.addEventListener("pause", function () { if (!anythingPlaying()) keepAwake(false); });
+    el.addEventListener("emptied", function () { if (!anythingPlaying()) keepAwake(false); });
   });
 
   // ---- Web / YouTube ----
@@ -435,7 +804,19 @@
     inst.type = "button"; inst.addEventListener("click", function () { if (!window.__installApp || !window.__installApp()) window.alert("To install: in your browser menu choose \"Install app\" or \"Add to Home screen\". On iPhone Safari: Share then Add to Home Screen."); });
     var setup = make("button", "btn", "Turn a spare device into an EYE3 box");
     setup.type = "button"; setup.addEventListener("click", function () { location.href = "setup.html"; });
-    var kv = make("div", "kv"); kv.appendChild(fs); kv.appendChild(pl); kv.appendChild(inst); kv.appendChild(setup); kv.appendChild(ph);
+    var sv = make("button", "btn", "");
+    sv.type = "button";
+    var paintSv = function () { var m = saverMinutes(); sv.textContent = "Screensaver: " + (m ? "after " + m + " min" : "off"); };
+    paintSv();
+    sv.addEventListener("click", function () { var i = SAVER_STEPS.indexOf(saverMinutes()); set(SAVER_KEY, String(SAVER_STEPS[(i + 1) % SAVER_STEPS.length])); paintSv(); armSaver(); });
+    var rc = make("button", "btn", rcCode ? "Phone remote: on (show code)" : "Phone remote: turn on");
+    rc.type = "button"; rc.addEventListener("click", openRemoteInfo);
+    var sl = make("button", "btn", "");
+    sl.type = "button";
+    var paintSl = function () { var m = sleepLeft(); sl.textContent = "Sleep timer: " + (m ? m + " min left" : "off"); };
+    paintSl();
+    sl.addEventListener("click", function () { cycleSleep(); paintSl(); });
+    var kv = make("div", "kv"); kv.appendChild(fs); kv.appendChild(rc); kv.appendChild(sl); kv.appendChild(sv); kv.appendChild(pl); kv.appendChild(inst); kv.appendChild(setup); kv.appendChild(ph);
     rowsHtml(body, [
       para("EYE3 Home runs in this browser and shows on the TV over HDMI. For the best look, press F or use the button below to go fullscreen."),
       kv,
@@ -452,6 +833,7 @@
   function isTyping() { var a = document.activeElement; return a && (a.tagName === "INPUT" || a.tagName === "TEXTAREA"); }
   document.addEventListener("keydown", function (e) {
     if ((e.key === "f" || e.key === "F") && !isTyping()) { toggleFullscreen(); return; }
+    if ((e.key === "z" || e.key === "Z") && !isTyping()) { e.preventDefault(); cycleSleep(); return; }
     if (isBack(e)) { if (overlayOpen()) { e.preventDefault(); closeOverlays(); } return; }
 
     if ($("ov-tv").classList.contains("open")) {
@@ -461,15 +843,216 @@
       else if (e.key === "Enter") { e.preventDefault(); playChannel(chIndex); }
       return;
     }
+    if ($("ov-radio").classList.contains("open")) {
+      if (e.key === "ArrowDown") { e.preventDefault(); rIndex = Math.min(stations.length - 1, rIndex + 1); paintStations(); scrollList("rlist", rIndex); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); rIndex = Math.max(0, rIndex - 1); paintStations(); scrollList("rlist", rIndex); }
+      else if (e.key === "ArrowRight") { e.preventDefault(); rGenre = (rGenre + 1) % GENRES.length; loadStations(); }
+      else if (e.key === "ArrowLeft") { e.preventDefault(); rGenre = (rGenre + GENRES.length - 1) % GENRES.length; loadStations(); }
+      else if (e.key === "Enter") { e.preventDefault(); playStation(rIndex); }
+      return;
+    }
+    if ($("ov-media").classList.contains("open")) {
+      if (isTyping()) return;
+      var inList = !document.activeElement || document.activeElement === document.body || document.activeElement.className.indexOf("btn") === -1;
+      if (e.key === "ArrowDown" && media.length) { e.preventDefault(); mIndex = Math.min(media.length - 1, mIndex + 1); paintMedia(); scrollList("mlist", mIndex); }
+      else if (e.key === "ArrowUp" && media.length) { e.preventDefault(); mIndex = Math.max(0, mIndex - 1); paintMedia(); scrollList("mlist", mIndex); }
+      else if (e.key === "ArrowRight" && inList) { e.preventDefault(); stepMedia(1); }
+      else if (e.key === "ArrowLeft" && inList) { e.preventDefault(); stepMedia(-1); }
+      else if (e.key === " " && inList && $("mvideo").style.display !== "none") { e.preventDefault(); var v = $("mvideo"); if (v.paused) v.play(); else v.pause(); }
+      else if (e.key === "Enter" && inList && media.length) { e.preventDefault(); playMedia(mIndex); }
+      return;
+    }
     if (overlayOpen()) return; // web/info overlays use normal focus
 
     if (e.key === "ArrowRight") { e.preventDefault(); focusIndex = (focusIndex + 1) % tiles.length; paintFocus(); }
     else if (e.key === "ArrowLeft") { e.preventDefault(); focusIndex = (focusIndex + tiles.length - 1) % tiles.length; paintFocus(); }
-    else if (e.key === "ArrowDown") { e.preventDefault(); focusIndex = Math.min(tiles.length - 1, focusIndex + 3); paintFocus(); }
-    else if (e.key === "ArrowUp") { e.preventDefault(); focusIndex = Math.max(0, focusIndex - 3); paintFocus(); }
+    else if (e.key === "ArrowDown") { e.preventDefault(); focusIndex = Math.min(tiles.length - 1, focusIndex + dockCols()); paintFocus(); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); focusIndex = Math.max(0, focusIndex - dockCols()); paintFocus(); }
+    else if (e.key === "s" || e.key === "S") { e.preventDefault(); showSaver(); }
+
     else if (e.key === "Enter") { e.preventDefault(); openTile(TILES[focusIndex].key); }
   });
-  function scrollCh() { var rows = $("chlist").querySelectorAll(".ch"); if (rows[chIndex]) rows[chIndex].scrollIntoView({ block: "nearest", behavior: reduceMotion ? "auto" : "smooth" }); }
+  function scrollList(id, idx) { var rows = $(id).querySelectorAll(".ch"); if (rows[idx]) rows[idx].scrollIntoView({ block: "nearest", behavior: reduceMotion ? "auto" : "smooth" }); }
+  function scrollCh() { scrollList("chlist", chIndex); }
+
+  // ---- splash: once per browser session; any key or click skips it; ?splash=0 turns it off ----
+  (function () {
+    var sp = $("splash"), seen = false, done = false, timer = null;
+    try { seen = /[?&]splash=0/.test(location.search) || sessionStorage.getItem("eye3.home.splash") === "1"; } catch (e) {}
+    function close() {
+      if (done) return; done = true; clearTimeout(timer);
+      try { sessionStorage.setItem("eye3.home.splash", "1"); } catch (e) {}
+      sp.classList.add("leaving"); setTimeout(function () { sp.parentNode && sp.parentNode.removeChild(sp); }, 600);
+    }
+    if (seen) { sp.parentNode.removeChild(sp); done = true; return; }
+    sp.addEventListener("click", close);
+    document.addEventListener("keydown", function (e) { if (!done) { e.preventDefault(); e.stopImmediatePropagation(); close(); } }, true);
+    timer = setTimeout(close, reduceMotion ? 1200 : 3200);
+  })();
+
+  // ---- toast ----
+  var toastTimer = null;
+  function toast(text) {
+    var t = $("toast"); t.textContent = text; t.classList.add("on");
+    clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.classList.remove("on"); }, 2200);
+  }
+  function mediaEls() { return ["video", "audio", "mvideo"].map($); }
+
+  // ---- sleep timer: stops playback and starts the screensaver after the chosen time ----
+  var SLEEP_STEPS = [0, 15, 30, 60, 90];
+  var sleepTimer = null, sleepEnd = 0;
+  function sleepLeft() { return sleepEnd ? Math.max(0, Math.ceil((sleepEnd - Date.now()) / 60000)) : 0; }
+  function paintSleep() {
+    var c = $("sleepchip"), left = sleepLeft();
+    c.hidden = !left; if (left) c.textContent = "😴 Sleep in " + left + " min";
+  }
+  function setSleep(min) {
+    clearTimeout(sleepTimer); sleepEnd = 0;
+    if (min) {
+      sleepEnd = Date.now() + min * 60000;
+      sleepTimer = setTimeout(function () {
+        sleepEnd = 0; closeOverlays(); stopPlayback(); paintSleep(); toast("Sleep timer — good night"); showSaver();
+      }, min * 60000);
+    }
+    paintSleep();
+  }
+  function cycleSleep() {
+    var cur = sleepLeft(), next = 0;
+    if (!cur) next = SLEEP_STEPS[1];
+    else for (var i = 1; i < SLEEP_STEPS.length; i++) if (SLEEP_STEPS[i] > cur) { next = SLEEP_STEPS[i]; break; }
+    setSleep(next); toast(next ? "Sleep timer: " + next + " min" : "Sleep timer off");
+    return next;
+  }
+  setInterval(paintSleep, 30000);
+
+  // ---- Phone remote: the phone sends plain navigation commands over a free relay (ntfy), like the TV portal ----
+  // Navigation only: no text, no links, no files. The topic is derived from a random 8-character code.
+  var RC_KEY = "eye3.home.rc";
+  var RC_ALPHABET = "ABCDEFGHJKMNPQRSTVWXYZ23456789";
+  var RC_KEYS = { up: "ArrowUp", down: "ArrowDown", left: "ArrowLeft", right: "ArrowRight", ok: "Enter", enter: "Enter", back: "Escape" };
+  var rcSource = null, rcPoll = null, rcSince = 0, rcSeen = {}, rcCode = "";
+  function rcBase() {
+    if (location.hostname === "localhost" || location.hostname === "127.0.0.1") { var m = /[?&]signal=([^&#]+)/.exec(location.search); if (m) return decodeURIComponent(m[1]); }
+    return "https://ntfy.sh";
+  }
+  function rcPretty(c) { return c.slice(0, 4) + "-" + c.slice(4); }
+  function rcNewCode() {
+    var out = "", buf = new Uint32Array(8);
+    (window.crypto || window.msCrypto).getRandomValues(buf);
+    for (var i = 0; i < 8; i++) out += RC_ALPHABET.charAt(buf[i] % RC_ALPHABET.length);
+    return out;
+  }
+  function pressKey(key) { document.dispatchEvent(new KeyboardEvent("keydown", { key: key, bubbles: true, cancelable: true })); }
+  function tileIndex(key) { for (var i = 0; i < TILES.length; i++) if (TILES[i].key === key) return i; return 0; }
+  function listState() {
+    if ($("ov-tv").classList.contains("open")) return "tv";
+    if ($("ov-radio").classList.contains("open")) return "radio";
+    if ($("ov-media").classList.contains("open")) return "media";
+    return "";
+  }
+  function stepList(d) {
+    var w = listState();
+    if (w === "tv" && channels.length) { chIndex = Math.max(0, Math.min(channels.length - 1, chIndex + d)); paintChannels(); scrollCh(); playChannel(chIndex); }
+    else if (w === "radio" && stations.length) { rIndex = Math.max(0, Math.min(stations.length - 1, rIndex + d)); paintStations(); scrollList("rlist", rIndex); playStation(rIndex); }
+    else if (w === "media") stepMedia(d);
+  }
+  function jumpTo(n) {
+    var w = listState(), i = (n === 0 ? 10 : n) - 1;
+    if (w === "tv" && channels[i]) { chIndex = i; paintChannels(); scrollCh(); playChannel(i); toast("Channel " + (i + 1)); }
+    else if (w === "radio" && stations[i]) { rIndex = i; paintStations(); scrollList("rlist", i); playStation(i); toast("Station " + (i + 1)); }
+  }
+  function setVolume(delta, mute) {
+    var els = mediaEls(), v = els[0].volume;
+    if (mute) { var m = !els[0].muted; els.forEach(function (e) { e.muted = m; }); toast(m ? "Muted" : "Sound on"); return; }
+    v = Math.max(0, Math.min(1, Math.round((v + delta) * 10) / 10));
+    els.forEach(function (e) { e.volume = v; e.muted = false; });
+    toast("Volume " + Math.round(v * 100) + "%");
+  }
+  function togglePlay() {
+    var w = listState(), el = w === "radio" ? $("audio") : w === "media" ? $("mvideo") : w === "tv" ? $("video") : null;
+    if (!el || !el.getAttribute("src")) { toast("Nothing to pause"); return; }
+    if (el.paused) { var p = el.play(); if (p && p["catch"]) p["catch"](function () {}); toast("Play"); } else { el.pause(); toast("Paused"); }
+  }
+  function rcApply(raw) {
+    var cmd = String(raw || "").toLowerCase();
+    if (cmd === "hello") { toast("Phone connected"); return; }
+    if (RC_KEYS[cmd]) { pressKey(RC_KEYS[cmd]); return; }
+    if (cmd === "home") { closeOverlays(); focusIndex = 0; paintFocus(); return; }
+    if (cmd === "tv" || cmd === "radio" || cmd === "media") { closeOverlays(); focusIndex = tileIndex(cmd); paintFocus(); openTile(cmd); return; }
+    if (cmd === "chup") { stepList(-1); return; }
+    if (cmd === "chdown") { stepList(1); return; }
+    if (cmd.indexOf("digit:") === 0) { var d = cmd.charCodeAt(6); if (d >= 48 && d <= 57) jumpTo(d - 48); return; }
+    if (cmd === "volup") { setVolume(0.1); return; }
+    if (cmd === "voldown") { setVolume(-0.1); return; }
+    if (cmd === "mute") { setVolume(0, true); return; }
+    if (cmd === "play") { togglePlay(); return; }
+    if (cmd === "sleep") { cycleSleep(); return; }
+    if (cmd === "saver") { showSaver(); return; }
+  }
+  function rcHandle(text) {
+    var data; try { data = JSON.parse(text); } catch (e) { return; }
+    if (!data || (data.event && data.event !== "message")) return;
+    if (data.id) { if (rcSeen[data.id]) return; rcSeen[data.id] = 1; }
+    if (data.time && data.time > rcSince) rcSince = data.time;
+    rcApply(data.message);
+  }
+  function rcStop() {
+    if (rcSource) { try { rcSource.close(); } catch (e) {} rcSource = null; }
+    clearTimeout(rcPoll); rcPoll = null; rcSeen = {};
+    $("rcchip").hidden = true;
+  }
+  function rcStartPoll(topic) {
+    var loop = function () {
+      if (!rcCode || "eye3rc-" + rcCode.toLowerCase() !== topic) return;
+      var xhr = new XMLHttpRequest();
+      try { xhr.open("GET", rcBase() + "/" + topic + "/json?poll=1&since=" + rcSince, true); } catch (e) { return; }
+      xhr.onloadend = function () {
+        if (xhr.status >= 200 && xhr.status < 300 && xhr.responseText) xhr.responseText.split(/\n/).forEach(function (l) { if (l.replace(/\s+/g, "")) rcHandle(l); });
+        rcPoll = setTimeout(loop, 1500);
+      };
+      try { xhr.send(); } catch (e) { rcPoll = setTimeout(loop, 3000); }
+    };
+    loop();
+  }
+  function rcStart(code) {
+    rcStop(); rcCode = code;
+    var topic = "eye3rc-" + code.toLowerCase();
+    rcSince = Math.floor(Date.now() / 1000) - 5;
+    $("rcchip").hidden = false;
+    if (window.EventSource) {
+      try {
+        rcSource = new EventSource(rcBase() + "/" + topic + "/sse");
+        rcSource.onmessage = function (e) { rcHandle(e.data); };
+        rcSource.onerror = function () { if (rcSource && rcSource.readyState === 2) { rcSource = null; rcStartPoll(topic); } };
+        return;
+      } catch (e) { rcSource = null; }
+    }
+    rcStartPoll(topic);
+  }
+  function rcOff() { rcStop(); rcCode = ""; set(RC_KEY, null); }
+  function openRemoteInfo() {
+    $("info-title").textContent = "Phone remote";
+    var code = rcCode, nodes = [];
+    var link = ORIGIN + "remote/" + (code ? "#c=" + code : "");
+    if (code) {
+      nodes.push(para("On your phone (same internet is enough — no Wi-Fi pairing), open:"));
+      var l = make("p", "", link); l.style.color = "var(--orange-soft)"; l.style.overflowWrap = "anywhere"; nodes.push(l);
+      nodes.push(para("or open " + ORIGIN + "remote/ and type this code:"));
+      nodes.push(make("div", "bigcode", rcPretty(code)));
+      nodes.push(para("Arrows, OK, Back, Home, channel and station up/down, number keys, TV · Radio · My media, volume, mute, play/pause and a sleep timer. Keep this page open."));
+    } else {
+      nodes.push(para("Turn this on to control EYE3 Home from your phone. It creates a private 8-character code; only navigation buttons are sent."));
+    }
+    var kv = make("div", "kv"), first = null;
+    var mk = function (label, fn) { var b = make("button", "btn", label); b.type = "button"; b.addEventListener("click", fn); kv.appendChild(b); if (!first) first = b; };
+    if (code) { mk("New code", function () { var c = rcNewCode(); set(RC_KEY, c); rcStart(c); openRemoteInfo(); }); mk("Turn off", function () { rcOff(); openRemoteInfo(); }); }
+    else mk("Turn on", function () { var c = rcNewCode(); set(RC_KEY, c); rcStart(c); openRemoteInfo(); });
+    nodes.push(kv);
+    rowsHtml($("info-body"), nodes);
+    openOverlay("ov-info");
+    setTimeout(function () { try { first.focus(); } catch (e) {} }, 60);
+  }
+  (function () { var c = get(RC_KEY); if (c && /^[A-Z0-9]{8}$/.test(c)) rcStart(c); })();
 
   // ---- installable app (PWA): register the service worker and keep an install prompt ----
   if ("serviceWorker" in navigator) {
