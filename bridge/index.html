@@ -184,6 +184,19 @@
     </section>
 
     <section class="panel section">
+      <h2>Firmware &amp; pendrive — what is safe on this TV</h2>
+      <p>Your TV is a <b>Philips 50PUT6103/56 (TPM186E, Saphi)</b>. Firmware is digitally signed by Philips, so the TV only accepts <b>official, unmodified Philips files for this exact model</b>. That is a safety feature — do not fight it.</p>
+      <div class="grid-3">
+        <div class="result"><span class="status supported">SAFE</span><h3>Official update over the internet</h3><p>TV: <b>Settings → Update software → Search for updates → Internet</b>. Keep the TV powered on until it restarts. Your channels and settings stay. On TPM186E the newest version is <b>018.005.036.001</b> (Sep 2020), which adds the built-in <b>Internet browser</b> and Miracast fixes.</p></div>
+        <div class="result"><span class="status supported">SAFE</span><h3>Official update by pendrive (USB)</h3><p>On a computer go to <b>philips.com/support</b>, enter <b>50PUT6103/56</b>, download the latest firmware. Unzip it to the <b>root of an empty FAT32 USB stick</b>. Insert it in the TV, then <b>Settings → Update software → USB</b> and follow the prompts. <b>Never remove the stick or power off during the update.</b></p></div>
+        <div class="result"><span class="status supported">SAFE</span><h3>Play your own media from USB</h3><p>Copy videos, photos or music to the stick and open the TV's <b>Media / USB</b> player. This does not touch the firmware.</p></div>
+        <div class="result"><span class="status unsupported">NOT POSSIBLE</span><h3>Custom software added to the firmware</h3><p>A TV app, launcher or EYE3 cannot be put into the firmware or side-loaded from USB. The signature check rejects any modified file, and trying to force one can <b>permanently brick the TV</b>. There is no safe way to do it.</p></div>
+        <div class="result"><span class="status limited">INSTEAD</span><h3>Add features the allowed ways</h3><p>Use the <b>App Gallery</b> for Philips-approved apps (that is how Smart STB got on), open <b>EYE3 in the TV's Internet browser</b> after updating, or add apps with an <b>HDMI streaming device</b>. The TV stays untouched.</p></div>
+        <div class="result"><span class="status unknown">CHECK FIRST</span><h3>Know your current version</h3><p><b>Settings → Update software → Current software info.</b> If it is already 018.005.036.001 or newer, you have the latest Philips software and the browser (if your model/region includes it).</p></div>
+      </div>
+    </section>
+
+    <section class="panel section">
       <h2>EYE3 links to use on your TV</h2>
       <div class="grid-3">
         <div><h3>EYE3 TV portal</h3><p>Open in the TV browser or add in Smart STB.</p><p><a href="https://j-janko420.github.io/EYE3-VISION/portal/c/">.../portal/c/</a></p></div>
