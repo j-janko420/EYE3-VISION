@@ -6,6 +6,13 @@
 <meta name="theme-color" content="#08122b">
 <meta name="description" content="EYE3 Home — a fullscreen TV home screen by i3 Design. Runs on your laptop or PC and shows on the TV over HDMI: Live TV, Vision tools, YouTube, web and cast.">
 <title>EYE3 Home</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="EYE3 Home">
+<meta name="mobile-web-app-capable" content="yes">
 <style>
   :root {
     color-scheme: dark;
@@ -424,7 +431,11 @@
     pl.type = "button"; pl.addEventListener("click", function () { $("tv-add").click(); });
     var ph = make("button", "btn", "Personalize (photo & theme) in EYE3 Vision");
     ph.type = "button"; ph.addEventListener("click", function () { location.href = ORIGIN + "index.html?tv=1"; });
-    var kv = make("div", "kv"); kv.appendChild(fs); kv.appendChild(pl); kv.appendChild(ph);
+    var inst = make("button", "btn", "Install EYE3 Home as an app");
+    inst.type = "button"; inst.addEventListener("click", function () { if (!window.__installApp || !window.__installApp()) window.alert("To install: in your browser menu choose \"Install app\" or \"Add to Home screen\". On iPhone Safari: Share then Add to Home Screen."); });
+    var setup = make("button", "btn", "Turn a spare device into an EYE3 box");
+    setup.type = "button"; setup.addEventListener("click", function () { location.href = "setup.html"; });
+    var kv = make("div", "kv"); kv.appendChild(fs); kv.appendChild(pl); kv.appendChild(inst); kv.appendChild(setup); kv.appendChild(ph);
     rowsHtml(body, [
       para("EYE3 Home runs in this browser and shows on the TV over HDMI. For the best look, press F or use the button below to go fullscreen."),
       kv,
@@ -459,6 +470,19 @@
     else if (e.key === "Enter") { e.preventDefault(); openTile(TILES[focusIndex].key); }
   });
   function scrollCh() { var rows = $("chlist").querySelectorAll(".ch"); if (rows[chIndex]) rows[chIndex].scrollIntoView({ block: "nearest", behavior: reduceMotion ? "auto" : "smooth" }); }
+
+  // ---- installable app (PWA): register the service worker and keep an install prompt ----
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); });
+  }
+  var deferredPrompt = null;
+  window.addEventListener("beforeinstallprompt", function (e) { e.preventDefault(); deferredPrompt = e; window.__canInstall = true; });
+  window.__installApp = function () {
+    if (!deferredPrompt) return false;
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(function () { deferredPrompt = null; });
+    return true;
+  };
 
   window.addEventListener("pagehide", stopPlayback);
 })();
