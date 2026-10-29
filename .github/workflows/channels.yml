@@ -1,0 +1,60 @@
+name: Channel catalogue
+
+# Rebuilds iptv/eye3-full.m3u and iptv/channels.json from the public iptv-org index.
+# Only free public HLS streams that answer a real playlist request are kept; adult
+# channels and streams that need special headers are dropped (see scripts/build_channels.py).
+# Runs weekly, on demand, and when the builder changes on a claude/** branch.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '41 4 * * 1'
+  push:
+    branches: ['claude/**']
+    paths: ['scripts/build_channels.py', '.github/workflows/channels.yml']
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+
+concurrency:
+  group: channels-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build and probe
+        run: python3 scripts/build_channels.py --out iptv --workers 120 --timeout 8
+
+      - name: Show the report
+        run: cat iptv/channels-report.txt
+
+      - name: Commit the refreshed files
+        id: commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add iptv/eye3-full.m3u iptv/channels.json iptv/channels-report.txt
+          if git diff --cached --quiet; then echo "changed=false" >> "$GITHUB_OUTPUT"; echo "No change."; exit 0; fi
+          git commit -m "Refresh channel catalogue"
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+          if ! git push origin "HEAD:${GITHUB_REF_NAME}"; then
+            echo "Direct push refused (branch protection?); opening a pull request instead."
+            git push origin "HEAD:channels-refresh" --force
+            gh pr create --base "${GITHUB_REF_NAME}" --head channels-refresh --title "Refresh channel catalogue" --body "Automated weekly refresh of iptv/eye3-full.m3u and iptv/channels.json." || true
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      # Commits made with the workflow token do not start other workflows, so publish explicitly.
+      - name: Publish the site (main only)
+        if: github.ref == 'refs/heads/main' && steps.commit.outputs.changed == 'true'
+        run: gh workflow run pages.yml --ref main
+        env:
+          GH_TOKEN: ${{ github.token }}
