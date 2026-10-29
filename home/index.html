@@ -320,6 +320,7 @@
     <select class="btn" id="vod-acct" aria-label="Account"></select>
     <button class="btn on" id="vod-movies" type="button">Movies</button>
     <button class="btn" id="vod-series" type="button">Series</button>
+    <button class="btn" id="vod-free" type="button" title="Public-domain films from the Internet Archive. No account needed.">Free movies</button>
     <select class="btn" id="vod-cat" aria-label="Category"></select>
     <input class="field tv-search" id="vod-search" type="search" placeholder="Search titles  ( / )" autocomplete="off" spellcheck="false" aria-label="Search titles">
     <span class="chip" id="vod-count">0 titles</span>
@@ -1272,7 +1273,7 @@
     list.forEach(function (a) { var o = nt(make("option", "", a.name)); o.value = a.id; sel.appendChild(o); });
     if (!vodAcct() && list.length) vod.acct = list[0].id;
     sel.value = vod.acct; sel.hidden = list.length < 2;
-    $("vod-movies").classList.toggle("on", vod.kind === "movie"); $("vod-series").classList.toggle("on", vod.kind === "series");
+    $("vod-movies").classList.toggle("on", vod.kind === "movie"); $("vod-series").classList.toggle("on", vod.kind === "series"); $("vod-free").classList.remove("on");
   }
   function vodItems() { return vodCache[vod.acct + "|" + vod.kind] || []; }
   // adult titles are flagged by EYE3 Link: hidden everywhere, and shown only in the category below once the section is unlocked
@@ -1304,6 +1305,7 @@
     vod.total = all.length; vod.titles = all.slice(0, VOD_CAP); vod.idx = Math.min(vod.idx, Math.max(0, vod.titles.length - 1));
   }
   function vodRender() {
+    if (vod.kind === "free") return freeRender();
     var list = $("vod-list"); while (list.firstChild) list.removeChild(list.firstChild);
     var note = function (t, fn) { var r = make("div", "ch action", t); if (fn) { r.tabIndex = 0; r.addEventListener("click", fn); } list.appendChild(r); return r; };
     if (!vodAccts().length) {
@@ -1341,7 +1343,7 @@
     if (vod.total > vod.titles.length) note("Showing the first " + vod.titles.length + " of " + vod.total + ". Narrow it with a category or search.");
     $("vod-count").textContent = vod.total + " title" + (vod.total === 1 ? "" : "s");
   }
-  function vodRefresh() { vodFill(); vodCats(); vodFilter(); vodRender(); }
+  function vodRefresh() { if (vod.kind === "free") return freeRender(); vodFill(); vodCats(); vodFilter(); vodRender(); }
   function vodLoad() {
     var a = vodAcct(); vod.note = ""; vod.mode = "titles";
     if (!a) return vodRefresh();
@@ -1383,17 +1385,112 @@
   function openVod() {
     var cur = vodAccts();
     if (!vod.acct && cur.length) vod.acct = cur[0].id;
-    openOverlay("ov-vod"); vodLoad();
+    openOverlay("ov-vod");
+    if (vod.kind === "free") freeOpen(); else vodLoad();
   }
   $("tv-vod").addEventListener("click", function () { closeOverlays(); openVod(); });
   $("vod-close").addEventListener("click", closeOverlays);
   $("vod-accts").addEventListener("click", function () { closeOverlays(); openAccounts(); });
   $("vod-acct").addEventListener("change", function () { vod.acct = this.value; vod.cat = "All"; vod.q = ""; $("vod-search").value = ""; this.blur(); vodLoad(); });
-  $("vod-movies").addEventListener("click", function () { vod.kind = "movie"; vod.cat = "All"; vod.idx = 0; vodLoad(); });
-  $("vod-series").addEventListener("click", function () { vod.kind = "series"; vod.cat = "All"; vod.idx = 0; vodLoad(); });
-  $("vod-cat").addEventListener("change", function () { vod.cat = this.value; vod.idx = 0; vod.mode = "titles"; this.blur(); vodFilter(); vodRender(); });
-  $("vod-search").addEventListener("input", function () { vod.q = this.value; vod.idx = 0; vod.mode = "titles"; vodFilter(); vodRender(); });
+  $("vod-movies").addEventListener("click", function () { vod.kind = "movie"; vod.cat = "All"; vod.idx = 0; $("vod-search").value = vod.q; vodLoad(); });
+  $("vod-series").addEventListener("click", function () { vod.kind = "series"; vod.cat = "All"; vod.idx = 0; $("vod-search").value = vod.q; vodLoad(); });
+  $("vod-cat").addEventListener("change", function () {
+    if (vod.kind === "free") { free.genre = this.value; this.blur(); freeFetch(true); return; }
+    vod.cat = this.value; vod.idx = 0; vod.mode = "titles"; this.blur(); vodFilter(); vodRender();
+  });
+  $("vod-search").addEventListener("input", function () {
+    if (vod.kind === "free") { free.q = this.value; clearTimeout(free.timer); free.timer = setTimeout(function () { freeFetch(true); }, 450); return; }
+    vod.q = this.value; vod.idx = 0; vod.mode = "titles"; vodFilter(); vodRender();
+  });
   $("vod-search").addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === "ArrowDown") { e.preventDefault(); e.stopPropagation(); this.blur(); } });
+
+  // ---- Free movies: public-domain feature films from the Internet Archive (no account, no EYE3 Link) ----
+  var FREE_GENRES = [["", "All free movies"], ["comedy", "Comedy"], ["drama", "Drama"], ["sci-fi", "Sci-fi"], ["horror", "Horror"], ["western", "Western"], ["film noir", "Film noir"], ["animation", "Animation"], ["documentary", "Documentary"], ["silent", "Silent films"], ["crime", "Crime"], ["romance", "Romance"], ["war", "War"]];
+  var free = { q: "", genre: "", page: 1, items: [], total: 0, busy: "", note: "", timer: null, token: 0 };
+  var FREE_ROWS = 60;
+  function freeQuery() {
+    var q = "collection:(feature_films) AND mediatype:(movies) AND -subject:(adult OR erotic OR xxx OR porn)";
+    if (free.genre) q += " AND subject:(\"" + free.genre + "\")";
+    var t = free.q.replace(/[^\w\s'-]/g, " ").replace(/\s+/g, " ").trim();
+    if (t) q += " AND title:(" + t + ")";
+    return q;
+  }
+  function freeText(v) { return String(Array.isArray(v) ? v[0] : v || "").trim(); }
+  function freeFetch(reset) {
+    if (reset) { free.page = 1; free.items = []; free.total = 0; }
+    var my = ++free.token;
+    free.busy = "Loading free movies from the Internet Archive…"; free.note = ""; vodRender();
+    var url = "https://archive.org/advancedsearch.php?" + new URLSearchParams({ q: freeQuery(), rows: String(FREE_ROWS), page: String(free.page), output: "json" }).toString() +
+      "&fl[]=identifier&fl[]=title&fl[]=year&sort[]=downloads+desc";
+    return fetch(url).then(function (r) { if (!r.ok) throw new Error("The Internet Archive answered " + r.status + "."); return r.json(); }).then(function (d) {
+      if (my !== free.token) return;
+      var rs = d && d.response || {}, docs = rs.docs || [];
+      docs.forEach(function (x) {
+        var title = freeText(x.title), id = freeText(x.identifier);
+        if (!id || !title || ADULT_RX.test(title)) return;          // adult titles are never listed from this source
+        free.items.push({ id: id, n: title, y: /^\d{4}/.test(freeText(x.year)) ? freeText(x.year).slice(0, 4) : "" });
+      });
+      free.total = rs.numFound || free.items.length; free.busy = "";
+      if (docs.length < FREE_ROWS) free.total = free.items.length;   // last page (titles we hide are not counted)
+      if (!free.items.length) free.note = "No free movies match. Try another genre or search.";
+      vodRender();
+    })["catch"](function (err) {
+      if (my !== free.token) return;
+      free.busy = ""; free.note = (err && err.message ? err.message : "Could not reach the Internet Archive") + " Check your connection (a VPN may block archive.org) and try again."; vodRender();
+    });
+  }
+  // pick a file a browser can play: the Archive's standard h.264 copy first, then any mp4/webm/ogv, avoiding trailers and huge files
+  function freePick(files) {
+    var ok = (files || []).filter(function (f) { return /\.(mp4|m4v|webm|ogv)$/i.test(f.name || "") && !/(trailer|sample|thumb)/i.test(f.name); });
+    var rank = function (f) { return /^(h\.264|mpeg4)/i.test(f.format || "") ? 0 : /\.mp4$/i.test(f.name) ? 1 : 2; };
+    var size = function (f) { return parseInt(f.size, 10) || 0; };
+    ok.sort(function (a, b) { return rank(a) - rank(b) || (size(a) > 1.6e9 ? 1 : 0) - (size(b) > 1.6e9 ? 1 : 0) || size(b) - size(a); });
+    return ok[0] || null;
+  }
+  function freePlay(it) {
+    var title = it.n + (it.y ? " (" + it.y + ")" : "");
+    $("vod-idle").style.display = "none"; vodLabel(title + " — finding the video…", false);
+    fetch("https://archive.org/metadata/" + encodeURIComponent(it.id)).then(function (r) { if (!r.ok) throw new Error("answered " + r.status); return r.json(); }).then(function (d) {
+      var f = freePick(d && d.files);
+      if (!f) throw new Error("has no video file a browser can play");
+      var v = $("vod-video");
+      v.onerror = function () { vodLabel(title + " — can't play this file here. Try another movie.", true); };
+      v.onplaying = function () { vodLabel(title, false); setTimeout(function () { $("vod-label").style.display = "none"; }, 4000); };
+      v.src = "https://archive.org/download/" + encodeURIComponent(it.id) + "/" + f.name.split("/").map(encodeURIComponent).join("/");
+      var p = v.play(); if (p && p["catch"]) p["catch"](function () {});
+    })["catch"](function (err) { vodLabel(title + " — " + (err && err.message || "could not load") + ".", true); });
+  }
+  function freeFill() {
+    var sel = $("vod-cat");
+    while (sel.firstChild) sel.removeChild(sel.firstChild);
+    FREE_GENRES.forEach(function (g) { var o = make("option", "", g[1]); o.value = g[0]; sel.appendChild(o); });
+    sel.value = free.genre;
+  }
+  function freeRender() {
+    var list = $("vod-list"); while (list.firstChild) list.removeChild(list.firstChild);
+    var note = function (t, fn) { var r = make("div", "ch action", t); if (fn) { r.tabIndex = 0; r.addEventListener("click", fn); } list.appendChild(r); return r; };
+    free.items.forEach(function (it) {
+      var row = make("div", "ch"); row.tabIndex = 0;
+      row.appendChild(nt(make("span", "", it.n)));
+      if (it.y) row.appendChild(make("small", "", it.y));
+      row.addEventListener("click", function () { freePlay(it); });
+      row.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); freePlay(it); } });
+      list.appendChild(row);
+    });
+    if (free.busy) note(free.busy);
+    else if (free.note) note(free.note, function () { freeFetch(true); });
+    else if (free.items.length < free.total) note("Load more (" + free.items.length + " of " + free.total + ")", function () { free.page++; freeFetch(false); });
+    note("Public-domain films from the Internet Archive (archive.org). Free, no account.");
+    $("vod-count").textContent = free.total + " free movie" + (free.total === 1 ? "" : "s");
+  }
+  function freeOpen() {
+    vod.kind = "free"; vod.mode = "titles";
+    $("vod-acct").hidden = true; freeFill();
+    $("vod-movies").classList.remove("on"); $("vod-series").classList.remove("on"); $("vod-free").classList.add("on");
+    $("vod-search").value = free.q;
+    if (!free.items.length && !free.busy) freeFetch(true); else vodRender();
+  }
+  $("vod-free").addEventListener("click", freeOpen);
 
   function openMaker() { paintMaker(); openOverlay("ov-maker"); setTimeout(function () { try { $("mk-name").focus(); } catch (e) {} }, 60); }
   function m3uAttr(v) { return String(v == null ? "" : v).replace(/["\r\n]/g, " ").replace(/\s+/g, " ").replace(/^\s+|\s+$/g, ""); }
