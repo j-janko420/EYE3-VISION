@@ -1,0 +1,76 @@
+EYE3 channel catalogue, 2026-10-29T20:43:55Z
+source: https://iptv-org.github.io/iptv/index.m3u
+channels: 7499 (https: 6420)
+
+by category
+  News             690
+  General          1623
+  Entertainment    637
+  Movies           461
+  Series           332
+  Sports           236
+  Music            555
+  Kids             213
+  Documentary      153
+  Lifestyle        81
+  Culture          127
+  Comedy           128
+  Animation        134
+  Business         51
+  Education        121
+  Science          8
+  Religious        595
+  Travel           33
+  Cooking          48
+  Outdoor          56
+  Weather          14
+  Family           37
+  Classic          87
+  Legislative      112
+  Public           3
+  Relax            5
+  Shop             60
+  Auto             25
+  Other            874
+
+by country (top 40)
+  US   1625
+  IN   657
+  SE   372
+  DE   337
+  RU   289
+  IT   188
+  CL   178
+  DO   173
+  ES   161
+  FR   141
+  BR   140
+  PE   139
+  AR   135
+  UK   133
+  NL   124
+  PL   123
+  TR   113
+  RO   106
+  MX   105
+  CA   104
+  IR   98
+  CO   91
+  ID   82
+  CN   73
+  UA   59
+  CZ   57
+  EC   54
+  GR   53
+  IQ   52
+  VE   51
+  VN   50
+  KR   49
+  CR   48
+  HU   47
+  PY   45
+  HN   44
+  SA   44
+  TH   43
+  BO   42
+  AU   38
