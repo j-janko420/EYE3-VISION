@@ -49,12 +49,14 @@ jobs:
           echo "== iptv-org news sample (alive only) =="
           curl -sL --max-time 30 https://iptv-org.github.io/iptv/categories/news.m3u -o news.m3u || true
           if [ ! -s news.m3u ]; then echo "could not download iptv-org news list"; exit 0; fi
-          grep -A1 '^#EXTINF' news.m3u | grep -v '^--' | paste - - | \
-            grep -viE 'adult|xxx|18\+|porn' | head -120 | \
-            while IFS=$'\t' read -r info url; do
-              name="${info##*,}"
-              printf '%s\0%s\0' "$name" "$url"
-            done | xargs -0 -n2 -P 20 ./probe.sh | sort | tee news-results.tsv | grep '^OK' || true
+          tr -d '\r' < news.m3u | awk '
+            /^#EXTINF/ { info = $0; next }
+            /^#/ { next }
+            /^https?:/ && info != "" {
+              n = info; sub(/^.*,/, "", n)
+              if (info !~ /adult|xxx|18\+|porn/ && cnt < 150) { printf "%s\0%s\0", n, $0; cnt++ }
+              info = ""
+            }' | xargs -0 -n2 -P 20 ./probe.sh | sort | tee news-results.tsv | grep '^OK' || true
           echo "alive: $(grep -c '^OK' news-results.tsv || true) / $(wc -l < news-results.tsv)"
 
       - uses: actions/upload-artifact@v4
