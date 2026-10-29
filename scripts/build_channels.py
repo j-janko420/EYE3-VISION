@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
-"""Build EYE3's free channel catalogue from the public iptv-org index.
+"""Build EYE3's free channel catalogue from public, free playlists.
 
-Reads https://iptv-org.github.io/iptv/index.m3u (or --src FILE_OR_URL), keeps only
+Sources (repeat --src to change them; default: both):
+  https://iptv-org.github.io/iptv/index.m3u                    (group-title = category)
+  https://raw.githubusercontent.com/Free-TV/IPTV/master/playlist.m3u8   (group-title = country)
+Reads each source, keeps only
 free public HLS streams, drops adult channels and streams that need special HTTP
 headers, probes every stream and keeps the ones that answer with a real playlist.
 
@@ -16,13 +19,55 @@ import argparse, json, re, sys, time, urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 
-DEFAULT_SRC = "https://iptv-org.github.io/iptv/index.m3u"
+DEFAULT_SRCS = ["https://iptv-org.github.io/iptv/index.m3u",
+                "https://raw.githubusercontent.com/Free-TV/IPTV/master/playlist.m3u8"]
 UA = "Mozilla/5.0 (EYE3-Vision channel check)"
 BAD = re.compile(r"adult|xxx|18\+|porn|erotic|\bsex|playboy|hustler|brazzers|dorcel|penthouse|redlight|private\b", re.I)
 CATEGORY_ORDER = ["News", "General", "Entertainment", "Movies", "Series", "Sports", "Music", "Kids", "Documentary",
                   "Lifestyle", "Culture", "Comedy", "Animation", "Business", "Education", "Science", "Religious",
                   "Travel", "Cooking", "Outdoor", "Weather", "Family", "Classic", "Legislative", "Public", "Relax",
                   "Shop", "Auto", "Interactive", "Other"]
+
+
+# Free-TV groups its channels by country name; map those names to the two-letter codes used everywhere else.
+COUNTRY_CODES = {
+    "albania": "AL", "algeria": "DZ", "andorra": "AD", "argentina": "AR", "armenia": "AM", "australia": "AU", "austria": "AT",
+    "azerbaijan": "AZ", "bahrain": "BH", "bangladesh": "BD", "belarus": "BY", "belgium": "BE", "bolivia": "BO",
+    "bosnia and herzegovina": "BA", "brazil": "BR", "bulgaria": "BG", "canada": "CA", "chile": "CL", "china": "CN",
+    "colombia": "CO", "costa rica": "CR", "croatia": "HR", "cuba": "CU", "cyprus": "CY", "czech republic": "CZ", "czechia": "CZ",
+    "denmark": "DK", "dominican republic": "DO", "ecuador": "EC", "egypt": "EG", "el salvador": "SV", "estonia": "EE",
+    "finland": "FI", "france": "FR", "georgia": "GE", "germany": "DE", "greece": "GR", "guatemala": "GT", "honduras": "HN",
+    "hong kong": "HK", "hungary": "HU", "iceland": "IS", "india": "IN", "indonesia": "ID", "iran": "IR", "iraq": "IQ",
+    "ireland": "IE", "israel": "IL", "italy": "IT", "japan": "JP", "jordan": "JO", "kazakhstan": "KZ", "kenya": "KE",
+    "kosovo": "XK", "kuwait": "KW", "latvia": "LV", "lebanon": "LB", "libya": "LY", "lithuania": "LT", "luxembourg": "LU",
+    "malaysia": "MY", "malta": "MT", "mexico": "MX", "moldova": "MD", "montenegro": "ME", "morocco": "MA", "nepal": "NP",
+    "netherlands": "NL", "new zealand": "NZ", "nicaragua": "NI", "nigeria": "NG", "north macedonia": "MK", "macedonia": "MK",
+    "norway": "NO", "oman": "OM", "pakistan": "PK", "palestine": "PS", "panama": "PA", "paraguay": "PY", "peru": "PE",
+    "philippines": "PH", "poland": "PL", "portugal": "PT", "puerto rico": "PR", "qatar": "QA", "romania": "RO", "russia": "RU",
+    "saudi arabia": "SA", "serbia": "RS", "singapore": "SG", "slovakia": "SK", "slovenia": "SI", "south africa": "ZA",
+    "south korea": "KR", "spain": "ES", "sri lanka": "LK", "sweden": "SE", "switzerland": "CH", "syria": "SY", "taiwan": "TW",
+    "thailand": "TH", "tunisia": "TN", "turkey": "TR", "turkiye": "TR", "ukraine": "UA", "united arab emirates": "AE", "uae": "AE",
+    "united kingdom": "UK", "uk": "UK", "united states": "US", "usa": "US", "us": "US", "uruguay": "UY", "uzbekistan": "UZ",
+    "venezuela": "VE", "vietnam": "VN", "yemen": "YE",
+}
+# When a playlist does not give a category, guess one from the channel name.
+GUESS = [
+    ("News", r"news|noticias|nachrichten|info|actualit|haber|akhbar|24"),
+    ("Sports", r"sport|futbol|football|soccer|dazn|eleven|golf|tennis|racing|f1|nba|nfl|ufc"),
+    ("Kids", r"kids|kinder|cartoon|junior|baby|disney|nick|nickelodeon|boomerang|toon"),
+    ("Music", r"music|mtv|hits|radio|vevo|trace|kiss|rock|jazz"),
+    ("Movies", r"movie|cinema|film|kino|cine|hollywood"),
+    ("Documentary", r"documentar|discovery|history|nat geo|national geographic|science|wild|planet|nature|viasat"),
+    ("Religious", r"relig|church|islam|quran|catholic|jesus|christ|gospel|bible|ewtn|iman|hidayah"),
+]
+CATEGORY_SET = {c.lower() for c in CATEGORY_ORDER}
+
+
+def guess_category(name):
+    for cat, rx in GUESS:
+        if re.search(rx, name, re.I):
+            return cat
+    return "General"
 
 
 def read_source(src):
@@ -68,6 +113,13 @@ def clean(ch):
         group = "Other"
     if BAD.search(name) or BAD.search(group) or BAD.search(tvg_id) or group.lower() == "xxx":
         return None
+    place = ""
+    if group.lower() in CATEGORY_SET:
+        group = next(c for c in CATEGORY_ORDER if c.lower() == group.lower())
+    else:
+        # the playlist groups by country (Free-TV), not by category
+        place = COUNTRY_CODES.get(group.lower(), "")
+        group = "Other" if group.lower() == "other" else guess_category(name)
     if re.search(r"geo-?blocked", name, re.I):
         return None
     q = re.search(r"\((\d{3,4})p\)", name)
@@ -79,6 +131,7 @@ def clean(ch):
         suffix = tvg_id.split("@")[0].rsplit(".", 1)
         if len(suffix) == 2 and re.fullmatch(r"[a-z]{2}", suffix[1], re.I):
             country = suffix[1].upper()
+    country = country or place
     return {"name": base, "cat": group, "country": country, "url": url, "q": quality, "n247": n247,
             "id": tvg_id.split("@")[0], "logo": logo}
 
@@ -162,7 +215,7 @@ def write_outputs(channels, out, source):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--src", default=DEFAULT_SRC)
+    ap.add_argument("--src", action="append", help="playlist URL or file; repeat for several (default: iptv-org + Free-TV)")
     ap.add_argument("--out", default="iptv")
     ap.add_argument("--workers", type=int, default=100)
     ap.add_argument("--timeout", type=int, default=8)
@@ -170,7 +223,17 @@ def main():
     ap.add_argument("--limit", type=int, default=0, help="probe only the first N channels (for local tests)")
     a = ap.parse_args()
 
-    raw = list(parse(read_source(a.src)))
+    sources = a.src or DEFAULT_SRCS
+    raw, used = [], []
+    for src in sources:
+        try:
+            part = list(parse(read_source(src)))
+        except Exception as exc:  # one source being down must not lose the others
+            print("could not read %s: %s" % (src, exc), file=sys.stderr)
+            continue
+        print("read %d entries from %s" % (len(part), src), flush=True)
+        raw.extend(part)
+        used.append(src)
     cleaned = [c for c in (clean(r) for r in raw) if c]
     unique = dedupe(cleaned)
     if a.limit:
@@ -180,7 +243,7 @@ def main():
     if not a.no_probe and len(kept) < 50:
         print("refusing to publish: only %d channels answered (network problem?)" % len(kept), file=sys.stderr)
         return 1
-    data = write_outputs(kept, a.out, a.src if re.match(r"^https?://", a.src) else "local test file")
+    data = write_outputs(kept, a.out, " + ".join(x if re.match(r"^https?://", x) else "local test file" for x in used))
     print("wrote %d channels (%d categories)" % (data["count"], len(data["categories"])))
     return 0
 
