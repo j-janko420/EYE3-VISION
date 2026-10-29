@@ -43,7 +43,7 @@ jobs:
           if git diff --cached --quiet; then echo "changed=false" >> "$GITHUB_OUTPUT"; echo "No change."; exit 0; fi
           git commit -m "Refresh channel catalogue"
           echo "changed=true" >> "$GITHUB_OUTPUT"
-          if ! git push origin "HEAD:${GITHUB_REF_NAME}"; then
+          if ! { git pull --rebase origin "${GITHUB_REF_NAME}" && git push origin "HEAD:${GITHUB_REF_NAME}"; }; then
             echo "Direct push refused (branch protection?); opening a pull request instead."
             git push origin "HEAD:channels-refresh" --force
             gh pr create --base "${GITHUB_REF_NAME}" --head channels-refresh --title "Refresh channel catalogue" --body "Automated weekly refresh of iptv/eye3-full.m3u and iptv/channels.json." || true
