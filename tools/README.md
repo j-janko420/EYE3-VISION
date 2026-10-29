@@ -28,11 +28,15 @@ https://github.com/j-janko420/EYE3-VISION/releases/tag/eye3-link-latest (Windows
 
 Your channels appear in Live TV under the account's name, with a group filter for the provider's own groups.
 
+### Movies and series on demand
+Add your Xtream Codes account (server, username, password), then Live TV → **Movies & series**. Pick Movies or Series, a category, or search. Series open into seasons and episodes. Big libraries can take a minute to load the first time. Files the browser can play (mp4) start in the page; `.mkv` and some others need VLC.
+
 ### Direct links
 Open these on the laptop to jump straight to the right form (nothing is filled in or saved from the link):
 - M3U link: `https://j-janko420.github.io/EYE3-VISION/home/?add=m3u`
 - Xtream Codes login: `https://j-janko420.github.io/EYE3-VISION/home/?add=xtream`
 - MAG / Stalker portal (address + MAC): `https://j-janko420.github.io/EYE3-VISION/home/?add=mag`
+- Movies & series on demand (needs an Xtream account added first): `https://j-janko420.github.io/EYE3-VISION/home/?add=movies`
 - Playlist maker (your own channels, M3U import/export): `https://j-janko420.github.io/EYE3-VISION/home/?add=playlist`
 
 Adult groups in your own accounts show only after you unlock the hidden section (see below).
