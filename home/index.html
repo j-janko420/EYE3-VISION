@@ -1,0 +1,467 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#08122b">
+<meta name="description" content="EYE3 Home — a fullscreen TV home screen by i3 Design. Runs on your laptop or PC and shows on the TV over HDMI: Live TV, Vision tools, YouTube, web and cast.">
+<title>EYE3 Home</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #08122b;
+    --ink: #eef3fb;
+    --muted: #9fb0cc;
+    --line: rgba(239, 233, 220, .14);
+    --panel: rgba(12, 24, 54, .72);
+    --orange: #ff9a61;
+    --orange-soft: #ffb078;
+    --cream: #efe9dc;
+    font-family: Outfit, Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    min-height: 100vh; min-height: 100dvh; color: var(--ink); overflow: hidden;
+    background:
+      radial-gradient(circle at 24% 16%, rgba(29, 58, 122, .9) 0, transparent 46%),
+      radial-gradient(circle at 82% 86%, rgba(22, 48, 106, .8) 0, transparent 44%),
+      var(--bg);
+    background-image:
+      linear-gradient(180deg, rgba(6, 14, 34, .62), rgba(6, 14, 34, .82)), var(--i3-photo, none),
+      radial-gradient(circle at 24% 16%, rgba(29, 58, 122, .9) 0, transparent 46%),
+      radial-gradient(circle at 82% 86%, rgba(22, 48, 106, .8) 0, transparent 44%),
+      linear-gradient(180deg, var(--bg), var(--bg));
+    background-size: cover; background-position: center; background-attachment: fixed;
+  }
+  button, input { font: inherit; color: inherit; }
+  a { color: inherit; text-decoration: none; }
+
+  .home { display: flex; flex-direction: column; height: 100vh; height: 100dvh; padding: clamp(18px, 3vw, 46px); }
+  .top { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+  .brand { display: flex; align-items: center; gap: 16px; }
+  .badge { display: grid; place-items: center; width: clamp(48px, 5vw, 74px); aspect-ratio: 1; border: 4px solid var(--cream); border-radius: 14px; background: #0b1a3a; color: var(--cream); font-weight: 800; line-height: .95; text-align: center; }
+  .badge b { font-size: clamp(20px, 2.4vw, 34px); }
+  .badge span { font-size: clamp(7px, .8vw, 11px); letter-spacing: 2px; }
+  .brand h1 { margin: 0; font-size: clamp(20px, 2.4vw, 34px); font-weight: 750; letter-spacing: .14em; color: var(--orange); }
+  .brand p { margin: 2px 0 0; color: var(--muted); font-size: clamp(11px, 1vw, 15px); letter-spacing: .04em; }
+  .clock { text-align: right; }
+  .clock .t { font-size: clamp(30px, 4vw, 60px); font-weight: 700; line-height: 1; }
+  .clock .d { margin-top: 4px; color: var(--muted); font-size: clamp(12px, 1.1vw, 18px); }
+
+  .greet { margin: clamp(18px, 3vh, 44px) 0 clamp(14px, 2vh, 26px); font-size: clamp(20px, 2.6vw, 40px); font-weight: 650; letter-spacing: -.02em; }
+  .greet span { color: var(--orange-soft); }
+
+  .dock { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: clamp(12px, 1.4vw, 22px); }
+  .tile {
+    position: relative; display: flex; flex-direction: column; justify-content: space-between;
+    min-height: clamp(130px, 22vh, 240px); padding: clamp(16px, 1.6vw, 26px);
+    border: 2px solid var(--line); border-radius: 20px; background: var(--panel);
+    cursor: pointer; transition: transform .18s ease, border-color .18s ease, background .18s ease;
+    text-align: left;
+  }
+  .tile .ico { font-size: clamp(26px, 3vw, 46px); line-height: 1; }
+  .tile .name { font-size: clamp(15px, 1.4vw, 24px); font-weight: 650; }
+  .tile .sub { margin-top: 4px; color: var(--muted); font-size: clamp(10px, .9vw, 14px); }
+  .tile.on, .tile:hover { transform: translateY(-4px) scale(1.02); border-color: var(--cream); background: rgba(28, 48, 96, .9); }
+  .tile.on { box-shadow: 0 0 0 3px rgba(255, 154, 97, .5), 0 18px 50px rgba(0, 0, 0, .5); border-color: var(--orange); }
+
+  .foot { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: auto; padding-top: clamp(14px, 2vh, 24px); color: var(--muted); font-size: clamp(11px, .95vw, 15px); }
+  .hintkeys b { color: var(--ink); font-weight: 650; }
+  .net { display: flex; align-items: center; gap: 8px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: #58d6a0; box-shadow: 0 0 10px #58d6a0aa; }
+  .dot.off { background: #e5584f; box-shadow: 0 0 10px #e5584faa; }
+
+  /* Overlay (Live TV, Web, Cast, Settings) */
+  .ov { position: fixed; inset: 0; z-index: 10; display: none; flex-direction: column; padding: clamp(18px, 3vw, 46px); background: rgba(5, 9, 20, .96); }
+  .ov.open { display: flex; }
+  .ov-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: clamp(14px, 2vh, 24px); }
+  .ov-top h2 { margin: 0; font-size: clamp(20px, 2.4vw, 34px); font-weight: 700; }
+  .ov-top h2 small { margin-left: 12px; color: var(--muted); font-size: .5em; font-weight: 500; }
+  .btn { padding: 10px 18px; border: 2px solid var(--line); border-radius: 12px; background: rgba(12, 24, 54, .8); font-size: clamp(13px, 1.1vw, 17px); font-weight: 650; cursor: pointer; }
+  .btn.on, .btn:hover { border-color: var(--orange); background: #2a1d15; color: #fff; }
+
+  .tv { flex: 1; display: grid; grid-template-columns: minmax(240px, 30%) 1fr; gap: clamp(12px, 1.4vw, 22px); min-height: 0; }
+  .chlist { overflow: auto; padding-right: 6px; }
+  .ch { display: flex; align-items: center; gap: 12px; padding: 12px 16px; margin-bottom: 8px; border: 2px solid transparent; border-radius: 14px; background: rgba(12, 24, 54, .72); font-size: clamp(14px, 1.2vw, 20px); cursor: pointer; }
+  .ch small { margin-left: auto; color: var(--muted); font-size: .75em; }
+  .ch.action { color: var(--orange-soft); }
+  .ch.on, .ch:hover { border-color: var(--orange); background: #2a1d15; color: #fff; }
+  .screen { position: relative; display: flex; align-items: center; justify-content: center; border: 2px solid var(--line); border-radius: 18px; background: #000; overflow: hidden; }
+  .screen video, .screen iframe { width: 100%; height: 100%; border: 0; background: #000; }
+  .screen .idle { color: var(--muted); font-size: clamp(14px, 1.3vw, 20px); text-align: center; padding: 20px; }
+  .screen .label { position: absolute; left: 16px; bottom: 16px; padding: 8px 16px; border: 2px solid var(--orange); border-radius: 10px; background: rgba(8, 18, 43, .85); font-size: clamp(13px, 1.1vw, 18px); font-weight: 650; }
+  .screen .label.err { border-color: #e5584f; color: #ffb3ad; }
+
+  .pane { flex: 1; display: flex; flex-direction: column; gap: 16px; min-height: 0; }
+  .pane iframe { flex: 1; width: 100%; border: 2px solid var(--line); border-radius: 16px; background: #fff; }
+  .field { display: block; width: 100%; padding: 14px 18px; border: 2px solid var(--line); border-radius: 14px; background: #0d121b; color: var(--ink); font-size: clamp(15px, 1.3vw, 22px); }
+  .rows { display: grid; gap: 12px; max-width: 760px; }
+  .rows p { margin: 0; color: var(--muted); font-size: clamp(13px, 1.1vw, 18px); line-height: 1.6; }
+  .rows .kv { display: flex; gap: 10px; flex-wrap: wrap; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 10px; }
+
+  @media (max-width: 900px) {
+    .dock { grid-template-columns: repeat(2, 1fr); }
+    .tv { grid-template-columns: 1fr; }
+    .foot { flex-direction: column; align-items: flex-start; gap: 8px; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<main class="home" id="home">
+  <div class="top">
+    <div class="brand">
+      <div class="badge"><b>i3</b><span>DESIGN</span></div>
+      <div><h1>EYE3 HOME</h1><p>Your TV, on your terms · by i3 Design</p></div>
+    </div>
+    <div class="clock"><div class="t" id="clock">--:--</div><div class="d" id="date"></div></div>
+  </div>
+
+  <div class="greet" id="greet">Welcome back.</div>
+
+  <div class="dock" id="dock"></div>
+
+  <div class="foot">
+    <div class="hintkeys"><b>Arrows</b> move · <b>Enter</b> open · <b>Back/Esc</b> return · <b>F</b> fullscreen</div>
+    <div class="net"><span class="dot" id="netdot"></span><span id="netlabel">Online</span></div>
+  </div>
+</main>
+
+<!-- Live TV -->
+<section class="ov" id="ov-tv" aria-label="Live TV">
+  <div class="ov-top">
+    <h2>Live TV<small>EYE3 channels &amp; your playlist</small></h2>
+    <div class="toolbar">
+      <button class="btn" id="tv-add" type="button">Add my playlist</button>
+      <button class="btn" id="tv-close" type="button">Close</button>
+    </div>
+  </div>
+  <div class="tv">
+    <div class="chlist" id="chlist"></div>
+    <div class="screen" id="screen">
+      <video id="video" playsinline></video>
+      <div class="idle" id="idle">Pick a channel on the left and press OK.</div>
+      <div class="label" id="chlabel" style="display:none"></div>
+    </div>
+  </div>
+</section>
+
+<!-- Web / YouTube -->
+<section class="ov" id="ov-web" aria-label="Web">
+  <div class="ov-top">
+    <h2 id="web-title">Web</h2>
+    <div class="toolbar">
+      <button class="btn" id="web-close" type="button">Close</button>
+    </div>
+  </div>
+  <div class="pane">
+    <div class="toolbar"><input class="field" id="web-input" type="text" inputmode="url" autocomplete="off" spellcheck="false" placeholder="Search the web, or type a web address"></div>
+    <iframe id="web-frame" referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin allow-forms allow-popups" title="Web view"></iframe>
+  </div>
+</section>
+
+<!-- Cast & mirror / Settings info -->
+<section class="ov" id="ov-info" aria-label="Info">
+  <div class="ov-top"><h2 id="info-title">Cast &amp; mirror</h2><button class="btn" id="info-close" type="button">Close</button></div>
+  <div class="rows" id="info-body"></div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js" defer></script>
+<script>
+(function () {
+  "use strict";
+  var ORIGIN = location.origin + location.pathname.replace(/home\/(index\.html)?$/, "");
+  var PLAYLIST_KEY = "eye3.tv.playlist";
+  var THEME_KEY = "eye3.theme.v1";
+  var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  var FREE = [
+    { name: "Al Jazeera English", group: "News", url: "https://live-hls-web-aje.getaj.net/AJE/index.m3u8" },
+    { name: "DW English", group: "News", url: "https://dwamdstream102.akamaized.net/hls/live/2015525/dwstream102/index.m3u8" },
+    { name: "France 24 English", group: "News", url: "https://static.france24.com/live/F24_EN_LO_HLS/live_web.m3u8" },
+    { name: "NASA TV", group: "Science", url: "https://ntv1.akamaized.net/hls/live/2014075/NASA-NTV1-HLS/master.m3u8" },
+    { name: "Red Bull TV", group: "Sports", url: "https://rbmn-live.akamaized.net/hls/live/590964/BoRB-AT/master.m3u8" }
+  ];
+  var TILES = [
+    { key: "tv", ico: "📺", name: "Live TV", sub: "News, sport, your playlist" },
+    { key: "vision", ico: "👁", name: "EYE3 Vision", sub: "AI image & camera tools" },
+    { key: "youtube", ico: "▶", name: "YouTube", sub: "Big-screen player" },
+    { key: "web", ico: "🌐", name: "Web", sub: "Search & browse" },
+    { key: "cast", ico: "📲", name: "Cast & mirror", sub: "Phone to this screen" },
+    { key: "settings", ico: "⚙", name: "Settings", sub: "Playlist, photo, fullscreen" }
+  ];
+
+  var $ = function (id) { return document.getElementById(id); };
+  function make(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
+  function get(key) { try { return localStorage.getItem(key); } catch (e) { return null; } }
+  function set(key, val) { try { if (val == null) localStorage.removeItem(key); else localStorage.setItem(key, val); } catch (e) {} }
+
+  // ---- personal i3 photo theme (shared with the main app) ----
+  (function applyTheme() {
+    try {
+      var t = JSON.parse(get(THEME_KEY) || "null");
+      if (t && t.on && t.bg) document.documentElement.style.setProperty("--i3-photo", 'url("' + t.bg + '")');
+    } catch (e) {}
+  })();
+
+  // ---- clock + greeting ----
+  function tick() {
+    var now = new Date(), h = now.getHours();
+    var pad = function (n) { return (n < 10 ? "0" : "") + n; };
+    $("clock").textContent = pad(h) + ":" + pad(now.getMinutes());
+    $("date").textContent = now.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" });
+    var part = h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
+    $("greet").innerHTML = part + ". <span>What shall we watch?</span>";
+  }
+  tick(); setInterval(tick, 20000);
+
+  function setNet(online) {
+    $("netdot").className = "dot" + (online ? "" : " off");
+    $("netlabel").textContent = online ? "Online" : "Offline — check Wi-Fi";
+  }
+  setNet(navigator.onLine);
+  window.addEventListener("online", function () { setNet(true); });
+  window.addEventListener("offline", function () { setNet(false); });
+
+  // ---- dock ----
+  var dock = $("dock"), focusIndex = 0;
+  TILES.forEach(function (t, i) {
+    var tile = make("button", "tile");
+    tile.type = "button";
+    tile.setAttribute("data-key", t.key);
+    tile.appendChild(make("div", "ico", t.ico));
+    var wrap = make("div");
+    wrap.appendChild(make("div", "name", t.name));
+    wrap.appendChild(make("div", "sub", t.sub));
+    tile.appendChild(wrap);
+    tile.addEventListener("click", function () { focusIndex = i; paintFocus(); openTile(t.key); });
+    dock.appendChild(tile);
+  });
+  var tiles = [].slice.call(dock.children);
+  function paintFocus() {
+    tiles.forEach(function (el, i) { el.classList.toggle("on", i === focusIndex && !overlayOpen()); });
+    if (!overlayOpen()) tiles[focusIndex].focus({ preventScroll: true });
+  }
+  paintFocus();
+
+  // ---- fullscreen ----
+  function toggleFullscreen() {
+    try {
+      if (!document.fullscreenElement && document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
+      else if (document.exitFullscreen) document.exitFullscreen();
+    } catch (e) {}
+  }
+
+  // ---- overlays ----
+  function overlayOpen() { return !!document.querySelector(".ov.open"); }
+  function openOverlay(id) { $(id).classList.add("open"); }
+  function closeOverlays() {
+    stopPlayback();
+    [].slice.call(document.querySelectorAll(".ov.open")).forEach(function (o) { o.classList.remove("open"); });
+    $("web-frame").src = "about:blank";
+    paintFocus();
+  }
+
+  function openTile(key) {
+    if (key === "vision") { location.href = ORIGIN + "index.html?tv=1"; return; }
+    if (key === "tv") { openTV(); return; }
+    if (key === "youtube") { openWeb("YouTube", "https://www.youtube.com/tv", ""); return; }
+    if (key === "web") { openWeb("Web", "", ""); return; }
+    if (key === "cast") { openCast(); return; }
+    if (key === "settings") { openSettings(); return; }
+  }
+
+  // ---- Live TV ----
+  var channels = [], chIndex = 0, hls = null;
+  function loadChannels() {
+    channels = FREE.slice(0);
+    var saved = get(PLAYLIST_KEY);
+    var list = $("chlist");
+    while (list.firstChild) list.removeChild(list.firstChild);
+    channels.forEach(function (c, i) {
+      var row = make("div", "ch");
+      row.appendChild(make("span", "", c.name));
+      if (c.group) row.appendChild(make("small", "", c.group));
+      row.addEventListener("click", function () { chIndex = i; paintChannels(); playChannel(i); });
+      list.appendChild(row);
+    });
+    if (saved) {
+      var note = make("div", "ch action", "Loaded your playlist — add again to change");
+      list.appendChild(note);
+      fetchPlaylist(saved);
+    }
+    paintChannels();
+  }
+  function fetchPlaylist(url) {
+    var xhr = new XMLHttpRequest();
+    try { xhr.open("GET", url, true); } catch (e) { return; }
+    xhr.onreadystatechange = function () {
+      if (xhr.readyState === 4 && xhr.status >= 200 && xhr.status < 300) {
+        var extra = parseM3U(xhr.responseText);
+        if (extra.length) { channels = channels.concat(extra); loadChannelsFromArray(); }
+      }
+    };
+    try { xhr.send(); } catch (e) {}
+  }
+  function loadChannelsFromArray() {
+    var list = $("chlist");
+    while (list.firstChild) list.removeChild(list.firstChild);
+    channels.forEach(function (c, i) {
+      var row = make("div", "ch");
+      row.appendChild(make("span", "", c.name));
+      if (c.group) row.appendChild(make("small", "", c.group));
+      row.addEventListener("click", function () { chIndex = i; paintChannels(); playChannel(i); });
+      list.appendChild(row);
+    });
+    paintChannels();
+  }
+  function parseM3U(body) {
+    var lines = String(body).split(/\r?\n/), out = [], info = null;
+    for (var i = 0; i < lines.length; i++) {
+      var line = (lines[i] || "").replace(/^\s+|\s+$/g, "");
+      if (!line) continue;
+      if (line.indexOf("#EXTINF") === 0) {
+        var g = /group-title="([^"]*)"/i.exec(line), c = line.lastIndexOf(",");
+        info = { name: c > -1 ? line.slice(c + 1).replace(/^\s+/, "") : "Channel", group: g ? g[1] : "" };
+      } else if (line.charAt(0) !== "#" && /^(https?):/i.test(line)) {
+        var item = info || { name: line, group: "" }; item.url = line;
+        if (!/adult|xxx|18\+|porn/i.test(item.group + " " + item.name)) out.push(item);
+        info = null;
+      }
+    }
+    return out;
+  }
+  function paintChannels() {
+    var rows = [].slice.call($("chlist").querySelectorAll(".ch"));
+    rows.forEach(function (el, i) { if (!el.classList.contains("action")) el.classList.toggle("on", i === chIndex && tvFocus === "list"); });
+  }
+  function showLabel(text, isErr) {
+    var l = $("chlabel"); l.textContent = text; l.className = "label" + (isErr ? " err" : ""); l.style.display = "block";
+  }
+  function playChannel(i) {
+    var c = channels[i]; if (!c || !c.url) return;
+    $("idle").style.display = "none";
+    var video = $("video");
+    stopHls();
+    showLabel(c.name, false);
+    if (video.canPlayType("application/vnd.apple.mpegurl")) {
+      video.src = c.url;
+    } else if (window.Hls && window.Hls.isSupported()) {
+      hls = new window.Hls({ enableWorker: true });
+      hls.on(window.Hls.Events.ERROR, function (ev, data) { if (data && data.fatal) showLabel(c.name + " — can't play this stream", true); });
+      hls.loadSource(c.url); hls.attachMedia(video);
+    } else {
+      video.src = c.url;
+    }
+    video.onerror = function () { showLabel(c.name + " — can't play this stream", true); };
+    var p = video.play(); if (p && p["catch"]) p["catch"](function () {});
+  }
+  function stopHls() { if (hls) { try { hls.destroy(); } catch (e) {} hls = null; } }
+  function stopPlayback() {
+    stopHls();
+    var video = $("video");
+    try { video.pause(); } catch (e) {}
+    video.removeAttribute("src"); try { video.load(); } catch (e) {}
+    $("idle").style.display = ""; $("chlabel").style.display = "none";
+  }
+  var tvFocus = "list";
+  function openTV() { loadChannels(); tvFocus = "list"; chIndex = 0; openOverlay("ov-tv"); paintChannels(); }
+  $("tv-close").addEventListener("click", closeOverlays);
+  $("tv-add").addEventListener("click", function () {
+    var cur = get(PLAYLIST_KEY) || "";
+    var v = window.prompt("Paste your M3U or Xtream playlist link (saved on this computer only):", cur);
+    if (v == null) return;
+    v = v.replace(/^\s+|\s+$/g, "");
+    if (!v) { set(PLAYLIST_KEY, null); } else if (/^https?:\/\//i.test(v)) { set(PLAYLIST_KEY, v); } else { window.alert("Link must start with http:// or https://"); return; }
+    openTV();
+  });
+
+  // ---- Web / YouTube ----
+  function openWeb(title, url, query) {
+    $("web-title").textContent = title;
+    $("web-input").value = "";
+    $("web-input").style.display = title === "YouTube" ? "none" : "";
+    $("web-frame").src = url || "https://html.duckduckgo.com/html/";
+    openOverlay("ov-web");
+    if (title !== "YouTube") setTimeout(function () { try { $("web-input").focus(); } catch (e) {} }, 60);
+  }
+  $("web-close").addEventListener("click", closeOverlays);
+  $("web-input").addEventListener("keydown", function (e) {
+    if (e.key !== "Enter") return;
+    var v = ($("web-input").value || "").replace(/^\s+|\s+$/g, "");
+    if (!v) return;
+    var url = /^https?:\/\//i.test(v) ? v : (/\.[a-z]{2,}($|\/)/i.test(v) && v.indexOf(" ") === -1 ? "https://" + v : "https://html.duckduckgo.com/html/?q=" + encodeURIComponent(v));
+    $("web-frame").src = url;
+  });
+
+  // ---- Cast / Settings ----
+  function rowsHtml(parent, nodes) { while (parent.firstChild) parent.removeChild(parent.firstChild); nodes.forEach(function (n) { parent.appendChild(n); }); }
+  function openCast() {
+    $("info-title").textContent = "Cast & mirror";
+    var body = $("info-body");
+    var nodes = [
+      para("This computer is the “EYE3 box” plugged into the TV over HDMI. To put a phone on the screen too:"),
+      para("• iPhone / iPad: open EYE3 Vision → Connect TV on this screen to show a pairing code, then scan it with the phone. Both devices on the same Wi-Fi."),
+      para("• Any phone browser: open " + ORIGIN + " and use Connect TV."),
+      para("• YouTube: open the YouTube tile here, then tap the cast icon in the phone’s YouTube app and pick this screen.")
+    ];
+    var b = make("button", "btn", "Open Connect TV");
+    b.type = "button";
+    b.addEventListener("click", function () { location.href = ORIGIN + "index.html?tv=1"; });
+    nodes.push(b);
+    rowsHtml(body, nodes);
+    openOverlay("ov-info");
+    setTimeout(function () { try { b.focus(); } catch (e) {} }, 60);
+  }
+  function openSettings() {
+    $("info-title").textContent = "Settings";
+    var body = $("info-body");
+    var fs = make("button", "btn", document.fullscreenElement ? "Exit fullscreen" : "Go fullscreen (recommended on TV)");
+    fs.type = "button"; fs.addEventListener("click", function () { toggleFullscreen(); closeOverlays(); });
+    var pl = make("button", "btn", "Set / change my playlist");
+    pl.type = "button"; pl.addEventListener("click", function () { $("tv-add").click(); });
+    var ph = make("button", "btn", "Personalize (photo & theme) in EYE3 Vision");
+    ph.type = "button"; ph.addEventListener("click", function () { location.href = ORIGIN + "index.html?tv=1"; });
+    var kv = make("div", "kv"); kv.appendChild(fs); kv.appendChild(pl); kv.appendChild(ph);
+    rowsHtml(body, [
+      para("EYE3 Home runs in this browser and shows on the TV over HDMI. For the best look, press F or use the button below to go fullscreen."),
+      kv,
+      para("Tip: bookmark this page, and set the browser to open it on start, so the TV goes straight to EYE3 Home.")
+    ]);
+    openOverlay("ov-info");
+    setTimeout(function () { try { fs.focus(); } catch (e) {} }, 60);
+  }
+  function para(t) { return make("p", "", t); }
+  $("info-close").addEventListener("click", closeOverlays);
+
+  // ---- keyboard / remote ----
+  function isBack(e) { return e.key === "Escape" || e.key === "GoBack" || e.keyCode === 10009 || e.keyCode === 461 || e.key === "Backspace" && !isTyping(); }
+  function isTyping() { var a = document.activeElement; return a && (a.tagName === "INPUT" || a.tagName === "TEXTAREA"); }
+  document.addEventListener("keydown", function (e) {
+    if ((e.key === "f" || e.key === "F") && !isTyping()) { toggleFullscreen(); return; }
+    if (isBack(e)) { if (overlayOpen()) { e.preventDefault(); closeOverlays(); } return; }
+
+    if ($("ov-tv").classList.contains("open")) {
+      if (isTyping()) return;
+      if (e.key === "ArrowDown") { e.preventDefault(); chIndex = Math.min(channels.length - 1, chIndex + 1); paintChannels(); scrollCh(); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); chIndex = Math.max(0, chIndex - 1); paintChannels(); scrollCh(); }
+      else if (e.key === "Enter") { e.preventDefault(); playChannel(chIndex); }
+      return;
+    }
+    if (overlayOpen()) return; // web/info overlays use normal focus
+
+    if (e.key === "ArrowRight") { e.preventDefault(); focusIndex = (focusIndex + 1) % tiles.length; paintFocus(); }
+    else if (e.key === "ArrowLeft") { e.preventDefault(); focusIndex = (focusIndex + tiles.length - 1) % tiles.length; paintFocus(); }
+    else if (e.key === "ArrowDown") { e.preventDefault(); focusIndex = Math.min(tiles.length - 1, focusIndex + 3); paintFocus(); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); focusIndex = Math.max(0, focusIndex - 3); paintFocus(); }
+    else if (e.key === "Enter") { e.preventDefault(); openTile(TILES[focusIndex].key); }
+  });
+  function scrollCh() { var rows = $("chlist").querySelectorAll(".ch"); if (rows[chIndex]) rows[chIndex].scrollIntoView({ block: "nearest", behavior: reduceMotion ? "auto" : "smooth" }); }
+
+  window.addEventListener("pagehide", stopPlayback);
+})();
+</script>
+</body>
+</html>
