@@ -351,7 +351,7 @@
         <button class="btn on" type="submit">Add channel</button>
       </form>
       <div class="acct-form">
-        <label>Import an M3U file <input class="field" id="mk-import" type="file" accept=".m3u,.m3u8,audio/x-mpegurl,text/plain"></label>
+        <label>Import an M3U file <input class="field" id="mk-import" type="file"></label>
         <label>Export
           <select class="btn" id="mk-scope" aria-label="What to export">
             <option value="favs">My favourites (★)</option>
@@ -1523,7 +1523,8 @@
     if (!f) return;
     var r = new FileReader();
     r.onload = function () {
-      var items = parseM3U(String(r.result || "")), have = {}, added = 0;
+      var text = String(r.result || ""), items = parseM3U(text), have = {}, added = 0;
+      if (!items.length && !/#EXTM3U/i.test(text)) { input.value = ""; return mkMsg("That file does not look like an M3U playlist (it should start with #EXTM3U).", "bad"); }
       myChannels.forEach(function (c) { have[c.u] = 1; });
       items.forEach(function (c) {
         if (myChannels.length >= MY_MAX || have[c.url] || !/^https?:\/\//i.test(c.url)) return;
