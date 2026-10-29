@@ -733,7 +733,12 @@
   updateDashboard();
   tick();
   setInterval(tick, 30000);
-  setTimeout(function () { try { $(DASH_IDS[dashFocus]).focus(); } catch (e) { /* focus is optional on older TV browsers */ } }, 0);
+  // Open straight into the channel menu: the key-driven list works on every box, the dashboard is one key (H) away.
+  hideSplash();
+  openSection(0);
+  state.zone = 'menu';
+  render();
+  try { window.focus(); } catch (e) { /* optional */ }
 })();
 </script>
 </body>
