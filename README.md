@@ -51,6 +51,8 @@ Published free on **GitHub Pages**: `.github/workflows/pages.yml` deploys `index
 
 Also: **Search channels** across all lists, **Cast & mirror** (the routes that work with Philips Saphi: Digital media renderer, Miracast, HDMI) and an experimental **Web search**. Script errors show on screen in red so a photo of the TV is enough to diagnose problems. The layout uses normal page flow and tables (no absolute positioning) because Smart STB may show the portal at its content height.
 
+The portal has a **Phone remote**: choose it on the TV to show an 8-character code, open `https://j-janko420.github.io/EYE3-VISION/remote/` on your phone (same internet), type the code, and the phone becomes a touch remote (arrows, OK, Back, Home, channel up/down, numbers). Commands travel over a free relay (ntfy.sh) on a random topic — no app, no pairing to a server, works on older TV browsers via SSE with an XHR-poll fallback.
+
 Channels play through the box's own player (MAG `gSTB.Play`), or an HTML5 video where there is no MAG API. Up/Down or CH+/CH- change channel; Back returns. Adult groups are filtered out. The page is plain ES5 with no modern CSS, so it runs on old TV engines. The capability check moved to `/portal/check/`.
 
 **Start presentation** hides the menus, switches to the large TV layout and keeps the screen awake.

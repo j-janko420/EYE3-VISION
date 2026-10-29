@@ -31,6 +31,7 @@ jobs:
           cp -r iptv _site/
           cp -r bridge _site/
           cp -r home _site/
+          cp -r remote _site/
           touch _site/.nojekyll
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

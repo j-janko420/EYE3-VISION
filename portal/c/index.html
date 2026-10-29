@@ -118,7 +118,8 @@
     { title: 'Search channels', kind: 'search', gap: true },
     { title: 'Cast & mirror', kind: 'cast' },
     { title: 'Web search', kind: 'web' },
-    { title: 'TV check', kind: 'link', href: '../check/', gap: true },
+    { title: 'Phone remote', kind: 'remote', gap: true },
+    { title: 'TV check', kind: 'link', href: '../check/' },
     { title: 'Full EYE3 app', kind: 'link', href: '../../index.html?tv=1' }
   ];
   var CAST = [
@@ -196,6 +197,7 @@
     if (entry.kind === 'link') { window.location.href = entry.href; return; }
     if (entry.kind === 'search') { openEditor('search'); return; }
     if (entry.kind === 'web') { openEditor('web'); return; }
+    if (entry.kind === 'remote') { startRemote(index); return; }
     state.open = index;
     state.row = 0;
     state.top = 0;
@@ -400,6 +402,96 @@
   }
 
   // ---------- Remote control ----------
+  // ---------- Phone remote: the phone sends button presses here over a free relay (ntfy) ----------
+  // Low-sensitivity navigation only (up/down/ok/back...). The command channel is a random topic.
+  var RC_ALPHABET = 'ABCDEFGHJKMNPQRSTVWXYZ23456789';
+  var rcSource = null, rcPoll = null, rcSince = 0, rcSeen = {}, rcTopic = '';
+  function rcParams() { try { return new RegExp('[?&]signal=([^&#]+)').exec(location.search); } catch (e) { return null; } }
+  function rcBase() {
+    var host = location.hostname;
+    if ((host === 'localhost' || host === '127.0.0.1')) { var m = rcParams(); if (m) return decodeURIComponent(m[1]); }
+    return 'https://ntfy.sh';
+  }
+  function rcShareBase() { return location.href.replace(/portal\/c\/(index\.html)?([?#].*)?$/, ''); }
+  function rcNewCode() {
+    var code = '';
+    for (var i = 0; i < 8; i++) code += RC_ALPHABET.charAt(Math.floor(Math.random() * RC_ALPHABET.length));
+    return code;
+  }
+  function rcPretty(code) { return code.slice(0, 4) + '-' + code.slice(4); }
+  function fakeKey(code) {
+    if (typeof document.onkeydown === 'function') {
+      try { document.onkeydown({ keyCode: code, which: code, preventDefault: function () {}, stopImmediatePropagation: function () {} }); } catch (e) {}
+    }
+  }
+  var RC_MAP = { up: 38, down: 40, left: 37, right: 39, ok: 13, enter: 13, back: 8, chup: 33, chdown: 34 };
+  function rcApply(cmd) {
+    if (!cmd) return;
+    cmd = String(cmd);
+    if (cmd === 'hello') { if (state.open > -1 && MENU[state.open] && MENU[state.open].kind === 'remote') { state.note = 'Phone connected. Use it like a remote.'; render(); } return; }
+    if (cmd === 'home') { state.zone = 'menu'; state.menu = 0; state.open = -1; state.items = []; state.title = 'Welcome'; state.note = ''; render(); return; }
+    if (cmd.indexOf('digit:') === 0) { var ch = cmd.charCodeAt(6); if (ch >= 48 && ch <= 57) fakeKey(ch); return; }
+    var k = RC_MAP[cmd]; if (k) fakeKey(k);
+  }
+  function rcHandleRaw(text) {
+    var data; try { data = JSON.parse(text); } catch (e) { return; }
+    if (data.event && data.event !== 'message') return;
+    if (data.id) { if (rcSeen[data.id]) return; rcSeen[data.id] = 1; }
+    if (data.time && data.time > rcSince) rcSince = data.time;
+    rcApply(data.message);
+  }
+  function rcListen(topic) {
+    rcStop();
+    rcTopic = topic;
+    rcSince = Math.floor(new Date().getTime() / 1000) - 5;
+    if (window.EventSource) {
+      try {
+        rcSource = new EventSource(rcBase() + '/' + topic + '/sse');
+        rcSource.onmessage = function (e) { rcHandleRaw(e.data); };
+        rcSource.onerror = function () { if (rcSource && rcSource.readyState === 2) { rcSource = null; rcStartPoll(topic); } };
+        return;
+      } catch (e) { rcSource = null; }
+    }
+    rcStartPoll(topic);
+  }
+  function rcStartPoll(topic) {
+    function loop() {
+      var xhr = new XMLHttpRequest();
+      try { xhr.open('GET', rcBase() + '/' + topic + '/json?poll=1&since=' + rcSince, true); } catch (e) { return; }
+      xhr.onreadystatechange = function () {
+        if (xhr.readyState === 4) {
+          if (xhr.status >= 200 && xhr.status < 300 && xhr.responseText) {
+            var lines = xhr.responseText.split(/\n/);
+            for (var i = 0; i < lines.length; i++) if (trim(lines[i])) rcHandleRaw(lines[i]);
+          }
+          if (rcTopic === topic) rcPoll = setTimeout(loop, 1500);
+        }
+      };
+      try { xhr.send(); } catch (e) { if (rcTopic === topic) rcPoll = setTimeout(loop, 2500); }
+    }
+    loop();
+  }
+  function rcStop() {
+    if (rcSource) { try { rcSource.close(); } catch (e) {} rcSource = null; }
+    if (rcPoll) { clearTimeout(rcPoll); rcPoll = null; }
+    rcTopic = ''; rcSeen = {};
+  }
+  function startRemote(index) {
+    state.open = index; state.title = 'Phone remote'; state.row = 0; state.top = 0; state.zone = 'list';
+    var code = rcNewCode();
+    var topic = 'eye3rc-' + code.toLowerCase();
+    var link = rcShareBase() + 'remote/#c=' + code;
+    state.items = [
+      { name: '1. On your phone, open:  ' + link, info: true },
+      { name: '2. Or go to ' + rcShareBase() + 'remote/  and type this code:', info: true },
+      { name: '      ' + rcPretty(code), info: true },
+      { name: '3. Keep this TV page open. Your phone is now the remote: arrows, OK, Back, channel up/down.', info: true }
+    ];
+    state.note = 'Waiting for your phone to connect...';
+    render();
+    rcListen(topic);
+  }
+
   function isBack(code) { return code === 8 || code === 27 || code === 461 || code === 10009 || code === 166; }
   var splashOpen = true;
   function hideSplash() {
