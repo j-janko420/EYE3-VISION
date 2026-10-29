@@ -280,6 +280,7 @@
         <option value="https://iptv-org.github.io/iptv/categories/music.m3u">iptv-org · Music</option>
         <option value="https://m3upt.com/iptv">M3UPT · Portuguese (some need a Portuguese IP)</option>
       </select>
+      <button class="btn" id="tv-vod" type="button">Movies &amp; series</button>
       <button class="btn" id="tv-maker" type="button">Playlist maker</button>
       <button class="btn" id="tv-accts" type="button">IPTV accounts</button>
       <button class="btn" id="tv-add" type="button">Add my playlist</button>
@@ -302,6 +303,34 @@
       <video id="video" playsinline></video>
       <div class="idle" id="idle">Pick a channel on the left and press OK.</div>
       <div class="label" id="chlabel" style="display:none"></div>
+    </div>
+  </div>
+</section>
+
+<!-- Movies & series on demand: your own Xtream account, read through EYE3 Link -->
+<section class="ov" id="ov-vod" aria-label="Movies and series">
+  <div class="ov-top">
+    <h2>Movies &amp; series<small>On demand from your own Xtream account</small></h2>
+    <div class="toolbar">
+      <button class="btn" id="vod-accts" type="button">IPTV accounts</button>
+      <button class="btn" id="vod-close" type="button">Close</button>
+    </div>
+  </div>
+  <div class="tv-filters">
+    <select class="btn" id="vod-acct" aria-label="Account"></select>
+    <button class="btn on" id="vod-movies" type="button">Movies</button>
+    <button class="btn" id="vod-series" type="button">Series</button>
+    <select class="btn" id="vod-cat" aria-label="Category"></select>
+    <input class="field tv-search" id="vod-search" type="search" placeholder="Search titles  ( / )" autocomplete="off" spellcheck="false" aria-label="Search titles">
+    <span class="chip" id="vod-count">0 titles</span>
+    <span class="hintkeys">↑↓ title · Enter play · <b>←</b> back to series · <b>/</b> search</span>
+  </div>
+  <div class="tv">
+    <div class="chlist" id="vod-list"></div>
+    <div class="screen" id="vod-screen">
+      <video id="vod-video" controls playsinline></video>
+      <div class="idle" id="vod-idle">Pick a title on the left and press Enter.</div>
+      <div class="label" id="vod-label" style="display:none"></div>
     </div>
   </div>
 </section>
@@ -898,7 +927,7 @@
     try { video.pause(); } catch (e) {}
     video.removeAttribute("src"); try { video.load(); } catch (e) {}
     $("idle").style.display = ""; $("chlabel").style.display = "none";
-    stopRadio(); stopMedia();
+    stopRadio(); stopMedia(); vodStop();
   }
   var tvFocus = "list";
   function openTV() {
@@ -1094,7 +1123,7 @@
     });
   }
   function exMsg(t, kind) { var m = $("ex-msg"); m.textContent = t; m.className = "acct-note" + (kind ? " " + kind : ""); }
-  function refreshLists() { var keep = channels[chIndex] && channels[chIndex].url; buildAll(); fillSelects(); applyFilter(keep); }
+  function refreshLists() { var keep = channels[chIndex] && channels[chIndex].url; buildAll(); fillSelects(); applyFilter(keep); if ($("ov-vod").classList.contains("open")) vodRefresh(); }
   function paintExplicit() {
     var pin = pinInfo();
     $("ex-age-row").hidden = explicitUnlocked;
@@ -1220,6 +1249,152 @@
     });
     if (!shown) list.appendChild(make("div", "ch action", "No channels of your own yet. Add one, or import an M3U file."));
   }
+  // ---- Movies & series on demand: Xtream accounts only, read and streamed through EYE3 Link ----
+  var vod = { kind: "movie", acct: "", cat: "All", q: "", titles: [], idx: 0, mode: "titles", series: null, seriesName: "", seasons: [], busy: "", note: "" };
+  var vodCache = {}, VOD_CAP = 400;
+  function vodAccts() { return accounts.filter(function (a) { return a.type === "xtream"; }); }
+  function vodAcct() { return vodAccts().filter(function (a) { return a.id === vod.acct; })[0] || null; }
+  function vodCreds(a, extra) {
+    var o = { server: a.server, user: a.user, pass: a.pass };
+    for (var k in extra) o[k] = extra[k];
+    return o;
+  }
+  function vodLabel(text, isErr) { var l = $("vod-label"); l.textContent = text; l.className = "label" + (isErr ? " err" : ""); l.style.display = "block"; }
+  function vodStop() {
+    var v = $("vod-video");
+    try { v.pause(); } catch (e) {}
+    v.removeAttribute("src"); try { v.load(); } catch (e) {}
+    $("vod-idle").style.display = ""; $("vod-label").style.display = "none";
+  }
+  function vodFill() {
+    var sel = $("vod-acct"), list = vodAccts();
+    while (sel.firstChild) sel.removeChild(sel.firstChild);
+    list.forEach(function (a) { var o = nt(make("option", "", a.name)); o.value = a.id; sel.appendChild(o); });
+    if (!vodAcct() && list.length) vod.acct = list[0].id;
+    sel.value = vod.acct; sel.hidden = list.length < 2;
+    $("vod-movies").classList.toggle("on", vod.kind === "movie"); $("vod-series").classList.toggle("on", vod.kind === "series");
+  }
+  function vodItems() { return vodCache[vod.acct + "|" + vod.kind] || []; }
+  // adult titles are flagged by EYE3 Link: hidden everywhere, and shown only in the category below once the section is unlocked
+  function vodShown(it) { return !it.x || explicitUnlocked; }
+  function vodCats() {
+    var counts = {}, adult = 0, total = 0;
+    vodItems().forEach(function (it) {
+      if (it.x) { adult++; return; }
+      counts[it.c] = (counts[it.c] || 0) + 1; total++;
+    });
+    var sel = $("vod-cat"), names = Object.keys(counts).sort();
+    while (sel.firstChild) sel.removeChild(sel.firstChild);
+    var add = function (v, t) { var o = make("option", "", t); o.value = v; sel.appendChild(o); };
+    add("All", "All categories (" + total + ")");
+    names.forEach(function (n) { var o = nt(make("option", "", n + " (" + counts[n] + ")")); o.value = n; sel.appendChild(o); });
+    if (explicitUnlocked && adult) add(EXPLICIT, EXPLICIT + " (" + adult + ")");
+    if (vod.cat !== "All" && !counts[vod.cat] && !(vod.cat === EXPLICIT && explicitUnlocked && adult)) vod.cat = "All";
+    sel.value = vod.cat;
+  }
+  function vodFilter() {
+    var q = vod.q.toLowerCase(), all = [];
+    vodItems().forEach(function (it) {
+      if (!vodShown(it)) return;
+      if (vod.cat === EXPLICIT) { if (!it.x) return; } else if (it.x) return;
+      if (vod.cat !== "All" && vod.cat !== EXPLICIT && it.c !== vod.cat) return;
+      if (q && it.n.toLowerCase().indexOf(q) < 0) return;
+      all.push(it);
+    });
+    vod.total = all.length; vod.titles = all.slice(0, VOD_CAP); vod.idx = Math.min(vod.idx, Math.max(0, vod.titles.length - 1));
+  }
+  function vodRender() {
+    var list = $("vod-list"); while (list.firstChild) list.removeChild(list.firstChild);
+    var note = function (t, fn) { var r = make("div", "ch action", t); if (fn) { r.tabIndex = 0; r.addEventListener("click", fn); } list.appendChild(r); return r; };
+    if (!vodAccts().length) {
+      note("You need an Xtream Codes account for movies and series. Press here to add one.", function () { closeOverlays(); openAccounts(); $("acct-type").value = "xtream"; showAcctFields(); });
+      $("vod-count").textContent = "0 titles"; return;
+    }
+    if (vod.mode === "episodes") {
+      var back = note("← Back to the series list", vodBack); back.classList.remove("action"); back.classList.add("on");
+      vod.seasons.forEach(function (se) {
+        list.appendChild(make("div", "ch action", "Season " + se.season));
+        se.episodes.forEach(function (ep) {
+          var row = make("div", "ch"); row.tabIndex = 0;
+          row.appendChild(make("b", "num", ep.num ? "E" + ep.num : "·"));
+          row.appendChild(nt(make("span", "", ep.n)));
+          if (ep.d) row.appendChild(make("small", "", ep.d));
+          row.addEventListener("click", function () { vodPlay(ep, vod.seriesName + " · S" + se.season + (ep.num ? "E" + ep.num : "") + " · " + ep.n); });
+          list.appendChild(row);
+        });
+      });
+      $("vod-count").textContent = vod.seasons.reduce(function (n, se) { return n + se.episodes.length; }, 0) + " episodes";
+      return;
+    }
+    vod.titles.forEach(function (it, i) {
+      var row = make("div", "ch" + (i === vod.idx ? " on" : "")); row.tabIndex = 0;
+      row.appendChild(nt(make("span", "", it.n)));
+      var meta = [it.y, it.r ? "★ " + it.r : "", vod.cat === "All" ? it.c : ""].filter(Boolean).join(" · ");
+      if (meta) row.appendChild(nt(make("small", "", meta)));
+      row.addEventListener("click", function () { vod.idx = i; vodPick(it); vodRender(); });
+      row.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); vod.idx = i; vodPick(it); } });
+      list.appendChild(row);
+    });
+    if (vod.busy) note(vod.busy);
+    else if (vod.note) note(vod.note);
+    else if (!vod.titles.length) note(vodItems().length ? "No titles match. Try another category or search." : "Nothing loaded yet.");
+    if (vod.total > vod.titles.length) note("Showing the first " + vod.titles.length + " of " + vod.total + ". Narrow it with a category or search.");
+    $("vod-count").textContent = vod.total + " title" + (vod.total === 1 ? "" : "s");
+  }
+  function vodRefresh() { vodFill(); vodCats(); vodFilter(); vodRender(); }
+  function vodLoad() {
+    var a = vodAcct(); vod.note = ""; vod.mode = "titles";
+    if (!a) return vodRefresh();
+    if (vodCache[a.id + "|" + vod.kind]) return vodRefresh();
+    var key = a.id + "|" + vod.kind;
+    vod.busy = "Loading " + (vod.kind === "series" ? "series" : "movies") + " from " + a.name + "… big libraries can take a minute.";
+    vodRefresh();
+    linkGet("/api/vod", vodCreds(a, { kind: vod.kind })).then(function (d) {
+      vodCache[key] = d.items || []; vod.busy = "";
+      if (key === vod.acct + "|" + vod.kind) vodRefresh();
+    })["catch"](function (err) {
+      vod.busy = ""; vod.note = err.message;
+      if (key === vod.acct + "|" + vod.kind) vodRefresh();
+    });
+  }
+  function vodPick(it) {
+    var a = vodAcct(); if (!a) return;
+    if (vod.kind === "movie") { vodPlay({ id: it.id, e: it.e }, it.n + (it.y ? " (" + it.y + ")" : "")); return; }
+    vod.busy = "Loading episodes…"; vodRender();
+    linkGet("/api/vod/series", vodCreds(a, { id: it.id })).then(function (d) {
+      vod.busy = ""; vod.mode = "episodes"; vod.seasons = d.seasons || []; vod.seriesName = it.n;
+      vodRender(); var first = $("vod-list").querySelector(".ch:not(.action)"); if (first) first.focus();
+    })["catch"](function (err) { vod.busy = ""; vod.note = err.message; vodRender(); });
+  }
+  function vodBack() { vod.mode = "titles"; vodRender(); }
+  function vodPlay(ep, title) {
+    var a = vodAcct(); if (!a) return;
+    $("vod-idle").style.display = "none"; vodLabel(title + " — starting…", false);
+    linkGet("/api/vod/play", vodCreds(a, { kind: vod.kind, id: ep.id, ext: ep.e || "mp4" })).then(function (d) {
+      var v = $("vod-video");
+      v.onerror = function () {
+        vodLabel(title + " — can't play this file here." + (/^(mkv|avi|ts|flv|wmv)$/.test(d.ext) ? " A ." + d.ext + " file often needs VLC." : " Is EYE3 Link still running?"), true);
+      };
+      v.onplaying = function () { vodLabel(title, false); setTimeout(function () { $("vod-label").style.display = "none"; }, 4000); };
+      v.src = d.url;
+      var p = v.play(); if (p && p["catch"]) p["catch"](function () {});
+    })["catch"](function (err) { vodLabel(title + " — " + err.message, true); });
+  }
+  function openVod() {
+    var cur = vodAccts();
+    if (!vod.acct && cur.length) vod.acct = cur[0].id;
+    openOverlay("ov-vod"); vodLoad();
+  }
+  $("tv-vod").addEventListener("click", function () { closeOverlays(); openVod(); });
+  $("vod-close").addEventListener("click", closeOverlays);
+  $("vod-accts").addEventListener("click", function () { closeOverlays(); openAccounts(); });
+  $("vod-acct").addEventListener("change", function () { vod.acct = this.value; vod.cat = "All"; vod.q = ""; $("vod-search").value = ""; this.blur(); vodLoad(); });
+  $("vod-movies").addEventListener("click", function () { vod.kind = "movie"; vod.cat = "All"; vod.idx = 0; vodLoad(); });
+  $("vod-series").addEventListener("click", function () { vod.kind = "series"; vod.cat = "All"; vod.idx = 0; vodLoad(); });
+  $("vod-cat").addEventListener("change", function () { vod.cat = this.value; vod.idx = 0; vod.mode = "titles"; this.blur(); vodFilter(); vodRender(); });
+  $("vod-search").addEventListener("input", function () { vod.q = this.value; vod.idx = 0; vod.mode = "titles"; vodFilter(); vodRender(); });
+  $("vod-search").addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === "ArrowDown") { e.preventDefault(); e.stopPropagation(); this.blur(); } });
+
   function openMaker() { paintMaker(); openOverlay("ov-maker"); setTimeout(function () { try { $("mk-name").focus(); } catch (e) {} }, 60); }
   function m3uAttr(v) { return String(v == null ? "" : v).replace(/["\r\n]/g, " ").replace(/\s+/g, " ").replace(/^\s+|\s+$/g, ""); }
   function m3uText(list) {
@@ -1622,6 +1797,21 @@
       else if (e.key === "/") { e.preventDefault(); try { $("tv-search").focus(); } catch (er) {} }
       return;
     }
+    if ($("ov-vod").classList.contains("open")) {
+      if (isTyping()) return;
+      var vrows = function () { return [].slice.call($("vod-list").querySelectorAll(".ch:not(.action)")); };
+      if (e.key === "/") { e.preventDefault(); try { $("vod-search").focus(); } catch (er) {} }
+      else if (e.key === "ArrowLeft" && vod.mode === "episodes") { e.preventDefault(); vodBack(); }
+      else if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        var rows = vrows(); if (!rows.length) return;
+        var at = rows.indexOf(document.activeElement); e.preventDefault();
+        var to = at < 0 ? 0 : Math.max(0, Math.min(rows.length - 1, at + (e.key === "ArrowDown" ? 1 : -1)));
+        rows[to].focus(); rows[to].scrollIntoView({ block: "nearest" });
+        if (vod.mode === "titles") { vod.idx = to; rows.forEach(function (r, i) { r.classList.toggle("on", i === to); }); }
+      }
+      else if (e.key === "Enter" && document.activeElement && document.activeElement.classList.contains("ch")) { e.preventDefault(); document.activeElement.click(); }
+      return;
+    }
     if ($("ov-radio").classList.contains("open")) {
       if (e.key === "ArrowDown") { e.preventDefault(); rIndex = Math.min(stations.length - 1, rIndex + 1); paintStations(); scrollList("rlist", rIndex); }
       else if (e.key === "ArrowUp") { e.preventDefault(); rIndex = Math.max(0, rIndex - 1); paintStations(); scrollList("rlist", rIndex); }
@@ -1854,6 +2044,7 @@
     var kind = m[1], types = { m3u: "m3u", xtream: "xtream", mag: "stalker", stalker: "stalker" };
     setTimeout(function () {
       if (kind === "playlist") { openMaker(); return; }
+      if (kind === "movies") { openVod(); return; }
       if (!types[kind]) return;
       openAccounts(); $("acct-type").value = types[kind]; showAcctFields();
     }, 300);

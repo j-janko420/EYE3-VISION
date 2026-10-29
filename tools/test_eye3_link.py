@@ -46,7 +46,28 @@ class Mock(BaseHTTPRequestHandler):
             if act == "get_live_streams":
                 return self.reply([{"name": "Xtream One", "stream_id": 11, "category_id": "1", "stream_icon": "i.png"},
                                    {"name": "Hidden", "stream_id": 12, "category_id": "2"}])
+            if act == "get_vod_categories":
+                return self.reply([{"category_id": "7", "category_name": "Action"}, {"category_id": "8", "category_name": "XXX Adult"}])
+            if act == "get_vod_streams":
+                return self.reply([{"name": "Big Movie", "stream_id": 21, "category_id": "7", "stream_icon": "m.jpg", "container_extension": "mp4", "rating": "7.5", "year": "2019"},
+                                   {"name": "Odd Ext", "stream_id": 22, "category_id": "7", "container_extension": "../x"},
+                                   {"name": "Late Night", "stream_id": 23, "category_id": "8", "container_extension": "mkv"}])
+            if act == "get_series_categories":
+                return self.reply([{"category_id": "9", "category_name": "Drama"}])
+            if act == "get_series":
+                return self.reply([{"name": "Long Show", "series_id": 31, "category_id": "9", "cover": "c.jpg", "releaseDate": "2021-05-01"}])
+            if act == "get_series_info":
+                return self.reply({"info": {"name": "Long Show", "plot": "A plot."},
+                                   "episodes": {"2": [{"id": "502", "episode_num": 1, "title": "S2E1", "container_extension": "mp4", "season": 2, "info": {"duration": "00:40:00"}}],
+                                                "1": [{"id": "502x", "episode_num": 3, "title": "bad id"}, {"id": "412", "episode_num": 2, "title": "S1E2", "container_extension": "mkv", "season": 1},
+                                                      {"id": "411", "episode_num": 1, "title": "S1E1", "container_extension": "mp4", "season": 1}]}})
             return self.reply({"user_info": {"auth": 1, "status": "Expired" if q.get("username") == "old" else "Active", "exp_date": "1893456000", "max_connections": "2"}})
+        if u.path in ("/movie/u/p/21.mp4", "/series/u/p/411.mp4"):
+            rng = self.headers.get("Range")
+            Mock.seen["range"] = rng
+            if rng:
+                return self.reply(b"2345", "video/mp4", 206)
+            return self.reply(b"0123456789", "video/mp4")
         if u.path == "/where":
             return self.reply("AE\n", "text/plain")
         if u.path == "/forbidden/index.m3u8":
@@ -115,6 +136,44 @@ class LinkTests(unittest.TestCase):
 
     def api(self, path, **params):
         return get(self.port, "%s?%s" % (path, up.urlencode(params)), self.origin)
+
+    # --- movies and series on demand (Xtream VOD)
+    def vod(self, path, **params):
+        params.update(server=self.up_url, user="u", **{"pass": "p"})
+        return self.api(path, **params)
+
+    def test_vod_movies_are_listed_compactly_and_adult_is_flagged(self):
+        code, _, body = self.vod("/api/vod", kind="movie")
+        self.assertEqual(code, 200)
+        items = {i["n"]: i for i in json.loads(body)["items"]}
+        self.assertEqual(items["Big Movie"], {"id": 21, "n": "Big Movie", "c": "Action", "l": "m.jpg", "y": "2019", "r": "7.5", "e": "mp4"})
+        self.assertEqual(items["Odd Ext"]["e"], "mp4")            # a hostile extension is replaced
+        self.assertTrue(items["Late Night"]["x"])                 # adult is flagged, never dropped
+
+    def test_vod_series_list_and_episodes_sorted_by_season_and_number(self):
+        code, _, body = self.vod("/api/vod", kind="series")
+        self.assertEqual(json.loads(body)["items"][0]["y"], "2021")
+        code, _, body = self.vod("/api/vod/series", id="31")
+        d = json.loads(body)
+        self.assertEqual([s["season"] for s in d["seasons"]], ["1", "2"])
+        self.assertEqual([e["n"] for e in d["seasons"][0]["episodes"]], ["S1E1", "S1E2", "bad id"])
+        self.assertEqual(d["plot"], "A plot.")
+
+    def test_vod_play_link_is_proxied_with_range_and_checks_the_id(self):
+        code, _, body = self.vod("/api/vod/play", kind="movie", id="21", ext="mp4")
+        url = json.loads(body)["url"]
+        self.assertIn("/stream?", url)
+        path = url.split("127.0.0.1:%d" % self.port)[1]
+        code, h, data = get(self.port, path, {"Range": "bytes=2-5"})
+        self.assertEqual((code, data, Mock.seen["range"]), (206, b"2345", "bytes=2-5"))
+        self.assertEqual(self.vod("/api/vod/play", kind="movie", id="../21", ext="mp4")[0], 502)
+        self.assertEqual(self.vod("/api/vod/play", kind="series", id="411", ext="mp4/../")[0], 200)  # bad ext falls back to mp4
+
+    def test_vod_wrong_password_and_other_sites_are_refused(self):
+        code, _, body = self.api("/api/vod", server=self.up_url, user="u", **{"pass": "nope", "kind": "movie"})
+        self.assertNotEqual(code, 200)
+        code, _, _ = get(self.port, "/api/vod?" + up.urlencode({"server": self.up_url, "user": "u", "pass": "p", "kind": "movie"}), {"Origin": "https://evil.example"})
+        self.assertEqual(code, 403)
 
     # --- access control
     def test_ping_is_open_and_hello_needs_an_allowed_origin(self):

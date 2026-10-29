@@ -24,7 +24,7 @@ import urllib.parse as up
 import urllib.request as ur
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.0"
+VERSION = "1.1"
 ALLOWED_ORIGINS = ["https://j-janko420.github.io"]          # more: EYE3_ORIGINS=https://a,https://b
 LOCAL_ORIGIN = re.compile(r"^http://(localhost|127\.0\.0\.1)(:\d+)?$")
 BAD = re.compile(r"adult|xxx|18\+|porn|erotic|\bsex|playboy|hustler|brazzers|dorcel|penthouse|redlight", re.I)
@@ -225,6 +225,101 @@ def channels_from_xtream(server, user, password):
     except (TypeError, ValueError):
         exp = ""
     return {"channels": chans, "account": {"status": status or "Active", "expires": exp, "maxConnections": ui.get("max_connections")}}
+
+
+# --------------------------------------------------------------------- Xtream movies & series (VOD)
+MAX_VOD = 64 * 1024 * 1024
+VOD_EXT = re.compile(r"^[A-Za-z0-9]{2,5}$")
+
+
+def xtream_api(server, user, password):
+    base = xtream_base(server)
+    return base, "%s/player_api.php?username=%s&password=%s" % (base, up.quote(user, safe=""), up.quote(password, safe=""))
+
+
+def vod_json(url):
+    body, _, _ = fetch(url, limit=MAX_VOD)
+    try:
+        return json.loads(body.decode("utf-8", "replace"))
+    except ValueError:
+        raise LinkError("The server did not answer with the expected data. Check the address.")
+
+
+def vod_list(server, user, password, kind):
+    """Movies (kind=movie) or series (kind=series) of an Xtream account, in a compact form."""
+    base, api = xtream_api(server, user, password)
+    movie = kind != "series"
+    cats = {}
+    for c in vod_json(api + ("&action=get_vod_categories" if movie else "&action=get_series_categories")) or []:
+        cats[str(c.get("category_id"))] = str(c.get("category_name") or "Other")
+    raw = vod_json(api + ("&action=get_vod_streams" if movie else "&action=get_series"))
+    if isinstance(raw, dict):
+        if str(raw.get("user_info", {}).get("auth", 1)) == "0":
+            raise LinkError("The server rejected this username or password.")
+        raw = []
+    items = []
+    for s in raw or []:
+        if not isinstance(s, dict):
+            continue
+        ident = s.get("stream_id" if movie else "series_id")
+        if not ident:
+            continue
+        name = str(s.get("name") or s.get("title") or "Untitled").strip()
+        cat = cats.get(str(s.get("category_id")), "Other")
+        item = {"id": ident, "n": name, "c": cat, "l": str((s.get("stream_icon") if movie else s.get("cover")) or "")}
+        year = str(s.get("year") or s.get("releaseDate") or s.get("release_date") or "")[:4]
+        if year.isdigit():
+            item["y"] = year
+        rating = str(s.get("rating") or "").strip()
+        if rating and rating not in ("0", "0.0"):
+            item["r"] = rating[:4]
+        if movie:
+            ext = str(s.get("container_extension") or "mp4")
+            item["e"] = ext if VOD_EXT.match(ext) else "mp4"
+        if BAD.search(name + " " + cat):
+            item["x"] = True
+        items.append(item)
+    if not items:
+        raise LinkError("This account has no %s." % ("movies" if movie else "series"))
+    return {"items": items}
+
+
+def vod_series_info(server, user, password, series_id):
+    base, api = xtream_api(server, user, password)
+    info = vod_json(api + "&action=get_series_info&series_id=%s" % up.quote(str(series_id), safe=""))
+    if not isinstance(info, dict):
+        raise LinkError("The server did not return that series.")
+    meta = info.get("info") if isinstance(info.get("info"), dict) else {}
+    seasons = {}
+    eps = info.get("episodes") or {}
+    if isinstance(eps, list):  # some panels send a list of seasons instead of an object
+        eps = {str(i + 1): v for i, v in enumerate(eps)}
+    for key, rows in eps.items():
+        for e in rows or []:
+            if not isinstance(e, dict) or not e.get("id"):
+                continue
+            ext = str(e.get("container_extension") or "mp4")
+            einfo = e.get("info") if isinstance(e.get("info"), dict) else {}
+            seasons.setdefault(str(e.get("season") or key), []).append({
+                "id": e["id"], "num": e.get("episode_num"), "n": str(e.get("title") or "Episode"),
+                "e": ext if VOD_EXT.match(ext) else "mp4", "d": str(einfo.get("duration") or "")})
+    out = []
+    for key in sorted(seasons, key=lambda k: int(k) if str(k).isdigit() else 9999):
+        rows = sorted(seasons[key], key=lambda e: int(e["num"]) if str(e.get("num") or "").isdigit() else 9999)
+        out.append({"season": key, "episodes": rows})
+    if not out:
+        raise LinkError("No episodes were listed for this series.")
+    return {"title": str(meta.get("name") or ""), "plot": str(meta.get("plot") or "")[:600], "seasons": out}
+
+
+def vod_play_url(server, user, password, kind, ident, ext):
+    base = xtream_base(server)
+    if not str(ident).isdigit():
+        raise LinkError("That title has no valid id.")
+    ext = ext if VOD_EXT.match(ext or "") else "mp4"
+    path = "series" if kind == "series" else "movie"
+    direct = "%s/%s/%s/%s/%s.%s" % (base, path, up.quote(user, safe=""), up.quote(password, safe=""), ident, ext)
+    return {"url": stream_url(direct), "ext": ext}
 
 
 # ------------------------------------------------------------------------------ MAG / Stalker
@@ -444,6 +539,15 @@ class Handler(BaseHTTPRequestHandler):
             if not (one("server") and one("user") and one("pass")):
                 raise LinkError("Enter the server, username and password.")
             return self.send_json(200, channels_from_xtream(one("server"), one("user"), one("pass")))
+        if path in ("/api/vod", "/api/vod/series", "/api/vod/play"):
+            if not (one("server") and one("user") and one("pass")):
+                raise LinkError("Enter the server, username and password.")
+            creds = (one("server"), one("user"), one("pass"))
+            if path == "/api/vod":
+                return self.send_json(200, vod_list(*creds, kind=one("kind")))
+            if path == "/api/vod/series":
+                return self.send_json(200, vod_series_info(*creds, series_id=one("id")))
+            return self.send_json(200, vod_play_url(*creds, kind=one("kind"), ident=one("id"), ext=one("ext")))
         if path == "/api/stalker":
             if not (one("portal") and one("mac")):
                 raise LinkError("Enter the portal address and the MAC address.")
