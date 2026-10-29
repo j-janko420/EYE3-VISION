@@ -1,76 +1,76 @@
-EYE3 channel catalogue, 2026-10-29T21:21:22Z
+EYE3 channel catalogue, 2026-10-29T21:24:59Z
 source: https://iptv-org.github.io/iptv/index.m3u + https://raw.githubusercontent.com/Free-TV/IPTV/master/playlist.m3u8
-channels: 8059 (https: 6890)
+channels: 8003 (https: 6864)
 
 by category
-  News             696
-  General          2246
-  Entertainment    615
-  Movies           465
-  Series           329
-  Sports           237
+  News             690
+  General          2226
+  Entertainment    607
+  Movies           459
+  Series           327
+  Sports           240
   Music            605
-  Kids             217
-  Documentary      151
-  Lifestyle        77
-  Culture          120
-  Comedy           124
-  Animation        131
-  Business         57
-  Education        115
+  Kids             215
+  Documentary      148
+  Lifestyle        78
+  Culture          123
+  Comedy           125
+  Animation        130
+  Business         55
+  Education        114
   Science          6
-  Religious        580
-  Travel           32
-  Cooking          46
-  Outdoor          50
+  Religious        574
+  Travel           31
+  Cooking          47
+  Outdoor          55
   Weather          14
   Family           37
-  Classic          83
-  Legislative      93
+  Classic          84
+  Legislative      95
   Public           2
   Relax            5
-  Shop             55
-  Auto             24
-  Other            847
+  Shop             56
+  Auto             23
+  Other            832
 
 by country (top 40)
-  US   1594
-  IN   638
-  IT   380
+  US   1578
+  IN   632
+  IT   381
   SE   375
-  DE   344
-  RU   278
-  DO   182
+  DE   345
+  RU   272
   CL   180
+  DO   178
   ES   157
   ??   148
-  FR   147
-  UK   147
+  FR   145
+  UK   144
   PE   141
-  AR   139
-  BR   136
-  PL   122
+  AR   135
+  BR   131
+  PL   121
   NL   119
-  RO   117
+  RO   116
   CA   110
-  TR   107
-  MX   106
+  MX   105
+  TR   105
   IR   97
-  CO   91
-  CN   90
-  HU   87
+  CO   92
+  CN   89
+  HU   86
+  UA   81
   GR   79
-  ID   79
-  UA   77
+  ID   78
   CZ   65
-  KR   61
+  KR   60
   EC   54
+  IQ   54
   VE   54
-  IQ   53
-  CR   49
+  CR   48
   VN   48
-  HN   44
+  TH   44
   AU   43
   PY   43
-  SA   43
-  TH   43
+  HN   42
+  SA   41
