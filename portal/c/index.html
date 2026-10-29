@@ -351,6 +351,7 @@
   }
   var PLAYLIST_ACTIONS = [
     { name: 'Enter or change playlist link', action: 'edit' },
+    { name: 'Add Xtream Codes login (server, username, password)', action: 'xtream' },
     { name: 'Remove playlist from this TV', action: 'remove' }
   ];
 
@@ -379,7 +380,10 @@
         { name: 'EYE3 Vision analysis tools', action: 'link', href: '../../index.html?tv=1' },
         { name: 'Phone remote — pair your phone with this TV', action: 'menu', target: 'remote' },
         { name: 'Cast & mirror instructions', action: 'menu', target: 'cast' },
-        { name: 'TV capability check', action: 'link', href: '../check/' }
+        { name: 'TV capability check', action: 'link', href: '../check/' },
+        { name: 'MAG box or Smart STB portal address:  ' + rcShareBase() + 'portal/c/', info: true },
+        { name: 'Playlist with every free channel (SS IPTV, Smart STB, TiviMate):  ' + rcShareBase() + 'iptv/eye3-full.m3u', info: true },
+        { name: 'Your own Xtream subscription: My playlist > Add Xtream Codes login. A MAG (Stalker) portal subscription goes in the TV\'s own portal settings or the laptop app (EYE3 Home > IPTV accounts).', info: true }
       ];
       state.note = 'Apps and inputs available from this portal. Select an item and press OK.';
     } else if (entry.kind === 'settings') {
@@ -559,6 +563,7 @@
   var EDITORS = {
     playlist: { title: 'Your playlist link', help: 'Type your M3U or Xtream playlist link, then press OK. It is saved on this TV only. Back cancels.' },
     search: { title: 'Search channels', help: 'Type a channel name, for example "news" or "sport", then press OK. Back cancels.' },
+    xtream: { title: 'Xtream Codes login', help: 'Type the server address, username and password separated by spaces, for example: http://server.example:8080 myuser mypass. It becomes your playlist on this TV only. Back cancels.' },
     web: { title: 'Web search (experimental)', help: 'Type what to search for and press OK. A simple search page opens; use the TV\'s Back or Exit key to come back to EYE3.' }
   };
   function openEditor(kind) {
@@ -583,6 +588,15 @@
     if (kind === 'playlist') {
       if (/^https?:\/\//i.test(value)) { setStore(PLAYLIST_KEY, value); delete cache[value]; }
       else osd('A playlist link must start with http:// or https://');
+      openSection(menuIndex('mine'));
+    } else if (kind === 'xtream') {
+      var parts = value.split(/\s+/), origin = /^(https?:\/\/[^\/\s]+)/i.exec(/^https?:\/\//i.test(parts[0]) ? parts[0] : 'http://' + parts[0]);
+      if (parts.length >= 3 && origin) {
+        var link = origin[1] + '/get.php?username=' + encodeURIComponent(parts[1]) + '&password=' + encodeURIComponent(parts[2]) + '&type=m3u_plus&output=ts';
+        delete cache[getStore(PLAYLIST_KEY)];
+        setStore(PLAYLIST_KEY, link);
+        osd('Xtream login saved as your playlist');
+      } else osd('Type: server username password');
       openSection(menuIndex('mine'));
     } else if (kind === 'search') {
       runSearch(value);
@@ -766,6 +780,7 @@
       var item = state.items[state.row];
       if (!item) return false;
       if (item.action === 'edit') openEditor('playlist');
+      else if (item.action === 'xtream') openEditor('xtream');
       else if (item.action === 'remove') { setStore(PLAYLIST_KEY, null); osd('Playlist removed from this TV'); openSection(menuIndex('mine')); }
       else if (item.action === 'cat') openCategory(item.cat, item.name);
       else if (item.action === 'country') openCountry(item.country, item.name);
