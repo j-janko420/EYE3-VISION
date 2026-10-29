@@ -508,7 +508,7 @@
   function set(key, val) { try { if (val == null) localStorage.removeItem(key); else localStorage.setItem(key, val); } catch (e) {} }
 
 
-  // ---- Language: English, Français, العربية. Text is translated as screens are built; switching back restores the English exactly. ----
+  // ---- Language engine (dormant: the app runs in English only). Text is translated as screens are built; switching back restores the English exactly. ----
   var LANG_KEY = "eye3.home.lang", LANGS = { en: "English", fr: "Français", ar: "العربية" };
   var lang = "en", dict = null;
   window.EYE3_I18N = window.EYE3_I18N || {};
@@ -593,11 +593,8 @@
       document.head.appendChild(sc);
     });
   }
-  function startLang() {
-    var saved = get(LANG_KEY), pick = LANGS[saved] ? saved : (navigator.language || "en").slice(0, 2).toLowerCase();
-    if (!LANGS[pick] || pick === "en") return;
-    setLang(pick);
-  }
+  // EYE3 Home is English only for now: ignore the browser language and any saved choice (the engine above stays dormant).
+  function startLang() { set(LANG_KEY, null); }
 
   // ---- personal i3 photo theme (shared with the main app) ----
   (function applyTheme() {
@@ -612,7 +609,7 @@
     var now = new Date(), h = now.getHours();
     var pad = function (n) { return (n < 10 ? "0" : "") + n; };
     $("clock").textContent = pad(h) + ":" + pad(now.getMinutes());
-    $("date").textContent = now.toLocaleDateString(lang === "en" ? undefined : lang, { weekday: "long", day: "numeric", month: "long" });
+    $("date").textContent = now.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
     var part = h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
     $("greet").innerHTML = part + ". <span>What shall we watch?</span>";
   }
@@ -1473,7 +1470,7 @@
     lockExplicit(true);
     var now = new Date(), pad = function (n) { return (n < 10 ? "0" : "") + n; };
     $("saver-t").textContent = pad(now.getHours()) + ":" + pad(now.getMinutes());
-    $("saver-d").textContent = now.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" });
+    $("saver-d").textContent = now.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
     $("saver").classList.add("on"); $("saver").setAttribute("aria-hidden", "false");
     drift(); driftTimer = setInterval(function () {
       var n = new Date(); $("saver-t").textContent = pad(n.getHours()) + ":" + pad(n.getMinutes()); drift();
@@ -1582,12 +1579,9 @@
     ac.type = "button"; ac.addEventListener("click", function () { closeOverlays(); openAccounts(); });
     var ts = make("button", "btn", "Connect your TV (addresses)");
     ts.type = "button"; ts.addEventListener("click", openTvSetup);
-    var lg = make("button", "btn", "Language: " + LANGS[lang]);
-    lg.type = "button";
-    lg.addEventListener("click", function () { var order = ["en", "fr", "ar"]; setLang(order[(order.indexOf(lang) + 1) % order.length]).then(openSettings); });
     var hp = make("button", "btn", "Help, VPN & useful tools");
     hp.type = "button"; hp.addEventListener("click", openHelp);
-    var kv = make("div", "kv"); kv.appendChild(fs); kv.appendChild(ac); kv.appendChild(ts); kv.appendChild(hp); kv.appendChild(lg); kv.appendChild(rc); kv.appendChild(sl); kv.appendChild(sv); kv.appendChild(pl); kv.appendChild(inst); kv.appendChild(setup); kv.appendChild(ph);
+    var kv = make("div", "kv"); kv.appendChild(fs); kv.appendChild(ac); kv.appendChild(ts); kv.appendChild(hp); kv.appendChild(rc); kv.appendChild(sl); kv.appendChild(sv); kv.appendChild(pl); kv.appendChild(inst); kv.appendChild(setup); kv.appendChild(ph);
     rowsHtml(body, [
       para("EYE3 Home runs in this browser and shows on the TV over HDMI. For the best look, press F or use the button below to go fullscreen."),
       kv,
