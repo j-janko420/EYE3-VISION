@@ -52,7 +52,7 @@
 </div>
 
 <section id="connect">
-  <p>On the TV, open <b>EYE3 TV → Phone remote</b>. It shows an 8-character code. Type it here (same internet):</p>
+  <p>On the TV, open <b>EYE3 TV → Phone remote</b>. It shows an 8-character code. Type it here (same internet). For EYE3 Home on a laptop, use <b>Settings → Phone remote</b>:</p>
   <div class="code-in">
     <input id="code" type="text" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="9" placeholder="ABCD-EFGH">
     <button class="btn primary" id="go" type="button">Connect</button>
@@ -76,6 +76,21 @@
   <div class="chrow">
     <button class="btn" data-cmd="chup" type="button">CH ▲</button>
     <button class="btn" data-cmd="chdown" type="button">CH ▼</button>
+  </div>
+  <div class="rowbtns">
+    <button class="btn" data-cmd="tv" type="button">📺 TV</button>
+    <button class="btn" data-cmd="radio" type="button">📻 Radio</button>
+    <button class="btn" data-cmd="media" type="button">💾 Media</button>
+  </div>
+  <div class="rowbtns">
+    <button class="btn" data-cmd="voldown" type="button">🔉 Vol −</button>
+    <button class="btn" data-cmd="mute" type="button">🔇 Mute</button>
+    <button class="btn" data-cmd="volup" type="button">🔊 Vol +</button>
+  </div>
+  <div class="rowbtns">
+    <button class="btn" data-cmd="play" type="button">⏯ Play</button>
+    <button class="btn" data-cmd="sleep" type="button">😴 Sleep</button>
+    <button class="btn" data-cmd="saver" type="button">🌙 Saver</button>
   </div>
   <div class="nums hide" id="nums"></div>
   <div class="foot" id="foot"></div>

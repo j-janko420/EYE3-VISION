@@ -113,6 +113,12 @@
   .screen .now small { display: block; margin-top: 8px; color: var(--muted); font-size: .55em; font-weight: 500; }
   select.btn { appearance: none; padding-right: 18px; }
   select.btn option { background: #0b1a3a; color: var(--ink); }
+  .toast { position: fixed; left: 50%; bottom: 8%; z-index: 60; transform: translateX(-50%); padding: 12px 22px; border: 2px solid var(--orange); border-radius: 14px; background: rgba(8, 18, 43, .92); font-size: clamp(14px, 1.4vw, 22px); font-weight: 650; display: none; }
+  .toast.on { display: block; }
+  .chip { padding: 3px 10px; border: 1px solid var(--line); border-radius: 99px; color: var(--ink); font-size: .9em; }
+  .chip[hidden] { display: none; }
+  .foot .right { display: flex; align-items: center; gap: 12px; }
+  .bigcode { font-size: clamp(34px, 5vw, 76px); font-weight: 750; letter-spacing: .14em; color: var(--orange-soft); }
   .saver { position: fixed; inset: 0; z-index: 50; display: none; background: #000; }
   .saver.on { display: block; }
   .saver .face { position: absolute; left: 8%; top: 18%; transition: left 12s linear, top 12s linear; }
@@ -142,8 +148,8 @@
   <div class="dock" id="dock"></div>
 
   <div class="foot">
-    <div class="hintkeys"><b>Arrows</b> move · <b>Enter</b> open · <b>Back/Esc</b> return · <b>F</b> fullscreen · <b>S</b> screensaver</div>
-    <div class="net"><span class="dot" id="netdot"></span><span id="netlabel">Online</span></div>
+    <div class="hintkeys"><b>Arrows</b> move · <b>Enter</b> open · <b>Back/Esc</b> return · <b>F</b> fullscreen · <b>S</b> screensaver · <b>Z</b> sleep timer</div>
+    <div class="right"><span class="chip" id="sleepchip" hidden></span><span class="chip" id="rcchip" hidden>📱 Phone remote on</span><div class="net"><span class="dot" id="netdot"></span><span id="netlabel">Online</span></div></div>
   </div>
 </main>
 
@@ -212,6 +218,8 @@
     </div>
   </div>
 </section>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <!-- Screensaver -->
 <div class="saver" id="saver" aria-hidden="true"><div class="face" id="saver-face"><div class="t" id="saver-t">--:--</div><div class="d" id="saver-d"></div></div></div>
@@ -715,7 +723,14 @@
     var paintSv = function () { var m = saverMinutes(); sv.textContent = "Screensaver: " + (m ? "after " + m + " min" : "off"); };
     paintSv();
     sv.addEventListener("click", function () { var i = SAVER_STEPS.indexOf(saverMinutes()); set(SAVER_KEY, String(SAVER_STEPS[(i + 1) % SAVER_STEPS.length])); paintSv(); armSaver(); });
-    var kv = make("div", "kv"); kv.appendChild(fs); kv.appendChild(sv); kv.appendChild(pl); kv.appendChild(inst); kv.appendChild(setup); kv.appendChild(ph);
+    var rc = make("button", "btn", rcCode ? "Phone remote: on (show code)" : "Phone remote: turn on");
+    rc.type = "button"; rc.addEventListener("click", openRemoteInfo);
+    var sl = make("button", "btn", "");
+    sl.type = "button";
+    var paintSl = function () { var m = sleepLeft(); sl.textContent = "Sleep timer: " + (m ? m + " min left" : "off"); };
+    paintSl();
+    sl.addEventListener("click", function () { cycleSleep(); paintSl(); });
+    var kv = make("div", "kv"); kv.appendChild(fs); kv.appendChild(rc); kv.appendChild(sl); kv.appendChild(sv); kv.appendChild(pl); kv.appendChild(inst); kv.appendChild(setup); kv.appendChild(ph);
     rowsHtml(body, [
       para("EYE3 Home runs in this browser and shows on the TV over HDMI. For the best look, press F or use the button below to go fullscreen."),
       kv,
@@ -732,6 +747,7 @@
   function isTyping() { var a = document.activeElement; return a && (a.tagName === "INPUT" || a.tagName === "TEXTAREA"); }
   document.addEventListener("keydown", function (e) {
     if ((e.key === "f" || e.key === "F") && !isTyping()) { toggleFullscreen(); return; }
+    if ((e.key === "z" || e.key === "Z") && !isTyping()) { e.preventDefault(); cycleSleep(); return; }
     if (isBack(e)) { if (overlayOpen()) { e.preventDefault(); closeOverlays(); } return; }
 
     if ($("ov-tv").classList.contains("open")) {
@@ -767,10 +783,175 @@
     else if (e.key === "ArrowDown") { e.preventDefault(); focusIndex = Math.min(tiles.length - 1, focusIndex + dockCols()); paintFocus(); }
     else if (e.key === "ArrowUp") { e.preventDefault(); focusIndex = Math.max(0, focusIndex - dockCols()); paintFocus(); }
     else if (e.key === "s" || e.key === "S") { e.preventDefault(); showSaver(); }
+
     else if (e.key === "Enter") { e.preventDefault(); openTile(TILES[focusIndex].key); }
   });
   function scrollList(id, idx) { var rows = $(id).querySelectorAll(".ch"); if (rows[idx]) rows[idx].scrollIntoView({ block: "nearest", behavior: reduceMotion ? "auto" : "smooth" }); }
   function scrollCh() { scrollList("chlist", chIndex); }
+
+  // ---- toast ----
+  var toastTimer = null;
+  function toast(text) {
+    var t = $("toast"); t.textContent = text; t.classList.add("on");
+    clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.classList.remove("on"); }, 2200);
+  }
+  function mediaEls() { return ["video", "audio", "mvideo"].map($); }
+
+  // ---- sleep timer: stops playback and starts the screensaver after the chosen time ----
+  var SLEEP_STEPS = [0, 15, 30, 60, 90];
+  var sleepTimer = null, sleepEnd = 0;
+  function sleepLeft() { return sleepEnd ? Math.max(0, Math.ceil((sleepEnd - Date.now()) / 60000)) : 0; }
+  function paintSleep() {
+    var c = $("sleepchip"), left = sleepLeft();
+    c.hidden = !left; if (left) c.textContent = "😴 Sleep in " + left + " min";
+  }
+  function setSleep(min) {
+    clearTimeout(sleepTimer); sleepEnd = 0;
+    if (min) {
+      sleepEnd = Date.now() + min * 60000;
+      sleepTimer = setTimeout(function () {
+        sleepEnd = 0; closeOverlays(); stopPlayback(); paintSleep(); toast("Sleep timer — good night"); showSaver();
+      }, min * 60000);
+    }
+    paintSleep();
+  }
+  function cycleSleep() {
+    var cur = sleepLeft(), next = 0;
+    if (!cur) next = SLEEP_STEPS[1];
+    else for (var i = 1; i < SLEEP_STEPS.length; i++) if (SLEEP_STEPS[i] > cur) { next = SLEEP_STEPS[i]; break; }
+    setSleep(next); toast(next ? "Sleep timer: " + next + " min" : "Sleep timer off");
+    return next;
+  }
+  setInterval(paintSleep, 30000);
+
+  // ---- Phone remote: the phone sends plain navigation commands over a free relay (ntfy), like the TV portal ----
+  // Navigation only: no text, no links, no files. The topic is derived from a random 8-character code.
+  var RC_KEY = "eye3.home.rc";
+  var RC_ALPHABET = "ABCDEFGHJKMNPQRSTVWXYZ23456789";
+  var RC_KEYS = { up: "ArrowUp", down: "ArrowDown", left: "ArrowLeft", right: "ArrowRight", ok: "Enter", enter: "Enter", back: "Escape" };
+  var rcSource = null, rcPoll = null, rcSince = 0, rcSeen = {}, rcCode = "";
+  function rcBase() {
+    if (location.hostname === "localhost" || location.hostname === "127.0.0.1") { var m = /[?&]signal=([^&#]+)/.exec(location.search); if (m) return decodeURIComponent(m[1]); }
+    return "https://ntfy.sh";
+  }
+  function rcPretty(c) { return c.slice(0, 4) + "-" + c.slice(4); }
+  function rcNewCode() {
+    var out = "", buf = new Uint32Array(8);
+    (window.crypto || window.msCrypto).getRandomValues(buf);
+    for (var i = 0; i < 8; i++) out += RC_ALPHABET.charAt(buf[i] % RC_ALPHABET.length);
+    return out;
+  }
+  function pressKey(key) { document.dispatchEvent(new KeyboardEvent("keydown", { key: key, bubbles: true, cancelable: true })); }
+  function tileIndex(key) { for (var i = 0; i < TILES.length; i++) if (TILES[i].key === key) return i; return 0; }
+  function listState() {
+    if ($("ov-tv").classList.contains("open")) return "tv";
+    if ($("ov-radio").classList.contains("open")) return "radio";
+    if ($("ov-media").classList.contains("open")) return "media";
+    return "";
+  }
+  function stepList(d) {
+    var w = listState();
+    if (w === "tv" && channels.length) { chIndex = Math.max(0, Math.min(channels.length - 1, chIndex + d)); paintChannels(); scrollCh(); playChannel(chIndex); }
+    else if (w === "radio" && stations.length) { rIndex = Math.max(0, Math.min(stations.length - 1, rIndex + d)); paintStations(); scrollList("rlist", rIndex); playStation(rIndex); }
+    else if (w === "media") stepMedia(d);
+  }
+  function jumpTo(n) {
+    var w = listState(), i = (n === 0 ? 10 : n) - 1;
+    if (w === "tv" && channels[i]) { chIndex = i; paintChannels(); scrollCh(); playChannel(i); toast("Channel " + (i + 1)); }
+    else if (w === "radio" && stations[i]) { rIndex = i; paintStations(); scrollList("rlist", i); playStation(i); toast("Station " + (i + 1)); }
+  }
+  function setVolume(delta, mute) {
+    var els = mediaEls(), v = els[0].volume;
+    if (mute) { var m = !els[0].muted; els.forEach(function (e) { e.muted = m; }); toast(m ? "Muted" : "Sound on"); return; }
+    v = Math.max(0, Math.min(1, Math.round((v + delta) * 10) / 10));
+    els.forEach(function (e) { e.volume = v; e.muted = false; });
+    toast("Volume " + Math.round(v * 100) + "%");
+  }
+  function togglePlay() {
+    var w = listState(), el = w === "radio" ? $("audio") : w === "media" ? $("mvideo") : w === "tv" ? $("video") : null;
+    if (!el || !el.getAttribute("src")) { toast("Nothing to pause"); return; }
+    if (el.paused) { var p = el.play(); if (p && p["catch"]) p["catch"](function () {}); toast("Play"); } else { el.pause(); toast("Paused"); }
+  }
+  function rcApply(raw) {
+    var cmd = String(raw || "").toLowerCase();
+    if (cmd === "hello") { toast("Phone connected"); return; }
+    if (RC_KEYS[cmd]) { pressKey(RC_KEYS[cmd]); return; }
+    if (cmd === "home") { closeOverlays(); focusIndex = 0; paintFocus(); return; }
+    if (cmd === "tv" || cmd === "radio" || cmd === "media") { closeOverlays(); focusIndex = tileIndex(cmd); paintFocus(); openTile(cmd); return; }
+    if (cmd === "chup") { stepList(-1); return; }
+    if (cmd === "chdown") { stepList(1); return; }
+    if (cmd.indexOf("digit:") === 0) { var d = cmd.charCodeAt(6); if (d >= 48 && d <= 57) jumpTo(d - 48); return; }
+    if (cmd === "volup") { setVolume(0.1); return; }
+    if (cmd === "voldown") { setVolume(-0.1); return; }
+    if (cmd === "mute") { setVolume(0, true); return; }
+    if (cmd === "play") { togglePlay(); return; }
+    if (cmd === "sleep") { cycleSleep(); return; }
+    if (cmd === "saver") { showSaver(); return; }
+  }
+  function rcHandle(text) {
+    var data; try { data = JSON.parse(text); } catch (e) { return; }
+    if (!data || (data.event && data.event !== "message")) return;
+    if (data.id) { if (rcSeen[data.id]) return; rcSeen[data.id] = 1; }
+    if (data.time && data.time > rcSince) rcSince = data.time;
+    rcApply(data.message);
+  }
+  function rcStop() {
+    if (rcSource) { try { rcSource.close(); } catch (e) {} rcSource = null; }
+    clearTimeout(rcPoll); rcPoll = null; rcSeen = {};
+    $("rcchip").hidden = true;
+  }
+  function rcStartPoll(topic) {
+    var loop = function () {
+      if (!rcCode || "eye3rc-" + rcCode.toLowerCase() !== topic) return;
+      var xhr = new XMLHttpRequest();
+      try { xhr.open("GET", rcBase() + "/" + topic + "/json?poll=1&since=" + rcSince, true); } catch (e) { return; }
+      xhr.onloadend = function () {
+        if (xhr.status >= 200 && xhr.status < 300 && xhr.responseText) xhr.responseText.split(/\n/).forEach(function (l) { if (l.replace(/\s+/g, "")) rcHandle(l); });
+        rcPoll = setTimeout(loop, 1500);
+      };
+      try { xhr.send(); } catch (e) { rcPoll = setTimeout(loop, 3000); }
+    };
+    loop();
+  }
+  function rcStart(code) {
+    rcStop(); rcCode = code;
+    var topic = "eye3rc-" + code.toLowerCase();
+    rcSince = Math.floor(Date.now() / 1000) - 5;
+    $("rcchip").hidden = false;
+    if (window.EventSource) {
+      try {
+        rcSource = new EventSource(rcBase() + "/" + topic + "/sse");
+        rcSource.onmessage = function (e) { rcHandle(e.data); };
+        rcSource.onerror = function () { if (rcSource && rcSource.readyState === 2) { rcSource = null; rcStartPoll(topic); } };
+        return;
+      } catch (e) { rcSource = null; }
+    }
+    rcStartPoll(topic);
+  }
+  function rcOff() { rcStop(); rcCode = ""; set(RC_KEY, null); }
+  function openRemoteInfo() {
+    $("info-title").textContent = "Phone remote";
+    var code = rcCode, nodes = [];
+    var link = ORIGIN + "remote/" + (code ? "#c=" + code : "");
+    if (code) {
+      nodes.push(para("On your phone (same internet is enough — no Wi-Fi pairing), open:"));
+      var l = make("p", "", link); l.style.color = "var(--orange-soft)"; l.style.overflowWrap = "anywhere"; nodes.push(l);
+      nodes.push(para("or open " + ORIGIN + "remote/ and type this code:"));
+      nodes.push(make("div", "bigcode", rcPretty(code)));
+      nodes.push(para("Arrows, OK, Back, Home, channel and station up/down, number keys, TV · Radio · My media, volume, mute, play/pause and a sleep timer. Keep this page open."));
+    } else {
+      nodes.push(para("Turn this on to control EYE3 Home from your phone. It creates a private 8-character code; only navigation buttons are sent."));
+    }
+    var kv = make("div", "kv"), first = null;
+    var mk = function (label, fn) { var b = make("button", "btn", label); b.type = "button"; b.addEventListener("click", fn); kv.appendChild(b); if (!first) first = b; };
+    if (code) { mk("New code", function () { var c = rcNewCode(); set(RC_KEY, c); rcStart(c); openRemoteInfo(); }); mk("Turn off", function () { rcOff(); openRemoteInfo(); }); }
+    else mk("Turn on", function () { var c = rcNewCode(); set(RC_KEY, c); rcStart(c); openRemoteInfo(); });
+    nodes.push(kv);
+    rowsHtml($("info-body"), nodes);
+    openOverlay("ov-info");
+    setTimeout(function () { try { first.focus(); } catch (e) {} }, 60);
+  }
+  (function () { var c = get(RC_KEY); if (c && /^[A-Z0-9]{8}$/.test(c)) rcStart(c); })();
 
   // ---- installable app (PWA): register the service worker and keep an install prompt ----
   if ("serviceWorker" in navigator) {
