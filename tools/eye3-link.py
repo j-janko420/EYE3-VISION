@@ -15,16 +15,18 @@ link carries a secret token created when it starts, so other websites cannot use
 Use it only with accounts and playlists you are entitled to watch. Standard library only, Python 3.8+.
 This program is not a VPN. For channels blocked in your country you can send its traffic through a VPN or
 proxy you already have:  python3 eye3-link.py --proxy http://127.0.0.1:PORT   (HTTP proxies only).
+If your computer cannot find a provider's address ("getaddrinfo failed") but another device can, start it with
+--dns cloudflare (or google): only when the normal lookup fails, it asks that public DNS-over-HTTPS resolver.
 
 Run:   python3 eye3-link.py          (Windows: py eye3-link.py)      Stop: Ctrl+C
 """
-import argparse, hashlib, json, os, re, secrets, ssl, sys, time
+import argparse, hashlib, ipaddress, json, os, re, secrets, socket, ssl, sys, time
 import urllib.error as ue
 import urllib.parse as up
 import urllib.request as ur
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.1"
+VERSION = "1.2"
 ALLOWED_ORIGINS = ["https://j-janko420.github.io"]          # more: EYE3_ORIGINS=https://a,https://b
 LOCAL_ORIGIN = re.compile(r"^http://(localhost|127\.0\.0\.1)(:\d+)?$")
 BAD = re.compile(r"adult|xxx|18\+|porn|erotic|\bsex|playboy|hustler|brazzers|dorcel|penthouse|redlight", re.I)
@@ -56,6 +58,67 @@ def open_url(req, timeout):
     return ur.build_opener(*handlers).open(req, timeout=timeout)
 
 
+# ------------------------------------------------------------------ optional DNS-over-HTTPS (--dns)
+DOH = {"cloudflare": "https://1.1.1.1/dns-query", "google": "https://8.8.8.8/resolve"}   # by IP: no system DNS needed
+_real_getaddrinfo = socket.getaddrinfo
+_dns_cache = {}
+
+
+def is_ip(host):
+    try:
+        ipaddress.ip_address(host)
+        return True
+    except ValueError:
+        return False
+
+
+def doh_lookup(host):
+    """IPv4 addresses for host from the chosen DNS-over-HTTPS resolver (JSON API). Raises socket.gaierror."""
+    hit = _dns_cache.get(host)
+    if hit and hit[0] > time.time():
+        return hit[1]
+    url = STATE["dns"] + "?" + up.urlencode({"name": host, "type": "A"})
+    req = ur.Request(url, headers={"Accept": "application/dns-json", "User-Agent": UA_PLAYER})
+    try:
+        opener = ur.build_opener(ur.ProxyHandler({}), ur.HTTPSHandler(context=ssl_context()))   # direct, never via --proxy
+        with opener.open(req, timeout=8) as r:
+            data = json.loads(r.read(65536).decode("utf-8", "replace"))
+        answers = [a for a in data.get("Answer", []) if a.get("type") == 1 and is_ip(str(a.get("data", "")))]
+    except Exception:
+        answers = []
+    if not answers:
+        raise socket.gaierror(socket.EAI_NONAME, "no address found for %s" % host)
+    ips = [str(a["data"]) for a in answers]
+    ttl = min(max(int(answers[0].get("TTL", 60) or 60), 30), 300)
+    _dns_cache[host] = (time.time() + ttl, ips)
+    return ips
+
+
+def _getaddrinfo(host, port, *args, **kw):
+    try:
+        return _real_getaddrinfo(host, port, *args, **kw)
+    except socket.gaierror:
+        if not STATE.get("dns") or not isinstance(host, str) or not host or is_ip(host) or host.lower() == "localhost":
+            raise
+        out = []
+        for ip in doh_lookup(host):
+            out += _real_getaddrinfo(ip, port, *args, **kw)
+        return out
+
+
+def install_dns(resolver):
+    """Use a DNS-over-HTTPS resolver ('cloudflare', 'google' or an https URL) only when the system lookup fails."""
+    STATE["dns"] = DOH.get(resolver, resolver) if resolver else ""
+    socket.getaddrinfo = _getaddrinfo
+
+
+def reach_error(reason):
+    text = "Could not reach the server (%s)." % reason
+    if (isinstance(reason, socket.gaierror) or "getaddrinfo" in str(reason)) and not STATE.get("dns"):
+        text += " Your computer cannot find that address. If it works in another app or device, restart EYE3 Link with --dns cloudflare."
+    return text
+
+
 def fetch(url, headers=None, timeout=25, limit=MAX_PLAYLIST):
     """GET a URL; returns (body_bytes, final_url, response_headers)."""
     if not re.match(r"^https?://", url, re.I):
@@ -67,9 +130,9 @@ def fetch(url, headers=None, timeout=25, limit=MAX_PLAYLIST):
     except ue.HTTPError as e:
         raise LinkError("The server answered HTTP %d." % e.code)
     except ue.URLError as e:
-        raise LinkError("Could not reach the server (%s)." % e.reason)
+        raise LinkError(reach_error(e.reason))
     except Exception as e:  # timeouts, resets, bad certificates
-        raise LinkError("Could not reach the server (%s)." % e)
+        raise LinkError(reach_error(e))
 
 
 def fetch_json(url, headers=None):
@@ -568,7 +631,7 @@ class Handler(BaseHTTPRequestHandler):
         except ue.HTTPError as e:
             return self.send_error_json(502, "The stream server answered HTTP %d." % e.code)
         except Exception as e:
-            return self.send_error_json(502, "Could not reach the stream (%s)." % e)
+            return self.send_error_json(502, reach_error(e).replace("the server", "the stream", 1))
         with resp:
             ctype = resp.headers.get("Content-Type", "")
             final = resp.geturl()
@@ -630,13 +693,19 @@ def main():
     ap.add_argument("--port", type=int, default=8765)
     ap.add_argument("--insecure", action="store_true", help="accept providers with an invalid HTTPS certificate")
     ap.add_argument("--proxy", default="", help="send everything through this HTTP proxy, e.g. http://127.0.0.1:40000 (a VPN app's proxy mode)")
+    ap.add_argument("--dns", default="", metavar="cloudflare|google|URL", help="if this computer cannot find a provider's address, ask this DNS-over-HTTPS resolver (only then)")
     ap.add_argument("--verbose", action="store_true")
     ap.add_argument("--origin", action="append", default=[], help="also allow this web page origin (for your own copy of EYE3)")
     a = ap.parse_args()
     if a.proxy and not re.match(r"^https?://[^/\s]+$", a.proxy):
         print("The proxy must look like http://127.0.0.1:8080 (SOCKS proxies are not supported by this helper).")
         return 1
+    if a.dns and a.dns not in DOH and not re.match(r"^https://[^/\s]+/\S*$", a.dns):
+        print("--dns must be cloudflare, google or an https:// DNS-over-HTTPS address.")
+        return 1
     STATE.update(port=a.port, insecure=a.insecure, verbose=a.verbose, proxy=a.proxy)
+    if a.dns:
+        install_dns(a.dns)
     STATE["where_url"] = os.environ.get("EYE3_WHERE_URL", "")  # for tests only
     STATE["origins"] += a.origin
     try:
@@ -648,6 +717,8 @@ def main():
     print("EYE3 Link %s is running at http://127.0.0.1:%d" % (VERSION, a.port))
     if a.proxy:
         print("All traffic goes through your proxy: %s" % re.sub(r"//[^@/]*@", "//", a.proxy))
+    if a.dns:
+        print("If your computer cannot find an address, EYE3 Link asks %s (DNS-over-HTTPS)." % (a.dns if a.dns in DOH else "your DNS-over-HTTPS server"))
     print("Leave this window open while you watch. Press Ctrl+C to stop.")
     try:
         srv.serve_forever()
