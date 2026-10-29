@@ -125,6 +125,34 @@
   .btn.on, .btn:hover, .btn:focus-visible { outline: none; border-color: var(--accent); background: rgba(255, 38, 63, .16); color: #fff; box-shadow: 0 0 0 3px rgba(255, 38, 63, .14), 0 0 18px rgba(255, 38, 63, .22); }
 
   .tv { flex: 1; display: grid; grid-template-columns: minmax(240px, 30%) 1fr; gap: clamp(12px, 1.4vw, 22px); min-height: 0; }
+  .tv-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: clamp(10px, 1.6vh, 18px); color: var(--muted); font-size: clamp(11px, .9vw, 14px); }
+  .tv-filters select.btn { max-width: 24rem; }
+  .acct { flex: 1; display: grid; grid-template-columns: minmax(300px, 40%) 1fr; gap: clamp(14px, 1.6vw, 26px); min-height: 0; }
+  .acct-col { display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+  .linkstat { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border: 1px solid var(--edge); border-radius: 6px; background: var(--panel); font-size: clamp(13px, 1.05vw, 17px); }
+  .linkstat .dot { flex-shrink: 0; }
+  .linkhelp { padding: 14px 16px; border: 1px solid rgba(255, 176, 32, .45); border-radius: 6px; background: rgba(255, 176, 32, .06); color: #ffe3b1; font-size: clamp(12px, .95vw, 15px); line-height: 1.55; }
+  .linkhelp code { padding: 2px 7px; border-radius: 4px; background: #0b0506; color: #fff5f6; }
+  .linkhelp a { color: var(--orange-soft); text-decoration: underline; }
+  .acct-row { display: flex; align-items: center; gap: 10px; padding: 12px 14px; margin-bottom: 8px; border: 1px solid var(--edge); border-radius: 6px; background: var(--panel); }
+  .acct-row .who { flex: 1; min-width: 0; }
+  .acct-row .who b { display: block; font-size: clamp(14px, 1.15vw, 19px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .acct-row .who small { display: block; margin-top: 3px; color: var(--muted); font-size: clamp(11px, .85vw, 14px); }
+  .acct-row .who small.bad { color: #ffd27a; }
+  .acct-row .btn { padding: 7px 12px; font-size: clamp(11px, .9vw, 14px); }
+  .acct-form { display: grid; gap: 12px; align-content: start; max-width: 680px; }
+  .acct-form[hidden], .acct-form [hidden] { display: none; }
+  .acct-form label { display: grid; gap: 6px; color: var(--muted); font-size: clamp(11px, .9vw, 14px); letter-spacing: .04em; text-transform: uppercase; }
+  .acct-form .field { padding: 11px 14px; font-size: clamp(13px, 1.1vw, 18px); text-transform: none; letter-spacing: 0; }
+  .acct-note { margin: 0; color: var(--muted); font-size: clamp(12px, .95vw, 15px); line-height: 1.5; }
+  .acct-note.bad { color: #ffd27a; }
+  .acct-note.good { color: #8fe3bd; }
+  .copyrow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .copyrow code { flex: 1 1 22rem; min-width: 0; padding: 9px 12px; border: 1px solid var(--edge); border-radius: 5px; background: #0b0506; color: var(--orange-soft); font-size: clamp(12px, 1vw, 16px); overflow-wrap: anywhere; }
+  .rows h3 { margin: 6px 0 -4px; font-size: clamp(14px, 1.2vw, 20px); letter-spacing: .04em; text-transform: uppercase; color: var(--ink); }
+  .tv-filters .tv-search { display: inline-block; width: min(22rem, 100%); padding: 9px 14px; font-size: clamp(13px, 1.05vw, 17px); }
+  .ch .num { min-width: 2.4em; color: var(--accent); font-variant-numeric: tabular-nums; font-weight: 750; }
+  .ch .fav { margin-left: 8px; color: #ffd27a; font-style: normal; }
   .chlist { overflow: auto; padding-right: 6px; scrollbar-width: thin; scrollbar-color: rgba(255, 38, 63, .5) transparent; }
   .ch { display: flex; align-items: center; gap: 12px; padding: 12px 16px; margin-bottom: 8px; border: 1px solid transparent; border-radius: 6px; background: var(--panel); font-size: clamp(14px, 1.2vw, 20px); cursor: pointer; }
   .ch small { margin-left: auto; color: var(--muted); font-size: .75em; }
@@ -177,7 +205,7 @@
   @media (max-width: 900px) {
     .home { overflow-y: auto; }
     .dock { grid-template-columns: repeat(2, 1fr); }
-    .tv { grid-template-columns: 1fr; }
+    .tv, .acct { grid-template-columns: 1fr; }
     .hero-content { max-width: 100%; }
     .hero-art { opacity: .35; width: 80%; }
     .foot { flex-direction: column; align-items: flex-start; gap: 8px; }
@@ -239,7 +267,7 @@
 <!-- Live TV -->
 <section class="ov" id="ov-tv" aria-label="Live TV">
   <div class="ov-top">
-    <h2>Live TV<small>EYE3 channels &amp; your playlist</small></h2>
+    <h2>Live TV<small>Free channels, favourites &amp; your playlist</small></h2>
     <div class="toolbar">
       <select class="btn" id="tv-preset" aria-label="Add a free channel list">
         <option value="">Add a free list…</option>
@@ -249,9 +277,18 @@
         <option value="https://iptv-org.github.io/iptv/categories/music.m3u">iptv-org · Music</option>
         <option value="https://m3upt.com/iptv">M3UPT · Portuguese (some need a Portuguese IP)</option>
       </select>
+      <button class="btn" id="tv-accts" type="button">IPTV accounts</button>
       <button class="btn" id="tv-add" type="button">Add my playlist</button>
       <button class="btn" id="tv-close" type="button">Close</button>
     </div>
+  </div>
+  <div class="tv-filters">
+    <select class="btn" id="tv-cat" aria-label="Category"></select>
+    <select class="btn" id="tv-country" aria-label="Country"></select>
+    <select class="btn" id="tv-group" aria-label="Group" hidden></select>
+    <input class="field tv-search" id="tv-search" type="search" placeholder="Search channels  ( / )" autocomplete="off" spellcheck="false" aria-label="Search channels">
+    <span class="chip" id="tv-count">0 channels</span>
+    <span class="hintkeys">↑↓ channel · ←→ category · 0-9 number · <b>L</b> favourite · <b>/</b> search</span>
   </div>
   <div class="tv">
     <div class="chlist" id="chlist"></div>
@@ -260,6 +297,51 @@
       <div class="idle" id="idle">Pick a channel on the left and press OK.</div>
       <div class="label" id="chlabel" style="display:none"></div>
     </div>
+  </div>
+</section>
+
+<!-- IPTV accounts: your own M3U link, Xtream Codes login or MAG (Stalker) portal, via EYE3 Link -->
+<section class="ov" id="ov-acct" aria-label="IPTV accounts">
+  <div class="ov-top">
+    <h2>IPTV accounts<small>Your own M3U, Xtream Codes or MAG portal</small></h2>
+    <button class="btn" id="acct-close" type="button">Close</button>
+  </div>
+  <div class="acct">
+    <div class="acct-col">
+      <div class="linkstat"><span class="dot off" id="link-dot"></span><span id="link-text">Checking EYE3 Link…</span></div>
+      <div class="linkhelp" id="link-help" hidden>
+        Your provider cannot be read straight from a web page, so a small helper runs on <b>this computer</b>.
+        <ol style="margin:8px 0 0;padding-left:20px">
+          <li>Install Python 3 if you do not have it (python.org).</li>
+          <li><a href="../tools/eye3-link.py" download="eye3-link.py">Download eye3-link.py</a></li>
+          <li>Run <code>python3 eye3-link.py</code> (Windows: <code>py eye3-link.py</code>) and leave that window open.</li>
+        </ol>
+        <button class="btn" id="link-retry" type="button" style="margin-top:10px">Check again</button>
+      </div>
+      <div class="chlist" id="acct-list"></div>
+    </div>
+    <form class="acct-form" id="acct-form" autocomplete="off">
+      <label>Account type
+        <select class="btn" id="acct-type" aria-label="Account type">
+          <option value="m3u">M3U playlist link</option>
+          <option value="xtream">Xtream Codes (server, username, password)</option>
+          <option value="stalker">MAG / Stalker portal (address + MAC)</option>
+        </select>
+      </label>
+      <label>Name <input class="field" id="acct-name" type="text" maxlength="40" placeholder="My IPTV" required></label>
+      <div class="acct-form" data-for="m3u"><label>M3U link <input class="field" id="acct-url" type="url" placeholder="http://provider.example/get.php?username=…&password=…&type=m3u_plus"></label></div>
+      <div class="acct-form" data-for="xtream" hidden>
+        <label>Server <input class="field" id="acct-server" type="text" placeholder="http://provider.example:8080"></label>
+        <label>Username <input class="field" id="acct-user" type="text" autocomplete="off" spellcheck="false"></label>
+        <label>Password <input class="field" id="acct-pass" type="password" autocomplete="new-password"></label>
+      </div>
+      <div class="acct-form" data-for="stalker" hidden>
+        <label>Portal address <input class="field" id="acct-portal" type="text" placeholder="http://portal.example.com/c/"></label>
+        <label>MAC address <input class="field" id="acct-mac" type="text" placeholder="00:1A:79:AB:CD:EF" spellcheck="false"></label>
+      </div>
+      <button class="btn on" type="submit" id="acct-save">Save &amp; load</button>
+      <p class="acct-note" id="acct-msg">Saved on this computer only. Use accounts you are entitled to watch. Adult groups stay hidden.</p>
+    </form>
   </div>
 </section>
 
@@ -449,54 +531,163 @@
     if (key === "settings") { openSettings(); return; }
   }
 
-  // ---- Live TV ----
-  var channels = [], chIndex = 0, hls = null;
-  function loadChannels() {
-    channels = FREE.slice(0);
-    var saved = get(PLAYLIST_KEY);
+  // ---- Live TV: full free catalogue (iptv/channels.json, built weekly and probed), favourites, filters ----
+  var CATALOGUE_URL = "../iptv/channels.json";
+  var FAV_KEY = "eye3.home.favs", LAST_KEY = "eye3.home.last", FILTER_KEY = "eye3.home.tvfilter";
+  var FAVS = "★ Favourites", MAXROWS = 400;
+  var CATEGORY_ORDER = ["News", "General", "Entertainment", "Movies", "Series", "Sports", "Music", "Kids", "Documentary", "Lifestyle", "Culture", "Comedy", "Animation", "Business", "Education", "Science", "Religious", "Travel", "Cooking", "Outdoor", "Weather", "Family", "Classic", "Legislative", "Public", "Relax", "Shop", "Auto", "Interactive", "Other"];
+  var allChannels = [], channels = [], chIndex = 0, hls = null;
+  var catalogue = [], catalogueState = "idle", extraChannels = [], tvNotes = [], tvTotal = 0, focusCat = "";
+  var tvFilter = { cat: "All", country: "", group: "", q: "" };
+  var favs = [];
+  try { favs = JSON.parse(get(FAV_KEY) || "[]") || []; } catch (e) { favs = []; }
+  try { var sf = JSON.parse(get(FILTER_KEY) || "null"); if (sf && typeof sf.cat === "string") tvFilter = { cat: sf.cat, country: sf.country || "", group: "", q: "" }; } catch (e) {}
+  var regionNames = null;
+  try { regionNames = new Intl.DisplayNames(undefined, { type: "region" }); } catch (e) {}
+  function countryName(code) { try { return (regionNames && regionNames.of(code === "UK" ? "GB" : code)) || code; } catch (e) { return code; } }
+  function isFav(url) { return favs.indexOf(url) > -1; }
+  function toggleFav(url) {
+    var i = favs.indexOf(url);
+    if (i > -1) favs.splice(i, 1); else favs.push(url);
+    set(FAV_KEY, JSON.stringify(favs));
+    return i === -1;
+  }
+
+  function buildAll() {
+    var seen = {}, out = [];
+    var add = function (c) { if (c && c.url && !seen[c.url]) { seen[c.url] = 1; out.push(c); } };
+    FREE.forEach(function (c) { add({ name: c.name, cat: c.group, country: "", url: c.url, q: 0, sub: "" }); });
+    catalogue.forEach(add);
+    extraChannels.forEach(add);
+    // a viewer's own accounts always show everything in them, even if another list has the same stream
+    accounts.forEach(function (a) { (acctChannels[a.id] || []).forEach(function (c) { out.push(c); }); });
+    allChannels = out;
+  }
+  function isOwnCat(k) { return k === "My playlist" || k === "Added list" || accounts.some(function (a) { return a.name === k; }); }
+  function categoryList() {
+    var counts = {}, order = [];
+    allChannels.forEach(function (c) { if (!counts[c.cat]) { counts[c.cat] = 0; order.push(c.cat); } counts[c.cat]++; });
+    var mine = order.filter(isOwnCat);
+    var rank = function (k) { var i = CATEGORY_ORDER.indexOf(k); return i === -1 ? CATEGORY_ORDER.length : i; };
+    var rest = order.filter(function (k) { return mine.indexOf(k) === -1; }).sort(function (a, b) { return rank(a) - rank(b) || (a < b ? -1 : 1); });
+    return { counts: counts, order: mine.concat(rest) };
+  }
+  function fillSelects() {
+    var cs = categoryList(), sel = $("tv-cat"), cur = tvFilter.cat;
+    while (sel.firstChild) sel.removeChild(sel.firstChild);
+    var addOpt = function (s, value, text) { var o = make("option", "", text); o.value = value; s.appendChild(o); };
+    addOpt(sel, "All", "All categories (" + allChannels.length + ")");
+    addOpt(sel, FAVS, FAVS + " (" + favs.length + ")");
+    cs.order.forEach(function (k) { addOpt(sel, k, k + " (" + cs.counts[k] + ")"); });
+    if ([].slice.call(sel.options).every(function (o) { return o.value !== cur; })) cur = "All";
+    sel.value = tvFilter.cat = cur;
+    fillGroups();
+    var cn = {}, codes = [];
+    allChannels.forEach(function (c) { if (c.country) { if (!cn[c.country]) { cn[c.country] = 0; codes.push(c.country); } cn[c.country]++; } });
+    codes.sort(function (a, b) { return countryName(a).localeCompare(countryName(b)); });
+    var cSel = $("tv-country"), curC = tvFilter.country;
+    while (cSel.firstChild) cSel.removeChild(cSel.firstChild);
+    addOpt(cSel, "", "All countries");
+    codes.forEach(function (k) { addOpt(cSel, k, countryName(k) + " (" + cn[k] + ")"); });
+    if (curC && !cn[curC]) curC = "";
+    cSel.value = tvFilter.country = curC;
+  }
+  function fillGroups() {
+    var sel = $("tv-group"), cat = tvFilter.cat, counts = {}, keys = [];
+    if (cat !== "All" && cat !== FAVS) allChannels.forEach(function (c) { if (c.cat === cat && c.grp) { if (!counts[c.grp]) { counts[c.grp] = 0; keys.push(c.grp); } counts[c.grp]++; } });
+    while (sel.firstChild) sel.removeChild(sel.firstChild);
+    if (keys.length < 2) { sel.hidden = true; tvFilter.group = ""; return; }
+    keys.sort(function (a, b) { return a.localeCompare(b); });
+    var o = make("option", "", "All groups"); o.value = ""; sel.appendChild(o);
+    keys.forEach(function (k) { var x = make("option", "", k + " (" + counts[k] + ")"); x.value = k; sel.appendChild(x); });
+    if (!counts[tvFilter.group]) tvFilter.group = "";
+    sel.value = tvFilter.group; sel.hidden = false;
+  }
+  function applyFilter(keepUrl) {
+    var q = tvFilter.q.toLowerCase();
+    var list = allChannels.filter(function (c) {
+      if (tvFilter.cat === FAVS ? !isFav(c.url) : (tvFilter.cat !== "All" && c.cat !== tvFilter.cat)) return false;
+      if (tvFilter.country && c.country !== tvFilter.country) return false;
+      if (tvFilter.group && c.grp !== tvFilter.group) return false;
+      return !q || c.name.toLowerCase().indexOf(q) > -1;
+    });
+    tvTotal = list.length;
+    channels = list.slice(0, MAXROWS);
+    chIndex = 0;
+    if (keepUrl) { for (var i = 0; i < channels.length; i++) if (channels[i].url === keepUrl) { chIndex = i; break; } }
+    renderChannels();
+  }
+  function renderChannels() {
     var list = $("chlist");
     while (list.firstChild) list.removeChild(list.firstChild);
     channels.forEach(function (c, i) {
       var row = make("div", "ch");
+      row.appendChild(make("b", "num", String(i + 1)));
       row.appendChild(make("span", "", c.name));
-      if (c.group) row.appendChild(make("small", "", c.group));
+      var meta = [c.q ? c.q + "p" : "", c.country, c.sub || (tvFilter.cat === "All" || tvFilter.cat === FAVS ? c.grp : "")].filter(Boolean).join(" · ");
+      if (meta) row.appendChild(make("small", "", meta));
+      if (isFav(c.url)) row.appendChild(make("i", "fav", "★"));
       row.addEventListener("click", function () { chIndex = i; paintChannels(); playChannel(i); });
       list.appendChild(row);
     });
-    if (saved) {
-      var note = make("div", "ch action", "Loaded your playlist — add again to change");
-      list.appendChild(note);
-      fetchPlaylist(saved);
-    }
+    var note = function (t) { list.appendChild(make("div", "ch action", t)); };
+    if (!channels.length) note(tvFilter.cat === FAVS ? "No favourites yet. Press L on a channel to add it." : "No channels match. Try another category, country or search.");
+    if (tvTotal > channels.length) note("Showing the first " + channels.length + " of " + tvTotal + ". Narrow it with a category, country or search.");
+    if (catalogueState === "loading") note("Loading the full channel list…");
+    if (catalogueState === "failed") note("The full channel list could not be loaded (offline?). Showing EYE3 picks and your lists.");
+    tvNotes.forEach(note);
+    $("tv-count").textContent = tvTotal + " channel" + (tvTotal === 1 ? "" : "s");
     paintChannels();
   }
-  function fetchPlaylist(url, label) {
+  function loadCatalogue() {
+    if (catalogueState === "ready" || catalogueState === "loading") return;
+    catalogueState = "loading";
+    var done = function (ok) {
+      catalogueState = ok ? "ready" : "failed";
+      var keep = channels[chIndex] && channels[chIndex].url;
+      buildAll(); fillSelects(); applyFilter(keep);
+    };
+    var onHttps = location.protocol === "https:";
+    fetch(CATALOGUE_URL, { cache: "no-cache" }).then(function (r) { if (!r.ok) throw new Error("http " + r.status); return r.json(); }).then(function (d) {
+      if (!d || !d.channels || !d.channels.length) throw new Error("empty");
+      catalogue = d.channels.filter(function (c) { return !onHttps || c.s; }).map(function (c) {
+        return { name: c.n, cat: c.c || "Other", country: c.k || "", url: c.u, q: c.q || 0, sub: c.x ? "not 24/7" : "" };
+      });
+      done(true);
+    })["catch"](function () { done(false); });
+  }
+  function saveFilter() { set(FILTER_KEY, JSON.stringify({ cat: tvFilter.cat, country: tvFilter.country })); }
+  function stepCategory(d) {
+    var sel = $("tv-cat"), n = sel.options.length; if (!n) return;
+    sel.selectedIndex = (sel.selectedIndex + d + n) % n;
+    tvFilter.cat = sel.value; tvFilter.group = ""; fillGroups(); saveFilter(); applyFilter(); toast(sel.options[sel.selectedIndex].text);
+  }
+  function stepCountry(d) {
+    var sel = $("tv-country"), n = sel.options.length; if (!n) return;
+    sel.selectedIndex = (sel.selectedIndex + d + n) % n;
+    tvFilter.country = sel.value; saveFilter(); applyFilter(); toast(sel.options[sel.selectedIndex].text);
+  }
+  function fetchPlaylist(url, label, cat) {
     var xhr = new XMLHttpRequest();
-    var fail = function (why) { channels = channels.filter(function (c) { return !c.status; }); channels.push({ name: (label || "Playlist") + ": " + why, group: "", status: true }); loadChannelsFromArray(); };
+    var fail = function (why) { tvNotes = tvNotes.filter(function (t) { return t.indexOf(label + ":") !== 0; }); tvNotes.push(label + ": " + why); renderChannels(); };
     try { xhr.open("GET", url, true); } catch (e) { fail("bad link"); return; }
     xhr.onreadystatechange = function () {
       if (xhr.readyState !== 4) return;
       if (xhr.status >= 200 && xhr.status < 300) {
-        var extra = parseM3U(xhr.responseText).slice(0, 500);
-        if (extra.length) { channels = channels.filter(function (c) { return !c.status; }).concat(extra); loadChannelsFromArray(); }
-        else fail("no playable channels in it");
+        var extra = parseM3U(xhr.responseText).slice(0, 3000);
+        if (extra.length) {
+          extra.forEach(function (c) { c.cat = cat; });
+          extraChannels = extraChannels.filter(function (c) { return c.cat !== cat || cat === "Added list"; }).concat(extra);
+          tvNotes = tvNotes.filter(function (t) { return t.indexOf(label + ":") !== 0; });
+          var keep = channels[chIndex] && channels[chIndex].url;
+          if (focusCat === cat) { tvFilter.cat = cat; tvFilter.country = ""; focusCat = ""; keep = ""; }   // show what the viewer just added
+          buildAll(); fillSelects(); applyFilter(keep);
+        } else fail("no playable channels in it");
       } else {
         fail("could not be loaded (the site may block browsers; try it in SS IPTV or Kodi)");
       }
     };
     try { xhr.send(); } catch (e) { fail("could not be loaded"); }
-  }
-  function loadChannelsFromArray() {
-    var list = $("chlist");
-    while (list.firstChild) list.removeChild(list.firstChild);
-    channels.forEach(function (c, i) {
-      var row = make("div", c.status ? "ch action" : "ch");
-      row.appendChild(make("span", "", c.name));
-      if (c.group) row.appendChild(make("small", "", c.group));
-      if (!c.status) row.addEventListener("click", function () { chIndex = i; paintChannels(); playChannel(i); });
-      list.appendChild(row);
-    });
-    paintChannels();
   }
   function parseM3U(body) {
     var lines = String(body).split(/\r?\n/), out = [], info = null;
@@ -505,10 +696,11 @@
       if (!line) continue;
       if (line.indexOf("#EXTINF") === 0) {
         var g = /group-title="([^"]*)"/i.exec(line), c = line.lastIndexOf(",");
-        info = { name: c > -1 ? line.slice(c + 1).replace(/^\s+/, "") : "Channel", group: g ? g[1] : "" };
+        info = { name: c > -1 ? line.slice(c + 1).replace(/^\s+/, "") : "Channel", sub: g ? g[1] : "" };
       } else if (line.charAt(0) !== "#" && /^(https?):/i.test(line)) {
-        var item = info || { name: line, group: "" }; item.url = line;
-        if (!/adult|xxx|18\+|porn/i.test(item.group + " " + item.name)) out.push(item);
+        var item = info || { name: line, sub: "" }; item.url = line; item.country = ""; item.q = 0;
+        item.grp = item.sub; item.sub = "";
+        if (!/adult|xxx|18\+|porn/i.test(item.grp + " " + item.name)) out.push(item);
         info = null;
       }
     }
@@ -524,19 +716,20 @@
   function playChannel(i) {
     var c = channels[i]; if (!c || !c.url) return;
     $("idle").style.display = "none";
-    var video = $("video");
+    set(LAST_KEY, c.url);
+    var video = $("video"), title = (i + 1) + " · " + c.name + (c.q ? " · " + c.q + "p" : "") + (c.country ? " · " + c.country : "");
     stopHls();
-    showLabel(c.name, false);
+    showLabel(title, false);
     if (video.canPlayType("application/vnd.apple.mpegurl")) {
       video.src = c.url;
     } else if (window.Hls && window.Hls.isSupported()) {
       hls = new window.Hls({ enableWorker: true });
-      hls.on(window.Hls.Events.ERROR, function (ev, data) { if (data && data.fatal) showLabel(c.name + " — can't play this stream", true); });
+      hls.on(window.Hls.Events.ERROR, function (ev, data) { if (data && data.fatal) showLabel(title + " — can't play this stream." + (c.url.indexOf(LINK_BASE) === 0 ? " Is EYE3 Link still running?" : " Try another."), true); });
       hls.loadSource(c.url); hls.attachMedia(video);
     } else {
       video.src = c.url;
     }
-    video.onerror = function () { showLabel(c.name + " — can't play this stream", true); };
+    video.onerror = function () { showLabel(title + " — can't play this stream." + (c.url.indexOf(LINK_BASE) === 0 ? " Is EYE3 Link still running?" : " Try another."), true); };
     var p = video.play(); if (p && p["catch"]) p["catch"](function () {});
   }
   function stopHls() { if (hls) { try { hls.destroy(); } catch (e) {} hls = null; } }
@@ -549,21 +742,229 @@
     stopRadio(); stopMedia();
   }
   var tvFocus = "list";
-  function openTV() { loadChannels(); tvFocus = "list"; chIndex = 0; openOverlay("ov-tv"); paintChannels(); }
+  function openTV() {
+    var saved = get(PLAYLIST_KEY);
+    extraChannels = extraChannels.filter(function (c) { return c.cat !== "My playlist"; });
+    tvNotes = []; tvFilter.q = ""; $("tv-search").value = "";
+    buildAll(); fillSelects();
+    applyFilter(get(LAST_KEY));
+    tvFocus = "list";
+    openOverlay("ov-tv"); paintChannels(); scrollCh();
+    loadCatalogue();
+    if (saved) fetchPlaylist(saved, "My playlist", "My playlist");
+    autoLoadAccounts();
+  }
   $("tv-close").addEventListener("click", closeOverlays);
+  $("tv-cat").addEventListener("change", function () { tvFilter.cat = this.value; tvFilter.group = ""; fillGroups(); saveFilter(); applyFilter(); this.blur(); });
+  $("tv-group").addEventListener("change", function () { tvFilter.group = this.value; applyFilter(); this.blur(); });
+  $("tv-country").addEventListener("change", function () { tvFilter.country = this.value; saveFilter(); applyFilter(); this.blur(); });
+  $("tv-search").addEventListener("input", function () { tvFilter.q = this.value; applyFilter(); });
+  $("tv-search").addEventListener("keydown", function (e) {
+    if (e.key === "Enter" || e.key === "ArrowDown") { e.preventDefault(); e.stopPropagation(); this.blur(); }
+  });
   $("tv-preset").addEventListener("change", function () {
     var sel = $("tv-preset"), url = sel.value, label = sel.options[sel.selectedIndex].text;
-    sel.selectedIndex = 0;
-    if (url) fetchPlaylist(url, label);
+    sel.selectedIndex = 0; sel.blur();
+    if (url) { focusCat = "Added list"; fetchPlaylist(url, label, "Added list"); }
   });
+  $("tv-accts").addEventListener("click", openAccounts);
   $("tv-add").addEventListener("click", function () {
     var cur = get(PLAYLIST_KEY) || "";
     var v = window.prompt("Paste your M3U or Xtream playlist link (saved on this computer only):", cur);
     if (v == null) return;
     v = v.replace(/^\s+|\s+$/g, "");
-    if (!v) { set(PLAYLIST_KEY, null); } else if (/^https?:\/\//i.test(v)) { set(PLAYLIST_KEY, v); } else { window.alert("Link must start with http:// or https://"); return; }
+    if (!v) { set(PLAYLIST_KEY, null); } else if (/^https?:\/\//i.test(v)) { set(PLAYLIST_KEY, v); focusCat = "My playlist"; } else { window.alert("Link must start with http:// or https://"); return; }
     openTV();
   });
+  // Channel numbers: type digits on the keyboard or phone, the jump happens after a short pause (or on OK).
+  var tvNumber = "", tvNumberTimer = null;
+  function tvGoNumber() {
+    clearTimeout(tvNumberTimer);
+    var n = parseInt(tvNumber, 10); tvNumber = "";
+    if (n >= 1 && channels[n - 1]) { chIndex = n - 1; paintChannels(); scrollCh(); playChannel(chIndex); }
+    else if (n) toast("No channel " + n);
+  }
+  function tvDigit(d) {
+    tvNumber = (tvNumber + d).slice(0, 4);
+    toast("Channel " + tvNumber + "…");
+    clearTimeout(tvNumberTimer); tvNumberTimer = setTimeout(tvGoNumber, 1300);
+  }
+
+  // ---- IPTV accounts: M3U link, Xtream Codes or MAG (Stalker) portal, read through EYE3 Link on this computer ----
+  var LINK_BASE = "http://127.0.0.1:8765", ACCT_KEY = "eye3.home.accts";
+  var accounts = [], acctChannels = {}, acctState = {};
+  try { accounts = (JSON.parse(get(ACCT_KEY) || "[]") || []).filter(function (a) { return a && a.id && a.name && a.type; }); } catch (e) { accounts = []; }
+  function saveAccounts() { set(ACCT_KEY, JSON.stringify(accounts)); }
+  var linkUp = null;   // null = unknown, true/false after a check
+  function linkHello() {
+    return fetch(LINK_BASE + "/api/hello").then(function (r) { return r.json(); }).then(function (d) {
+      if (!d || !d.ok) throw new Error("no");
+      linkUp = d; return d;
+    })["catch"](function () { linkUp = false; throw new Error("EYE3 Link is not running on this computer."); });
+  }
+  function linkGet(path, params) {
+    return linkHello().then(function () {
+      return fetch(LINK_BASE + path + "?" + new URLSearchParams(params));
+    }).then(function (r) {
+      return r.json().then(function (j) { if (!r.ok) throw new Error(j && j.error ? j.error : "EYE3 Link answered " + r.status); return j; });
+    });
+  }
+  function acctRequest(a) {
+    if (a.type === "xtream") return ["/api/xtream", { server: a.server, user: a.user, pass: a.pass }];
+    if (a.type === "stalker") return ["/api/stalker", { portal: a.portal, mac: a.mac }];
+    return ["/api/m3u", { url: a.url }];
+  }
+  function loadAccount(a, quiet) {
+    acctState[a.id] = { loading: true };
+    paintAccounts();
+    var req = acctRequest(a);
+    return linkGet(req[0], req[1]).then(function (d) {
+      acctChannels[a.id] = (d.channels || []).map(function (c) { return { name: c.n, cat: a.name, grp: c.c || "", country: "", url: c.u, q: 0, sub: "" }; });
+      var info = d.account || {};
+      var bits = [(d.channels || []).length + " channels"];
+      if (info.status) bits.push(info.status);
+      if (info.expires) bits.push("until " + info.expires);
+      acctState[a.id] = { ok: true, text: bits.join(" · ") };
+      paintAccounts();
+      if ($("ov-tv").classList.contains("open")) { var keep = channels[chIndex] && channels[chIndex].url; buildAll(); fillSelects(); applyFilter(keep); }
+      return true;
+    })["catch"](function (err) {
+      acctState[a.id] = { bad: true, text: err.message };
+      paintAccounts();
+      if (quiet) { tvNotes = tvNotes.filter(function (t) { return t.indexOf(a.name + ":") !== 0; }); tvNotes.push(a.name + ": " + err.message); if ($("ov-tv").classList.contains("open")) renderChannels(); }
+      return false;
+    });
+  }
+  function autoLoadAccounts() {
+    accounts.forEach(function (a) { if (!acctChannels[a.id] && !(acctState[a.id] && acctState[a.id].loading)) loadAccount(a, true); });
+  }
+  var TYPE_LABEL = { m3u: "M3U link", xtream: "Xtream Codes", stalker: "MAG portal" };
+  function paintAccounts() {
+    var list = $("acct-list");
+    if (!list) return;
+    while (list.firstChild) list.removeChild(list.firstChild);
+    if (!accounts.length) list.appendChild(make("div", "ch action", "No accounts yet. Add one on the right."));
+    accounts.forEach(function (a) {
+      var st = acctState[a.id] || {}, row = make("div", "acct-row"), who = make("div", "who");
+      who.appendChild(make("b", "", a.name));
+      who.appendChild(make("small", st.bad ? "bad" : "", TYPE_LABEL[a.type] + " · " + (st.loading ? "loading…" : st.text || "not loaded yet")));
+      row.appendChild(who);
+      var reload = make("button", "btn", "Reload"); reload.type = "button"; reload.addEventListener("click", function () { delete acctChannels[a.id]; loadAccount(a); });
+      var remove = make("button", "btn", "Remove"); remove.type = "button";
+      remove.addEventListener("click", function () {
+        accounts = accounts.filter(function (x) { return x.id !== a.id; }); delete acctChannels[a.id]; delete acctState[a.id];
+        saveAccounts(); paintAccounts();
+        if (tvFilter.cat === a.name) { tvFilter.cat = "All"; tvFilter.group = ""; saveFilter(); }
+        if ($("ov-tv").classList.contains("open")) { buildAll(); fillSelects(); applyFilter(); }
+      });
+      row.appendChild(reload); row.appendChild(remove);
+      list.appendChild(row);
+    });
+  }
+  function paintLinkStatus() {
+    var up = linkUp && linkUp.ok;
+    $("link-dot").className = "dot" + (up ? "" : " off");
+    $("link-text").textContent = up ? "EYE3 Link is running (version " + linkUp.version + (linkUp.proxy ? ", through your proxy" : "") + ")" : linkUp === false ? "EYE3 Link is not running on this computer" : "Checking EYE3 Link…";
+    $("link-help").hidden = !!up || linkUp === null;
+  }
+  function checkLink() { linkUp = null; paintLinkStatus(); return linkHello().then(paintLinkStatus, paintLinkStatus); }
+  function acctMessage(text, kind) { var m = $("acct-msg"); m.textContent = text; m.className = "acct-note" + (kind ? " " + kind : ""); }
+  function showAcctFields() {
+    var t = $("acct-type").value;
+    [].slice.call(document.querySelectorAll("#acct-form [data-for]")).forEach(function (d) { d.hidden = d.getAttribute("data-for") !== t; });
+  }
+  function openAccounts() {
+    paintAccounts(); showAcctFields(); acctMessage("Saved on this computer only. Use accounts you are entitled to watch. Adult groups stay hidden.");
+    openOverlay("ov-acct"); checkLink();
+    setTimeout(function () { try { $("acct-name").focus(); } catch (e) {} }, 60);
+  }
+  $("acct-close").addEventListener("click", function () { closeOverlays(); });
+  $("link-retry").addEventListener("click", checkLink);
+  $("acct-type").addEventListener("change", showAcctFields);
+  $("acct-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var t = $("acct-type").value, v = function (id) { return $(id).value.replace(/^\s+|\s+$/g, ""); };
+    var a = { id: Date.now().toString(36) + Math.floor(Math.random() * 1e4).toString(36), name: v("acct-name"), type: t };
+    if (t === "m3u") { a.url = v("acct-url"); if (!/^https?:\/\//i.test(a.url)) return acctMessage("The M3U link must start with http:// or https://", "bad"); }
+    else if (t === "xtream") { a.server = v("acct-server"); a.user = v("acct-user"); a.pass = $("acct-pass").value; if (!a.server || !a.user || !a.pass) return acctMessage("Enter the server, username and password.", "bad"); }
+    else { a.portal = v("acct-portal"); a.mac = v("acct-mac"); if (!a.portal || !/^([0-9a-f]{2}[:\-]?){5}[0-9a-f]{2}$/i.test(a.mac)) return acctMessage("Enter the portal address and a MAC like 00:1A:79:AB:CD:EF.", "bad"); }
+    if (!a.name) return acctMessage("Give the account a name.", "bad");
+    if (accounts.some(function (x) { return x.name === a.name; })) return acctMessage("You already have an account with that name.", "bad");
+    accounts.push(a); saveAccounts(); $("acct-pass").value = "";
+    acctMessage("Saved. Loading channels…");
+    loadAccount(a).then(function (ok) {
+      acctMessage(ok ? "Done. Open Live TV and pick “" + a.name + "” in the category list." : acctState[a.id].text, ok ? "good" : "bad");
+      if (ok) { tvFilter.cat = a.name; tvFilter.group = ""; saveFilter(); }
+    });
+  });
+
+  // ---- Connect your TV: the addresses to type into a MAG box, Smart STB or an IPTV app ----
+  function copyText(text) {
+    var done = function () { toast("Copied"); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, function () { window.prompt("Copy this:", text); });
+    else window.prompt("Copy this:", text);
+  }
+  function openTvSetup() {
+    $("info-title").textContent = "Connect your TV";
+    var nodes = [para("Use these addresses on the TV (or any IPTV player). Nothing here needs a purchase.")], first = null;
+    var add = function (title, note, url) {
+      nodes.push(make("h3", "", title));
+      nodes.push(para(note));
+      var row = make("div", "copyrow"), code = make("code", "", url), b = make("button", "btn", "Copy"); b.type = "button";
+      b.addEventListener("click", function () { copyText(url); });
+      row.appendChild(code); row.appendChild(b); nodes.push(row);
+      if (!first) first = b;
+    };
+    add("MAG box / Smart STB portal", "On a MAG box: Settings → Servers → Portals → Portal 1 URL. In Smart STB: add it at smart-stb.tv and set it as Portal 1. Needs a browser-capable portal engine; if the TV only shows a blank screen, use the playlist below.", ORIGIN + "portal/c/");
+    add("Playlist: every free channel (SS IPTV, Smart STB, TiviMate, VLC)", "Add as an external playlist / M3U link. Updated weekly, only channels that answered a check.", ORIGIN + "iptv/eye3-full.m3u");
+    add("Playlist: small starter list", "A short, hand-picked list for a first test.", ORIGIN + "iptv/eye3.m3u");
+    add("Phone remote for EYE3 Home", "Open on your phone after turning on Settings → Phone remote.", ORIGIN + "remote/");
+    nodes.push(para("Your own Xtream or MAG subscription: add it under IPTV accounts here on the laptop, or enter it directly in the TV's own IPTV app. A web page on the TV itself cannot log in to those providers."));
+    rowsHtml($("info-body"), nodes);
+    openOverlay("ov-info");
+    setTimeout(function () { try { first.focus(); } catch (e) {} }, 60);
+  }
+
+  // ---- Help: why a channel will not play, VPN guidance, and a few free tools ----
+  var TOOLS = [
+    ["iptv-org", "The open channel lists EYE3 builds on.", "https://github.com/iptv-org/iptv"],
+    ["Free-TV / IPTV", "Free, legal channels grouped by country.", "https://github.com/Free-TV/IPTV"],
+    ["IPTV Player Web App", "A simple web player for any M3U link. Handy on a phone or a second device.", "https://afzafri.github.io/IPTV-Player-Web-App/"],
+    ["IPTVnator", "A free desktop IPTV player with a programme guide (Windows, Mac, Linux).", "https://github.com/4gray/iptvnator"],
+    ["VLC", "Plays any playlist or file. A good fallback when a browser cannot play something.", "https://www.videolan.org/vlc/"],
+    ["Jellyfin", "A free media server for your own films, music and photos on a PC, NAS or Raspberry Pi.", "https://jellyfin.org/"],
+    ["Threadfin", "A self-hosted manager that merges M3U playlists and guides into one tidy list.", "https://github.com/Threadfin/Threadfin"],
+    ["awesome-selfhosted", "An index of free self-hosted apps.", "https://awesome-selfhosted.net/"]
+  ];
+  function openHelp() {
+    $("info-title").textContent = "Help, VPN & useful tools";
+    var nodes = [make("h3", "", "A channel will not play")];
+    [
+      "Free channels change or go offline now and then. Press the next channel, or search for another. The list is re-checked every week.",
+      "A message ending “Is EYE3 Link still running?” means one of your own accounts lost its helper. Start EYE3 Link again and press Reload on the account.",
+      "A stream that keeps stopping is usually a weak internet connection. A cable connection helps."
+    ].forEach(function (t) { nodes.push(para("• " + t)); });
+    nodes.push(make("h3", "", "Channels blocked in your country"));
+    [
+      "Some broadcasters only allow viewers in their own country. EYE3 cannot change that, and it does not include a VPN: a VPN needs servers and software that a web page cannot provide.",
+      "If you already use a VPN you are allowed to use, turn it on for this computer: the browser and EYE3 Home then use it automatically.",
+      "For your own IPTV accounts only, EYE3 Link can send its traffic through a proxy you already have: python3 eye3-link.py --proxy http://127.0.0.1:PORT (HTTP proxies only). Check your provider’s and the broadcaster’s terms first."
+    ].forEach(function (t) { nodes.push(para("• " + t)); });
+    nodes.push(make("h3", "", "Useful free tools"));
+    nodes.push(para("These are separate projects, not part of EYE3. They open in a new tab."));
+    var first = null;
+    TOOLS.forEach(function (t) {
+      var row = make("div", "copyrow"), a = make("a", "btn", t[0]);
+      a.href = t[2]; a.target = "_blank"; a.rel = "noopener noreferrer";
+      row.appendChild(a); row.appendChild(make("span", "", t[1]));
+      row.lastChild.style.flex = "1 1 18rem"; row.lastChild.style.color = "var(--muted)";
+      nodes.push(row);
+      if (!first) first = a;
+    });
+    rowsHtml($("info-body"), nodes);
+    openOverlay("ov-info");
+    setTimeout(function () { try { first.focus(); } catch (e) {} }, 60);
+  }
 
   // ---- Radio (radio-browser.info: free, open directory of internet stations) ----
   var stations = [], rIndex = 0, rGenre = 0, rToken = 0;
@@ -816,7 +1217,13 @@
     var paintSl = function () { var m = sleepLeft(); sl.textContent = "Sleep timer: " + (m ? m + " min left" : "off"); };
     paintSl();
     sl.addEventListener("click", function () { cycleSleep(); paintSl(); });
-    var kv = make("div", "kv"); kv.appendChild(fs); kv.appendChild(rc); kv.appendChild(sl); kv.appendChild(sv); kv.appendChild(pl); kv.appendChild(inst); kv.appendChild(setup); kv.appendChild(ph);
+    var ac = make("button", "btn", "IPTV accounts (M3U, Xtream, MAG)");
+    ac.type = "button"; ac.addEventListener("click", function () { closeOverlays(); openAccounts(); });
+    var ts = make("button", "btn", "Connect your TV (addresses)");
+    ts.type = "button"; ts.addEventListener("click", openTvSetup);
+    var hp = make("button", "btn", "Help, VPN & useful tools");
+    hp.type = "button"; hp.addEventListener("click", openHelp);
+    var kv = make("div", "kv"); kv.appendChild(fs); kv.appendChild(ac); kv.appendChild(ts); kv.appendChild(hp); kv.appendChild(rc); kv.appendChild(sl); kv.appendChild(sv); kv.appendChild(pl); kv.appendChild(inst); kv.appendChild(setup); kv.appendChild(ph);
     rowsHtml(body, [
       para("EYE3 Home runs in this browser and shows on the TV over HDMI. For the best look, press F or use the button below to go fullscreen."),
       kv,
@@ -840,7 +1247,20 @@
       if (isTyping()) return;
       if (e.key === "ArrowDown") { e.preventDefault(); chIndex = Math.min(channels.length - 1, chIndex + 1); paintChannels(); scrollCh(); }
       else if (e.key === "ArrowUp") { e.preventDefault(); chIndex = Math.max(0, chIndex - 1); paintChannels(); scrollCh(); }
-      else if (e.key === "Enter") { e.preventDefault(); playChannel(chIndex); }
+      else if (e.key === "PageDown") { e.preventDefault(); chIndex = Math.min(channels.length - 1, chIndex + 10); paintChannels(); scrollCh(); }
+      else if (e.key === "PageUp") { e.preventDefault(); chIndex = Math.max(0, chIndex - 10); paintChannels(); scrollCh(); }
+      else if (e.key === "ArrowRight") { e.preventDefault(); stepCategory(1); }
+      else if (e.key === "ArrowLeft") { e.preventDefault(); stepCategory(-1); }
+      else if (e.key === "]") { e.preventDefault(); stepCountry(1); }
+      else if (e.key === "[") { e.preventDefault(); stepCountry(-1); }
+      else if (e.key >= "0" && e.key <= "9" && e.key.length === 1) { e.preventDefault(); tvDigit(e.key); }
+      else if (e.key === "Enter") { e.preventDefault(); if (tvNumber) tvGoNumber(); else playChannel(chIndex); }
+      else if (e.key === "l" || e.key === "L") {
+        e.preventDefault();
+        var c = channels[chIndex];
+        if (c) { var on = toggleFav(c.url); toast(on ? "Added to favourites" : "Removed from favourites"); var keep = c.url; fillSelects(); applyFilter(keep); scrollCh(); }
+      }
+      else if (e.key === "/") { e.preventDefault(); try { $("tv-search").focus(); } catch (er) {} }
       return;
     }
     if ($("ov-radio").classList.contains("open")) {
@@ -958,7 +1378,7 @@
   }
   function jumpTo(n) {
     var w = listState(), i = (n === 0 ? 10 : n) - 1;
-    if (w === "tv" && channels[i]) { chIndex = i; paintChannels(); scrollCh(); playChannel(i); toast("Channel " + (i + 1)); }
+    if (w === "tv") { tvDigit(n); }
     else if (w === "radio" && stations[i]) { rIndex = i; paintStations(); scrollList("rlist", i); playStation(i); toast("Station " + (i + 1)); }
   }
   function setVolume(delta, mute) {

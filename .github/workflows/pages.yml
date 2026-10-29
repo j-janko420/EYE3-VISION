@@ -32,6 +32,7 @@ jobs:
           cp -r bridge _site/
           cp -r home _site/
           cp -r remote _site/
+          cp -r tools _site/
           touch _site/.nojekyll
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
