@@ -171,7 +171,9 @@
   var PLAYLIST_KEY = 'eye3.tv.playlist';
   var RECENT_KEY = 'eye3.tv.recent';
   var VISIBLE = 9;
-  var ORG = 'https://iptv-org.github.io/iptv/categories/';
+  var CATALOGUE_URL = '../../iptv/channels.json';
+  var CATEGORY_ORDER = ['News', 'General', 'Entertainment', 'Movies', 'Series', 'Sports', 'Music', 'Kids', 'Documentary', 'Lifestyle', 'Culture', 'Comedy', 'Animation', 'Business', 'Education', 'Science', 'Religious', 'Travel', 'Cooking', 'Outdoor', 'Weather', 'Family', 'Classic', 'Legislative', 'Public', 'Relax', 'Shop', 'Auto', 'Interactive', 'Other'];
+  var COUNTRIES = { AE: 'United Arab Emirates', IN: 'India', US: 'United States', UK: 'United Kingdom', SA: 'Saudi Arabia', QA: 'Qatar', KW: 'Kuwait', BH: 'Bahrain', OM: 'Oman', EG: 'Egypt', PK: 'Pakistan', LK: 'Sri Lanka', BD: 'Bangladesh', NP: 'Nepal', DE: 'Germany', FR: 'France', ES: 'Spain', IT: 'Italy', PT: 'Portugal', BR: 'Brazil', MX: 'Mexico', AR: 'Argentina', CL: 'Chile', CO: 'Colombia', PE: 'Peru', TR: 'Turkey', RU: 'Russia', UA: 'Ukraine', PL: 'Poland', NL: 'Netherlands', SE: 'Sweden', NO: 'Norway', DK: 'Denmark', FI: 'Finland', CA: 'Canada', AU: 'Australia', NZ: 'New Zealand', CN: 'China', JP: 'Japan', KR: 'South Korea', ID: 'Indonesia', MY: 'Malaysia', PH: 'Philippines', TH: 'Thailand', VN: 'Vietnam', IR: 'Iran', IQ: 'Iraq', JO: 'Jordan', LB: 'Lebanon', SY: 'Syria', MA: 'Morocco', DZ: 'Algeria', TN: 'Tunisia', NG: 'Nigeria', ZA: 'South Africa', KE: 'Kenya', GR: 'Greece', RO: 'Romania', HU: 'Hungary', CZ: 'Czechia', AT: 'Austria', CH: 'Switzerland', BE: 'Belgium', IE: 'Ireland', IL: 'Israel', AF: 'Afghanistan', AL: 'Albania', AM: 'Armenia', AZ: 'Azerbaijan', BG: 'Bulgaria', BY: 'Belarus', HR: 'Croatia', RS: 'Serbia', SK: 'Slovakia', SI: 'Slovenia', DO: 'Dominican Republic', EC: 'Ecuador', VE: 'Venezuela', CR: 'Costa Rica', PY: 'Paraguay', BO: 'Bolivia', HN: 'Honduras', GT: 'Guatemala', UY: 'Uruguay', PA: 'Panama', HK: 'Hong Kong', TW: 'Taiwan', SG: 'Singapore', KZ: 'Kazakhstan' };
   var FREE = [
     { name: 'DW English', group: 'News', url: 'https://dwamdstream102.akamaized.net/hls/live/2015525/dwstream102/index.m3u8' },
     { name: 'France 24 English', group: 'News', url: 'https://static.france24.com/live/F24_EN_LO_HLS/live_web.m3u8' },
@@ -182,10 +184,8 @@
   ];
   var MENU = [
     { title: 'Live TV', kind: 'free' },
-    { title: 'World news', kind: 'org', cat: 'news' },
-    { title: 'Documentary', kind: 'org', cat: 'documentary' },
-    { title: 'Music', kind: 'org', cat: 'music' },
-    { title: 'Kids', kind: 'org', cat: 'kids' },
+    { title: 'All channels', kind: 'catalogue' },
+    { title: 'By country', kind: 'countries' },
     { title: 'My playlist', kind: 'mine' },
     { title: 'Search channels', kind: 'search', gap: true },
     { title: 'Cast & mirror', kind: 'cast' },
@@ -203,7 +203,7 @@
     { name: 'Show EYE3 analysis from the phone: open j-janko420.github.io/EYE3-VISION on the phone, then mirror it with one of the ways above.', info: true }
   ];
   var cache = {};
-  var state = { zone: 'menu', menu: 0, open: -1, row: 0, top: 0, items: [], title: 'Welcome', note: '', playing: -1, loading: 0 };
+  var state = { zone: 'menu', menu: 0, open: -1, row: 0, top: 0, items: [], title: 'Welcome', note: '', playing: -1, loading: 0, parent: null };
 
   function $(id) { return document.getElementById(id); }
   function setText(node, value) { while (node.firstChild) node.removeChild(node.firstChild); node.appendChild(document.createTextNode(value)); }
@@ -263,7 +263,7 @@
     }
     return out;
   }
-  function fetchText(url, done) {
+  function fetchText(url, done, limit) {
     var finished = false, xhr;
     function finish(body, problem) { if (finished) return; finished = true; done(body, problem); }
     try { xhr = new XMLHttpRequest(); xhr.open('GET', url, true); } catch (e) { finish(null, 'blocked'); return; }
@@ -271,7 +271,7 @@
       if (xhr.readyState === 4) finish(xhr.status >= 200 && xhr.status < 300 ? xhr.responseText : null, xhr.status ? 'HTTP ' + xhr.status : 'blocked');
     };
     try { xhr.send(); } catch (e) { finish(null, 'blocked'); }
-    setTimeout(function () { if (!finished) { try { xhr.abort(); } catch (e) { /* ignore */ } finish(null, 'timeout'); } }, 20000);
+    setTimeout(function () { if (!finished) { try { xhr.abort(); } catch (e) { /* ignore */ } finish(null, 'timeout'); } }, limit || 20000);
   }
   function loadList(url, done) {
     if (cache[url]) { done(cache[url], null); return; }
@@ -279,6 +279,68 @@
       if (body) cache[url] = parseM3U(body);
       done(body ? cache[url] : null, problem);
     });
+  }
+  // The full free catalogue (built weekly by GitHub, every stream probed). Same-origin JSON, so old TV browsers can read it.
+  var catalogue = null;
+  function loadCatalogue(done) {
+    if (catalogue) { done(catalogue, null); return; }
+    fetchText(CATALOGUE_URL, function (body, problem) {
+      if (!body) { done(null, problem); return; }
+      var data;
+      try { data = JSON.parse(body); } catch (e) { done(null, 'bad data'); return; }
+      var list = [], raw = data && data.channels ? data.channels : [], webOnly = !stb && window.location.protocol === 'https:';
+      for (var i = 0; i < raw.length; i++) {
+        var c = raw[i];
+        if (webOnly && !c.s) continue;
+        list.push({ name: c.n, cat: c.c, country: c.k, group: c.c + (c.k ? ' · ' + c.k : '') + (c.q ? ' · ' + c.q + 'p' : ''), url: c.u });
+      }
+      catalogue = list;
+      done(catalogue, null);
+    }, 45000);
+  }
+  function countBy(list, field) {
+    var counts = {}, keys = [];
+    for (var i = 0; i < list.length; i++) {
+      var k = list[i][field] || '';
+      if (!k) continue;
+      if (!counts[k]) { counts[k] = 0; keys.push(k); }
+      counts[k]++;
+    }
+    return { counts: counts, keys: keys };
+  }
+  function categoryRows(list) {
+    var by = countBy(list, 'cat'), rows = [{ name: 'All channels', group: list.length + ' channels', action: 'cat', cat: '' }], used = {}, i;
+    for (i = 0; i < CATEGORY_ORDER.length; i++) if (by.counts[CATEGORY_ORDER[i]]) { used[CATEGORY_ORDER[i]] = 1; rows.push({ name: CATEGORY_ORDER[i], group: by.counts[CATEGORY_ORDER[i]] + ' channels', action: 'cat', cat: CATEGORY_ORDER[i] }); }
+    for (i = 0; i < by.keys.length; i++) if (!used[by.keys[i]]) rows.push({ name: by.keys[i], group: by.counts[by.keys[i]] + ' channels', action: 'cat', cat: by.keys[i] });
+    return rows;
+  }
+  function countryRows(list) {
+    var by = countBy(list, 'country'), rows = [], i;
+    by.keys.sort(function (a, b) { var x = COUNTRIES[a] || a, y = COUNTRIES[b] || b; return x < y ? -1 : (x > y ? 1 : 0); });
+    for (i = 0; i < by.keys.length; i++) rows.push({ name: COUNTRIES[by.keys[i]] || by.keys[i], group: by.counts[by.keys[i]] + ' channels', action: 'country', country: by.keys[i] });
+    return rows;
+  }
+  function channelsWhere(list, field, value) {
+    var out = [];
+    for (var i = 0; i < list.length; i++) if (!value || list[i][field] === value) out.push(list[i]);
+    return out;
+  }
+  function showChannels(title, items, back) {
+    state.title = title;
+    state.items = items;
+    state.row = 0;
+    state.top = 0;
+    state.note = items.length + ' free public channels. Up/Down to browse, OK to watch, Back for the list.';
+    state.parent = back;
+    render();
+  }
+  function openCategory(cat, label) {
+    var list = catalogue || [], rows = state.items, row = state.row, top = state.top, title = state.title, note = state.note;
+    showChannels(cat ? label : 'All channels', channelsWhere(list, 'cat', cat), function () { state.title = title; state.items = rows; state.row = row; state.top = top; state.note = note; state.parent = null; render(); });
+  }
+  function openCountry(code, label) {
+    var list = catalogue || [], rows = state.items, row = state.row, top = state.top, title = state.title, note = state.note;
+    showChannels(label, channelsWhere(list, 'country', code), function () { state.title = title; state.items = rows; state.row = row; state.top = top; state.note = note; state.parent = null; render(); });
   }
   function linkFromAddress() {
     var hash = /[#&]playlist=([^&]+)/.exec(window.location.hash || '');
@@ -304,6 +366,7 @@
     state.title = entry.title;
     state.note = '';
     state.items = [];
+    state.parent = null;
     var ticket = ++state.loading;
     if (entry.kind === 'free') {
       state.items = FREE.slice(0);
@@ -328,13 +391,20 @@
         { name: 'Phone remote: open the Phone remote menu to pair your phone with this TV.', info: true }
       ];
       state.note = 'Portal settings and connection guidance. VPN controls must come from the device, router, or VPN provider.';
-    } else if (entry.kind === 'org') {
-      state.note = 'Loading free channels...';
-      loadList(ORG + entry.cat + '.m3u', function (items, problem) {
+    } else if (entry.kind === 'catalogue' || entry.kind === 'countries') {
+      state.note = 'Loading the full channel list (about 1 MB, a few seconds)...';
+      loadCatalogue(function (list, problem) {
         if (ticket !== state.loading) return;
-        state.items = items || [];
-        state.note = items ? (items.length ? 'Free public channels from the open iptv-org list.' : 'No channels in this list right now.')
-          : 'Could not load this list (' + problem + '). Check the TV\'s internet connection.';
+        if (!list) {
+          state.items = FREE.slice(0);
+          state.note = 'Could not load the full channel list (' + problem + '). Check the TV\'s internet connection. Showing the built-in channels.';
+        } else if (entry.kind === 'catalogue') {
+          state.items = categoryRows(list);
+          state.note = 'Pick a category and press OK. ' + list.length + ' free public channels.';
+        } else {
+          state.items = countryRows(list);
+          state.note = 'Pick a country and press OK.';
+        }
         render();
       });
     } else if (entry.kind === 'mine') {
@@ -359,7 +429,7 @@
 
   function runSearch(query) {
     var words = trim(query).toLowerCase();
-    var index = 6;
+    var index = menuIndex('search');
     state.open = index;
     state.title = 'Search: ' + query;
     state.row = 0;
@@ -368,11 +438,8 @@
     state.zone = 'list';
     state.note = 'Searching...';
     var ticket = ++state.loading;
-    var sources = [];
-    for (var m = 0; m < MENU.length; m++) if (MENU[m].kind === 'org') sources.push(ORG + MENU[m].cat + '.m3u');
     var mine = getStore(PLAYLIST_KEY);
-    if (mine) sources.push(mine);
-    var pool = FREE.slice(0), pending = sources.length;
+    var pool = FREE.slice(0), pending = 1 + (mine ? 1 : 0);
     function finish() {
       if (ticket !== state.loading) return;
       var seen = {}, found = [];
@@ -386,9 +453,13 @@
       render();
     }
     render();
-    if (!pending) { finish(); return; }
-    for (var s = 0; s < sources.length; s++) {
-      loadList(sources[s], function (items) {
+    loadCatalogue(function (list) {
+      if (list) pool = pool.concat(list);
+      pending -= 1;
+      if (!pending) finish();
+    });
+    if (mine) {
+      loadList(mine, function (items) {
         if (items) pool = pool.concat(items);
         pending -= 1;
         if (!pending) finish();
@@ -512,7 +583,7 @@
     if (kind === 'playlist') {
       if (/^https?:\/\//i.test(value)) { setStore(PLAYLIST_KEY, value); delete cache[value]; }
       else osd('A playlist link must start with http:// or https://');
-      openSection(5);
+      openSection(menuIndex('mine'));
     } else if (kind === 'search') {
       runSearch(value);
     } else if (kind === 'web') {
@@ -677,7 +748,11 @@
     }
     if (code === 72) { showDashboard(); return false; }
     if (code === 77) { state.zone = 'menu'; render(); return false; }
-    if (isBack(code)) { if (state.zone === 'list') { state.zone = 'menu'; render(); } return false; }
+    if (isBack(code)) {
+      if (state.zone === 'list' && state.parent) { var back = state.parent; state.parent = null; back(); }
+      else if (state.zone === 'list') { state.zone = 'menu'; render(); }
+      return false;
+    }
     if (state.zone === 'menu') {
       if (code === 38) { state.menu = (state.menu + MENU.length - 1) % MENU.length; render(); return false; }
       if (code === 40) { state.menu = (state.menu + 1) % MENU.length; render(); return false; }
@@ -691,7 +766,9 @@
       var item = state.items[state.row];
       if (!item) return false;
       if (item.action === 'edit') openEditor('playlist');
-      else if (item.action === 'remove') { setStore(PLAYLIST_KEY, null); osd('Playlist removed from this TV'); openSection(5); }
+      else if (item.action === 'remove') { setStore(PLAYLIST_KEY, null); osd('Playlist removed from this TV'); openSection(menuIndex('mine')); }
+      else if (item.action === 'cat') openCategory(item.cat, item.name);
+      else if (item.action === 'country') openCountry(item.country, item.name);
       else if (item.action === 'menu') openSection(menuIndex(item.target));
       else if (item.action === 'link') window.location.href = item.href;
       else if (item.url) play(state.row);
@@ -729,7 +806,7 @@
 
   var fromAddress = linkFromAddress();
   if (fromAddress) setStore(PLAYLIST_KEY, fromAddress);
-  setText($('live-summary'), FREE.length + ' free public channels to start; add your own playlist in My playlist.');
+  setText($('live-summary'), 'Thousands of free public channels in All channels, or add your own playlist in My playlist.');
   updateFeatured();
   updateDashboard();
   tick();
