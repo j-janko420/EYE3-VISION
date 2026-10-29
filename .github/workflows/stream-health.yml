@@ -26,7 +26,7 @@ jobs:
           cat > probe.sh <<'EOF'
           #!/usr/bin/env bash
           # usage: probe.sh "<name>" <url>   -> prints "OK|FAIL<TAB>code<TAB>name<TAB>url"
-          name="$1"; url="$2"
+          if [ $# -eq 1 ]; then name="${1%%$'\t'*}"; url="${1#*$'\t'}"; else name="$1"; url="$2"; fi
           body=$(mktemp)
           code=$(curl -sL --max-time 12 -A 'Mozilla/5.0' -o "$body" -w '%{http_code}' "$url" || true)
           if [ "$code" = "200" ] && head -c 7 "$body" | grep -q '#EXTM3U'; then status=OK; else status=FAIL; fi
@@ -54,9 +54,9 @@ jobs:
             /^#/ { next }
             /^https?:/ && info != "" {
               n = info; sub(/^.*,/, "", n)
-              if (info !~ /adult|xxx|18\+|porn/ && cnt < 150) { printf "%s\0%s\0", n, $0; cnt++ }
+              if (tolower(info) !~ /adult|xxx|18\+|porn/ && cnt < 150) { printf "%s\t%s\n", n, $0; cnt++ }
               info = ""
-            }' | xargs -0 -n2 -P 20 ./probe.sh | sort | tee news-results.tsv | grep '^OK' || true
+            }' | xargs -d '\n' -n1 -P 20 ./probe.sh | sort | tee news-results.tsv | grep '^OK' || true
           echo "alive: $(grep -c '^OK' news-results.tsv || true) / $(wc -l < news-results.tsv)"
 
       - uses: actions/upload-artifact@v4
