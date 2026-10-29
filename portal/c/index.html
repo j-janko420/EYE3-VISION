@@ -104,13 +104,14 @@
     </td>
   </tr></table>
   <div id="feature">
-    <div class="eyebrow">FEATURED · ORIGINAL SERIES</div>
-    <h1>THE THIRD EYE AWAKENS</h1>
-    <p class="meta">2026 &nbsp; · &nbsp; Adventure &nbsp; · &nbsp; 4K UHD</p>
-    <p id="feature-copy">System dormant. Signal detected. Enter the eye3 interface and explore live channels, media, and system controls.</p>
+    <div class="eyebrow">LIVE IPTV · PUBLIC CHANNELS</div>
+    <h1 id="feature-title">Al Jazeera English</h1>
+    <p class="meta" id="feature-meta">News · Free public stream</p>
+    <p id="feature-copy">Choose a public channel to start playback on this TV. Availability depends on the broadcaster and your location.</p>
     <div id="feature-actions">
-      <button id="watch-now" class="dash-action primary" type="button">▶ &nbsp; Watch now</button>
-      <button id="more-info" class="dash-action" type="button">ⓘ &nbsp; More info</button>
+      <button id="feature-prev" class="dash-action" type="button">‹ Previous channel</button>
+      <button id="feature-next" class="dash-action" type="button">Next channel ›</button>
+      <button id="watch-now" class="dash-action primary" type="button">▶ &nbsp; Watch channel</button>
     </div>
   </div>
   <table id="dash-sections">
@@ -123,7 +124,7 @@
       </div></td>
       <td><div class="dash-card">
         <h2>CONTINUE WATCHING YOUR QUEUE</h2>
-        <p>No recent channels yet. Start Live TV to begin your queue.</p>
+        <p id="queue-summary">No recently watched channels on this TV.</p>
         <button id="queue-open" class="dash-action" type="button">Browse channels</button>
       </div></td>
     </tr>
@@ -168,6 +169,7 @@
 (function () {
   var stb = window.gSTB || window.stb || null;
   var PLAYLIST_KEY = 'eye3.tv.playlist';
+  var RECENT_KEY = 'eye3.tv.recent';
   var VISIBLE = 9;
   var ORG = 'https://iptv-org.github.io/iptv/categories/';
   var FREE = [
@@ -207,6 +209,28 @@
   function trim(s) { return String(s).replace(/^\s+|\s+$/g, ''); }
   function getStore(key) { try { return window.localStorage ? localStorage.getItem(key) : null; } catch (e) { return null; } }
   function setStore(key, value) { try { if (value === null) localStorage.removeItem(key); else localStorage.setItem(key, value); } catch (e) { /* storage unavailable */ } }
+  function recentChannels() {
+    var saved = getStore(RECENT_KEY), items = [];
+    if (!saved) return items;
+    try { items = JSON.parse(saved); } catch (e) { return []; }
+    if (!items || typeof items.length !== 'number') return [];
+    var valid = [];
+    for (var i = 0; i < items.length && valid.length < 6; i++) {
+      if (items[i] && items[i].name && /^(https?|rtmp|rtsp|udp):/i.test(items[i].url || '')) valid.push(items[i]);
+    }
+    return valid;
+  }
+  function rememberChannel(channel) {
+    var previous = recentChannels(), next = [{ name: channel.name, group: channel.group || '', url: channel.url }];
+    for (var i = 0; i < previous.length && next.length < 6; i++) if (previous[i].url !== channel.url) next.push(previous[i]);
+    setStore(RECENT_KEY, JSON.stringify(next));
+    updateDashboard();
+  }
+  function updateDashboard() {
+    var recent = recentChannels(), saved = recent.length ? recent[0] : null;
+    setText($('queue-summary'), saved ? 'Last watched: ' + saved.name + (saved.group ? ' · ' + saved.group : '') : 'No recently watched channels on this TV.');
+    setText($('queue-open'), saved ? 'Resume ' + saved.name : 'Browse channels');
+  }
   function menuIndex(kind) {
     for (var i = 0; i < MENU.length; i++) if (MENU[i].kind === kind) return i;
     return -1;
@@ -421,6 +445,7 @@
   function play(index) {
     var channel = state.items[index];
     if (!channel || !channel.url) return;
+    rememberChannel(channel);
     state.playing = index;
     $('wrap').style.display = 'none';
     if (stb && typeof stb.Play === 'function') {
@@ -587,8 +612,18 @@
 
   function isBack(code) { return code === 8 || code === 27 || code === 461 || code === 10009 || code === 166; }
   var splashOpen = true;
-  var DASH_IDS = ['nav-home', 'nav-apps', 'nav-live', 'nav-settings', 'watch-now', 'more-info', 'apps-open', 'phone-open', 'queue-open', 'live-open'];
+  var featuredIndex = 0;
+  var DASH_IDS = ['nav-home', 'nav-apps', 'nav-live', 'nav-settings', 'feature-prev', 'feature-next', 'watch-now', 'apps-open', 'phone-open', 'queue-open', 'live-open'];
   var dashFocus = 0;
+  function updateFeatured() {
+    var channel = FREE[featuredIndex];
+    setText($('feature-title'), channel.name);
+    setText($('feature-meta'), channel.group + ' · Free public stream');
+  }
+  function changeFeatured(step) {
+    featuredIndex = (featuredIndex + step + FREE.length) % FREE.length;
+    updateFeatured();
+  }
   function showDashboard() {
     splashOpen = true;
     $('splash').style.display = 'block';
@@ -662,18 +697,35 @@
   $('nav-apps').onclick = function () { openDashboardSection('apps'); };
   $('nav-live').onclick = function () { openDashboardSection('free'); };
   $('nav-settings').onclick = function () { openDashboardSection('settings'); };
-  $('watch-now').onclick = function () { openDashboardSection('free'); };
-  $('more-info').onclick = function () {
-    setText($('feature-copy'), 'This featured title is an interface showcase, not a playable video. Watch now opens the available Live TV channels; movies and on-demand shows are not included.');
+  $('feature-prev').onclick = function () { changeFeatured(-1); };
+  $('feature-next').onclick = function () { changeFeatured(1); };
+  $('watch-now').onclick = function () {
+    var index = menuIndex('free');
+    hideSplash();
+    openSection(index);
+    play(featuredIndex);
   };
   $('apps-open').onclick = function () { openDashboardSection('apps'); };
   $('phone-open').onclick = function () { openDashboardSection('remote'); };
-  $('queue-open').onclick = function () { openDashboardSection('free'); };
+  $('queue-open').onclick = function () {
+    var recent = recentChannels();
+    if (!recent.length) { openDashboardSection('free'); return; }
+    hideSplash();
+    state.open = -1;
+    state.title = 'Continue watching';
+    state.items = recent;
+    state.row = 0;
+    state.top = 0;
+    state.zone = 'list';
+    play(0);
+  };
   $('live-open').onclick = function () { openDashboardSection('free'); };
 
   var fromAddress = linkFromAddress();
   if (fromAddress) setStore(PLAYLIST_KEY, fromAddress);
   setText($('live-summary'), FREE.length + ' free public channels to start; add your own playlist in My playlist.');
+  updateFeatured();
+  updateDashboard();
   tick();
   setInterval(tick, 30000);
   setTimeout(function () { try { $('nav-home').focus(); } catch (e) { /* focus is optional on older TV browsers */ } }, 0);
