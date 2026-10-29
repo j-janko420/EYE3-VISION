@@ -102,6 +102,25 @@ class Mock(BaseHTTPRequestHandler):
         return self.reply("nope", "text/plain", 404)
 
 
+class Doh(BaseHTTPRequestHandler):
+    """Mock DNS-over-HTTPS (JSON): panel.eye3test.invalid -> 127.0.0.1, everything else has no answer."""
+    asked = []
+
+    def log_message(self, *a):
+        pass
+
+    def do_GET(self):
+        q = up.parse_qs(up.urlparse(self.path).query)
+        name = q.get("name", [""])[0]
+        Doh.asked.append((name, self.headers.get("Accept")))
+        body = json.dumps({"Answer": [{"name": name, "type": 1, "TTL": 60, "data": "127.0.0.1"}]} if name == "panel.eye3test.invalid" else {"Status": 3}).encode()
+        self.send_response(200)
+        self.send_header("Content-Type", "application/dns-json")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+
 def serve(handler):
     s = ThreadingHTTPServer(("127.0.0.1", 0), handler)
     s.daemon_threads = True
@@ -174,6 +193,29 @@ class LinkTests(unittest.TestCase):
         self.assertNotEqual(code, 200)
         code, _, _ = get(self.port, "/api/vod?" + up.urlencode({"server": self.up_url, "user": "u", "pass": "p", "kind": "movie"}), {"Origin": "https://evil.example"})
         self.assertEqual(code, 403)
+
+    # --- --dns: DNS-over-HTTPS only when the normal lookup fails
+    def test_dns_off_gives_a_hint_and_on_resolves_through_doh(self):
+        server = "http://panel.eye3test.invalid:%d" % self.up_port
+        link.install_dns("")
+        code, _, body = self.api("/api/xtream", server=server, user="u", **{"pass": "p"})
+        self.assertEqual(code, 502)
+        self.assertIn("--dns cloudflare", json.loads(body)["error"])
+        doh = serve(Doh)
+        try:
+            link.install_dns("http://127.0.0.1:%d/dns-query" % doh.server_port)
+            code, _, body = self.api("/api/xtream", server=server, user="u", **{"pass": "p"})
+            self.assertEqual(code, 200)
+            self.assertEqual(json.loads(body)["channels"][0]["n"], "Xtream One")
+            self.assertEqual(Doh.asked[0], ("panel.eye3test.invalid", "application/dns-json"))
+            n = len(Doh.asked)
+            self.api("/api/xtream", server=server, user="u", **{"pass": "p"})
+            self.assertEqual(len(Doh.asked), n)                       # cached
+            self.api("/api/xtream", server=self.up_url, user="u", **{"pass": "p"})
+            self.assertEqual(len(Doh.asked), n)                       # a name the system can resolve never asks DoH
+        finally:
+            link.install_dns("")
+            doh.shutdown()
 
     # --- access control
     def test_ping_is_open_and_hello_needs_an_allowed_origin(self):

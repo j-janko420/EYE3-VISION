@@ -41,6 +41,14 @@ Open these on the laptop to jump straight to the right form (nothing is filled i
 
 Adult groups in your own accounts show only after you unlock the hidden section (see below).
 
+## "Could not reach the server (getaddrinfo failed)"
+Your computer cannot find the provider's address, although the same address may work in another app or on another device (different DNS or network). Start EYE3 Link with its own lookup as a fallback:
+
+- Program (Windows): right-click `eye3-link-windows.exe` → **Create shortcut** → right-click the shortcut → **Properties** → in **Target** add ` --dns cloudflare` after the closing quote (use `google` for Google's resolver) → OK, then open the shortcut. Or in a command window: `eye3-link-windows.exe --dns cloudflare`.
+- Python: `py eye3-link.py --dns cloudflare`
+
+It only asks that public resolver when your normal lookup fails, and only for the provider's host name. Changing Windows DNS to `1.1.1.1` and `8.8.8.8` does the same for the whole computer. This is not a VPN: your traffic still goes straight to the provider.
+
 ## Channels blocked in your country (VPN / proxy)
 EYE3 does **not** include a VPN: a VPN needs servers and software that a web page or this small helper cannot provide, and pretending otherwise would be unsafe. Options:
 - Use a VPN you are allowed to use on this computer. EYE3 Home and EYE3 Link then use it automatically.
