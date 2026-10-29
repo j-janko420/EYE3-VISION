@@ -3,20 +3,20 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#10141d">
+  <meta name="theme-color" content="#050101">
   <meta name="description" content="TV Bridge helps you check TV compatibility, find official update guidance, and set up a supported streaming device.">
   <title>EYE3 Bridge — Safe TV Setup</title>
   <style>
     :root {
       color-scheme: dark;
-      --bg: #0b0e14;
-      --panel: #121823;
+      --bg: #050101;
+      --panel: #140709;
       --panel-2: #182131;
-      --border: #293448;
-      --text: #eef3fb;
-      --muted: #a5b1c4;
-      --accent: #ff9a61;
-      --accent-2: #ffb078;
+      --border: #3a1a20;
+      --text: #fff5f6;
+      --muted: #b9a9ac;
+      --accent: #ff263f;
+      --accent-2: #ff7a8a;
       --warning: #ffd58a;
       --danger: #ff9c9c;
       --radius: 18px;
@@ -25,7 +25,7 @@
     * { box-sizing: border-box; }
     body {
       margin: 0; background:
-        radial-gradient(ellipse at 10% 0%, rgba(90, 120, 190, .16), transparent 36%),
+        radial-gradient(ellipse at 10% 0%, rgba(255,38,63, .16), transparent 36%),
         radial-gradient(ellipse at 95% 10%, rgba(70, 200, 180, .10), transparent 30%), var(--bg);
       color: var(--text); line-height: 1.55;
     }
@@ -53,7 +53,7 @@
     p { color: var(--muted); margin: 0 0 14px; }
     .hero-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
     .device-art { min-height: 260px; border: 1px solid var(--border); border-radius: 24px; background: linear-gradient(140deg, #192536, #10151e); padding: 24px; display: grid; place-items: center; position: relative; overflow: hidden; }
-    .tv { width: min(100%, 350px); aspect-ratio: 16/10; border: 8px solid #283343; border-bottom-width: 12px; border-radius: 12px; background: linear-gradient(145deg, #152b3b, #10141e 70%); box-shadow: 0 20px 60px #0008; padding: 15px; position: relative; }
+    .tv { width: min(100%, 350px); aspect-ratio: 16/10; border: 8px solid #3a1a20; border-bottom-width: 12px; border-radius: 12px; background: linear-gradient(145deg, #152b3b, #10141e 70%); box-shadow: 0 20px 60px #0008; padding: 15px; position: relative; }
     .tv-screen { height: 100%; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
     .tile { border-radius: 8px; background: linear-gradient(145deg, #31576a, #1d2c3b); }
     .tile:nth-child(2) { background: linear-gradient(145deg, #7661a0, #302a4d); }
@@ -61,7 +61,7 @@
     .tile:nth-child(4) { background: linear-gradient(145deg, #347f78, #1d373b); }
     .tile:nth-child(5) { background: linear-gradient(145deg, #4569a2, #1d2a43); }
     .tile:nth-child(6) { background: linear-gradient(145deg, #817d50, #383720); }
-    .tv-stand { width: 80px; height: 16px; border-bottom: 5px solid #283343; border-left: 12px solid transparent; border-right: 12px solid transparent; margin: 0 auto; }
+    .tv-stand { width: 80px; height: 16px; border-bottom: 5px solid #3a1a20; border-left: 12px solid transparent; border-right: 12px solid transparent; margin: 0 auto; }
     .section { margin: 22px 0; }
     .panel { border: 1px solid var(--border); background: rgba(18,24,35,.88); border-radius: var(--radius); padding: 22px; }
     .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
@@ -75,7 +75,7 @@
     .fields { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
     .field { display: flex; flex-direction: column; gap: 6px; }
     label { color: #dce5f3; font-size: .9rem; font-weight: 650; }
-    input, select { width: 100%; border: 1px solid var(--border); background: #0d121b; color: var(--text); border-radius: 10px; padding: 12px; min-height: 46px; }
+    input, select { width: 100%; border: 1px solid var(--border); background: #0b0506; color: var(--text); border-radius: 10px; padding: 12px; min-height: 46px; }
     .hint { font-size: .82rem; color: var(--muted); }
     .wizard-actions { display: flex; justify-content: space-between; gap: 10px; margin-top: 24px; }
     .notice { padding: 14px 16px; border: 1px solid rgba(255,213,138,.3); border-radius: 12px; background: rgba(255,213,138,.07); color: #ffe3b1; margin: 16px 0; font-size: .9rem; }
@@ -85,7 +85,7 @@
     .status.supported { background: #143e36; color: #a6f2df; }
     .status.limited { background: #44391f; color: #ffe1a3; }
     .status.unsupported { background: #46282e; color: #ffc0c4; }
-    .status.unknown { background: #27344a; color: #c6d8ff; }
+    .status.unknown { background: #3a1218; color: #ffb1bb; }
     .report-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
     footer { border-top: 1px solid rgba(150,170,200,.12); padding: 25px 0 38px; margin-top: 40px; color: var(--muted); font-size: .85rem; }
     @media (max-width: 760px) {
