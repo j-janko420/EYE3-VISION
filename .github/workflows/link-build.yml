@@ -1,0 +1,76 @@
+name: EYE3 Link programs
+
+# Builds ready-to-run EYE3 Link programs (no Python needed) for Windows, macOS and Linux from tools/eye3-link.py,
+# smoke-tests each one, and on main publishes them to the rolling "eye3-link-latest" release with SHA-256 checksums.
+# The programs are NOT code-signed: Windows SmartScreen / macOS Gatekeeper may warn, and some antivirus tools
+# flag PyInstaller programs. The Python script remains available and is the reference build.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, 'claude/**']
+    paths: ['tools/eye3-link.py', 'tools/smoke_binary.py', 'tools/test_eye3_link.py', '.github/workflows/link-build.yml']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: link-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            name: eye3-link-linux
+          - os: windows-latest
+            name: eye3-link-windows
+          - os: macos-latest
+            name: eye3-link-macos
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run the helper's own tests first
+        run: python tools/test_eye3_link.py
+      - name: Build the program
+        run: |
+          python -m pip install --disable-pip-version-check pyinstaller==6.11.1
+          pyinstaller --onefile --clean --name ${{ matrix.name }} tools/eye3-link.py
+      - name: Smoke test the program
+        run: python tools/smoke_binary.py "dist/${{ matrix.name }}" 8791
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.name }}
+          path: dist/${{ matrix.name }}*
+          if-no-files-found: error
+
+  publish:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+          merge-multiple: true
+      - name: Checksums and release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd out
+          chmod +x eye3-link-linux eye3-link-macos || true
+          sha256sum eye3-link-* > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+          gh release delete eye3-link-latest --yes --cleanup-tag --repo "$GITHUB_REPOSITORY" || true
+          gh release create eye3-link-latest --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease \
+            --title "EYE3 Link (ready-to-run programs)" \
+            --notes "Ready-to-run EYE3 Link for Windows, macOS (Apple silicon) and Linux. Built automatically from tools/eye3-link.py. Not code-signed: your system may warn. Check the SHA-256 in SHA256SUMS.txt. Guide: tools/README.md" \
+            eye3-link-linux eye3-link-macos eye3-link-windows.exe SHA256SUMS.txt
