@@ -1,0 +1,30 @@
+name: tmp archive check
+on:
+  push:
+    branches: ['claude/**']
+    paths: ['.github/workflows/tmp-archive-check.yml']
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Search API shape and CORS
+        run: |
+          Q='collection:(feature_films) AND mediatype:(movies) AND -subject:(adult OR erotic OR xxx) AND subject:(comedy)'
+          curl -sS -D /tmp/h.txt -G 'https://archive.org/advancedsearch.php' --data-urlencode "q=$Q" --data-urlencode rows=3 --data-urlencode page=1 --data-urlencode output=json -H 'Origin: https://j-janko420.github.io' -o /tmp/s.json --data-urlencode 'fl[]=identifier' --data-urlencode 'fl[]=title' --data-urlencode 'fl[]=year' --data-urlencode 'sort[]=downloads desc'
+          grep -i -E "^HTTP|access-control" /tmp/h.txt; head -c 700 /tmp/s.json; echo
+          ID=$(python3 -c "import json;print(json.load(open('/tmp/s.json'))['response']['docs'][0]['identifier'])")
+          echo "ID=$ID"
+          curl -sS -D /tmp/h2.txt "https://archive.org/metadata/$ID" -H 'Origin: https://j-janko420.github.io' -o /tmp/m.json
+          grep -i -E "^HTTP|access-control" /tmp/h2.txt
+          python3 - <<'PY'
+          import json
+          d=json.load(open('/tmp/m.json'))
+          for f in d.get('files',[]):
+              if f['name'].lower().endswith(('.mp4','.m4v','.webm','.ogv')):
+                  print(f['name'], f.get('format'), f.get('size'))
+          PY
+          NAME=$(python3 -c "
+          import json
+          d=json.load(open('/tmp/m.json'))
+          print([f['name'] for f in d['files'] if f['name'].lower().endswith('.mp4')][0])")
+          curl -sS -I "https://archive.org/download/$ID/$NAME" | head -8
