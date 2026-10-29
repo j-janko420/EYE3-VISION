@@ -26,7 +26,7 @@ import urllib.parse as up
 import urllib.request as ur
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.2"
+VERSION = "1.3"
 ALLOWED_ORIGINS = ["https://j-janko420.github.io"]          # more: EYE3_ORIGINS=https://a,https://b
 LOCAL_ORIGIN = re.compile(r"^http://(localhost|127\.0\.0\.1)(:\d+)?$")
 BAD = re.compile(r"adult|xxx|18\+|porn|erotic|\bsex|playboy|hustler|brazzers|dorcel|penthouse|redlight", re.I)
@@ -402,11 +402,16 @@ class Stalker:
         if not p.netloc:
             raise LinkError("Enter the portal address, for example http://portal.example.com/c/")
         self.root = "%s://%s" % (p.scheme, p.netloc)
-        path = re.sub(r"/c$", "", p.path.rstrip("/"))
+        path = p.path.rstrip("/")
         cands = []
+        if path.lower().endswith(".php"):      # the viewer pasted the portal's data address itself
+            cands.append(self.root + path)
+            path = re.sub(r"/[^/]*$", "", path)
+        path = re.sub(r"/c$", "", path)
         if path:
             cands += [self.root + path + "/server/load.php", self.root + path + "/portal.php"]
-        cands += [self.root + "/stalker_portal/server/load.php", self.root + "/server/load.php", self.root + "/portal.php"]
+        cands += [self.root + "/stalker_portal/server/load.php", self.root + "/server/load.php", self.root + "/portal.php",
+                  self.root + "/c/server/load.php", self.root + "/c/portal.php"]
         self.candidates = list(dict.fromkeys(cands))
         self.api, self.token = None, ""
         self.sn = hashlib.md5(self.mac.encode()).hexdigest()[:13].upper()
@@ -426,17 +431,18 @@ class Stalker:
         try:
             data = json.loads(body.decode("utf-8", "replace"))
         except ValueError:
-            raise LinkError("The portal answered with a web page, not data. Check the portal address.")
+            title = re.search(r"<title[^>]*>([^<]{1,60})", body.decode("utf-8", "replace"), re.I)
+            raise LinkError("a web page" + (' titled "%s"' % title.group(1).strip() if title else "") + ", not data")
         return data.get("js") if isinstance(data, dict) else None
 
     def connect(self):
-        last, refused = "", False
+        tried, refused = [], False
         for api in self.candidates:
             try:
                 self.token = ""
                 js = self.call(api, type="stb", action="handshake", token="", prehash="0")
             except LinkError as e:
-                last = str(e)
+                tried.append("%s: %s" % (up.urlparse(api).path, re.sub(r"^The server answered ", "", str(e)).rstrip(".")))
                 continue
             if isinstance(js, dict) and js.get("token"):
                 self.api, self.token = api, js["token"]
@@ -445,7 +451,7 @@ class Stalker:
         else:
             if refused:
                 raise LinkError("The portal answered but did not accept this MAC address. Check the MAC and that it is active.")
-            raise LinkError(last or "Could not find the portal's data service. Check the portal address.")
+            raise LinkError("Could not find the portal's data service on %s. Tried %s. Use the portal address your box or app uses (often ending in /c/), or paste the portal.php / load.php address itself." % (self.root, "; ".join(tried)))
         self.call(type="stb", action="get_profile", hd="1", ver="ImageDescription: 0.2.18-r14-pub-250; ImageDate: Fri Jan 15 15:20:44 EET 2016; PORTAL version: 5.6.1; API Version: JS API version: 328; STB API version: 134; Player Engine version: 0x566",
                   num_banks="2", sn=self.sn, stb_type="MAG250", client_type="STB", image_version="218", video_out="hdmi",
                   device_id=self.dev, device_id2=self.dev, auth_second_step="1", hw_version="1.7-BD-00", not_valid_token="0",

@@ -102,6 +102,21 @@ class Mock(BaseHTTPRequestHandler):
         return self.reply("nope", "text/plain", 404)
 
 
+class WebOnly(BaseHTTPRequestHandler):
+    """A 'portal' address that only has a web page (and a 404 for the Stalker data paths under /stalker_portal)."""
+    def log_message(self, *a):
+        pass
+
+    def do_GET(self):
+        body = b"<html><head><title>Welcome to the portal</title></head><body>Hello</body></html>"
+        code = 404 if self.path.startswith("/stalker_portal") else 200
+        self.send_response(code)
+        self.send_header("Content-Type", "text/html")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+
 class Doh(BaseHTTPRequestHandler):
     """Mock DNS-over-HTTPS (JSON): panel.eye3test.invalid -> 127.0.0.1, everything else has no answer."""
     asked = []
@@ -294,6 +309,20 @@ class LinkTests(unittest.TestCase):
         code, hdrs, body = get(self.port, loc.path + "?" + loc.query)
         self.assertEqual(code, 200)
         self.assertIn(b"/stream?", body)
+
+    def test_stalker_web_page_answer_lists_what_was_tried_and_a_pasted_api_address_works(self):
+        web = serve(WebOnly)
+        try:
+            code, _, body = self.api("/api/stalker", portal="http://127.0.0.1:%d/web/c/" % web.server_port, mac=MAC)
+        finally:
+            web.shutdown()
+        err = json.loads(body)["error"]
+        self.assertEqual(code, 502)
+        self.assertIn('/web/server/load.php: a web page titled "Welcome to the portal", not data', err)
+        self.assertIn("/stalker_portal/server/load.php: HTTP 404", err)
+        self.assertNotIn(MAC, err)                                   # the MAC is never echoed
+        code, _, body = self.api("/api/stalker", portal=self.up_url + "/stalker_portal/server/load.php", mac=MAC)
+        self.assertEqual(code, 200)                                  # pasting the data address itself is accepted
 
     def test_stalker_wrong_mac_and_bad_input(self):
         code, _, body = self.api("/api/stalker", portal=self.up_url, mac="00:1A:79:00:00:01")
