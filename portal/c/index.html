@@ -21,13 +21,39 @@
   .badge { display: inline-block; padding: 4px 10px 3px; border: 4px solid #efe9dc; background: #0b1a3a; color: #efe9dc; font-weight: bold; text-align: center; vertical-align: middle; }
   .badge b { display: block; font-size: 30px; line-height: 30px; }
   .badge span { display: block; font-size: 10px; letter-spacing: 2px; }
-  #splash { padding: 120px 0 80px; text-align: center; }
-  #splash .badge { padding: 10px 26px 8px; border-width: 6px; }
-  #splash .badge b { font-size: 70px; line-height: 70px; }
-  #splash .badge span { font-size: 18px; letter-spacing: 4px; }
-  #splash h1 { margin: 30px 0 10px; font-size: 42px; }
-  #splash p { margin: 0 0 8px; color: #b9c3dc; font-size: 22px; }
-  #splash .go { display: inline-block; margin-top: 26px; padding: 12px 34px; border: 3px solid #ff9a61; background: #2a1d15; color: #ffffff; font-size: 22px; font-weight: bold; }
+  #splash { width: 94%; margin: 0 auto; padding: 18px 0 24px; }
+  #splash-head { width: 100%; margin-bottom: 20px; }
+  #splash-head td { vertical-align: middle; }
+  #splash-brand { margin-left: 14px; color: #ff9a61; font-size: 28px; font-weight: bold; letter-spacing: 3px; vertical-align: middle; }
+  #splash-nav { text-align: right; }
+  #home-clock { display: inline-block; margin-left: 10px; color: #efe9dc; font-size: 24px; font-weight: bold; }
+  #splash-nav button, .dash-action { margin: 4px; padding: 10px 16px; border: 2px solid #22305a; background: #101d3d; color: #efe9dc; font-size: 16px; font-weight: bold; }
+  #splash-nav button:focus, .dash-action:focus { outline: 3px solid #ff9a61; background: #2a1d15; color: #ffffff; }
+  #feature { padding: 30px 34px; border: 2px solid #22305a; background: #0c1836; }
+  #feature .eyebrow { color: #ffb078; font-size: 15px; font-weight: bold; letter-spacing: 3px; }
+  #feature h1 { margin: 16px 0 8px; color: #ffffff; font-size: 42px; line-height: 1.1; }
+  #feature .meta { margin: 0 0 14px; color: #ffb078; font-size: 17px; }
+  #feature p { max-width: 780px; margin: 0 0 10px; color: #b9c3dc; font-size: 19px; line-height: 1.45; }
+  #feature .dash-action.primary { border-color: #ff9a61; background: #2a1d15; color: #ffffff; }
+  #feature-actions { margin-top: 14px; }
+  #dash-sections { width: 100%; margin-top: 18px; }
+  #dash-sections td { width: 50%; padding: 0 8px 12px 0; vertical-align: top; }
+  .dash-card { min-height: 92px; padding: 14px 18px; border: 2px solid #22305a; background: #0c1836; }
+  .dash-card h2 { margin: 0 0 8px; color: #ffb078; font-size: 18px; letter-spacing: 1px; }
+  .dash-card p { margin: 0 0 8px; color: #b9c3dc; font-size: 16px; line-height: 1.4; }
+  .dash-card .dash-action { margin: 4px 4px 0 0; }
+  #dash-vpn { margin-top: 4px; padding: 10px 14px; border-left: 5px solid #8a96b5; background: #101d3d; color: #c9cfe0; font-size: 15px; line-height: 1.4; }
+  #splash-hint { margin-top: 8px; color: #8a96b5; font-size: 14px; }
+  @media screen and (max-width: 700px) {
+    #splash-head td, #dash-sections td { display: block; width: auto; }
+    #splash-nav { padding-top: 12px; text-align: left; }
+    #splash-nav button { margin: 3px 1px; padding: 8px; font-size: 13px; }
+    #home-clock { font-size: 18px; }
+    #feature { padding: 20px 16px; }
+    #feature h1 { font-size: 28px; }
+    #feature p { font-size: 16px; }
+    #dash-sections td { padding: 0 0 10px; }
+  }
   table { border-collapse: collapse; }
   #top { width: 100%; margin-bottom: 16px; }
   #top td { vertical-align: middle; }
@@ -67,11 +93,55 @@
 </head>
 <body>
 <div id="splash">
-  <div class="badge"><b>i3</b><span>DESIGN</span></div>
-  <h1>Welcome to EYE3 Vision</h1>
-  <p>Designed by i3 Design</p>
-  <p>Live TV · Your playlist · Search · Cast &amp; mirror</p>
-  <div class="go">Press OK to start</div>
+  <table id="splash-head"><tr>
+    <td><span class="badge"><b>i3</b><span>DESIGN</span></span><span id="splash-brand">eye3 Vision</span></td>
+    <td id="splash-nav">
+      <button id="nav-home" type="button">HOME</button>
+      <button id="nav-apps" type="button">APPS</button>
+      <button id="nav-live" type="button">LIVE TV</button>
+      <button id="nav-settings" type="button">SETTINGS</button>
+      <span id="home-clock">--:--</span>
+    </td>
+  </tr></table>
+  <div id="feature">
+    <div class="eyebrow">LIVE IPTV · PUBLIC CHANNELS</div>
+    <h1 id="feature-title">Al Jazeera English</h1>
+    <p class="meta" id="feature-meta">News · Free public stream</p>
+    <p id="feature-copy">Choose a public channel to start playback on this TV. Availability depends on the broadcaster and your location.</p>
+    <div id="feature-actions">
+      <button id="feature-prev" class="dash-action" type="button">‹ Previous channel</button>
+      <button id="feature-next" class="dash-action" type="button">Next channel ›</button>
+      <button id="watch-now" class="dash-action primary" type="button">▶ &nbsp; Watch channel</button>
+    </div>
+  </div>
+  <table id="dash-sections">
+    <tr>
+      <td><div class="dash-card">
+        <h2>APPS &amp; INPUTS</h2>
+        <p>Open EYE3 tools, phone remote, and screen-mirroring guidance.</p>
+        <button id="apps-open" class="dash-action" type="button">View apps &amp; inputs</button>
+        <button id="phone-open" class="dash-action" type="button">Connect phone remote</button>
+      </div></td>
+      <td><div class="dash-card">
+        <h2>CONTINUE WATCHING YOUR QUEUE</h2>
+        <p id="queue-summary">No recently watched channels on this TV.</p>
+        <button id="queue-open" class="dash-action" type="button">Browse channels</button>
+      </div></td>
+    </tr>
+    <tr>
+      <td><div class="dash-card">
+        <h2>LIVE IPTV CHANNELS</h2>
+        <p id="live-summary">Free public channels and your own playlist.</p>
+        <button id="live-open" class="dash-action" type="button">Open Live TV</button>
+      </div></td>
+      <td><div class="dash-card">
+        <h2>TRENDING MOVIES &amp; SHOWS</h2>
+        <p>This portal plays live channels and playlists; it does not include an on-demand movie catalog.</p>
+      </div></td>
+    </tr>
+  </table>
+  <div id="dash-vpn">VPN is controlled by your TV, set-top box, or router. This webpage cannot turn a device VPN on or off; see Settings for guidance.</div>
+  <div id="splash-hint">D-pad: navigate · Enter: select · Back: return · H: home · M: menu</div>
 </div>
 <div id="err"></div>
 <div class="wrap" id="wrap" style="display: none">
@@ -83,7 +153,7 @@
     <td id="menucell"><div id="menu"></div></td>
     <td><div id="panel"><div id="ptitle"><span id="pcount"></span><span id="ptext"></span></div><div id="list"></div><div id="msg"></div></div></td>
   </tr></table>
-  <div id="hint"><span id="ver">EYE3 TV v2 · i3 Design</span>Arrows: move · OK: open / play · Back: return · Watching: Up/Down or CH+/CH- to change channel</div>
+  <div id="hint"><span id="ver">EYE3 TV v2 · i3 Design</span>Arrows: move · OK: open / play · Back: return · H: home · M: menu · Watching: Up/Down or CH+/CH- to change channel</div>
 </div>
 <div id="editor">
   <h2 id="ed-title"></h2>
@@ -99,6 +169,7 @@
 (function () {
   var stb = window.gSTB || window.stb || null;
   var PLAYLIST_KEY = 'eye3.tv.playlist';
+  var RECENT_KEY = 'eye3.tv.recent';
   var VISIBLE = 9;
   var ORG = 'https://iptv-org.github.io/iptv/categories/';
   var FREE = [
@@ -120,7 +191,9 @@
     { title: 'Web search', kind: 'web' },
     { title: 'Phone remote', kind: 'remote', gap: true },
     { title: 'TV check', kind: 'link', href: '../check/' },
-    { title: 'Full EYE3 app', kind: 'link', href: '../../index.html?tv=1' }
+    { title: 'Full EYE3 app', kind: 'link', href: '../../index.html?tv=1' },
+    { title: 'Apps & inputs', kind: 'apps', gap: true },
+    { title: 'Settings', kind: 'settings' }
   ];
   var CAST = [
     { name: 'iPhone or iPad to this TV: on the TV open Settings > Network > Digital media renderer and switch it On. Then use a DLNA mirroring app on the iPhone and choose this TV.', info: true },
@@ -136,6 +209,32 @@
   function trim(s) { return String(s).replace(/^\s+|\s+$/g, ''); }
   function getStore(key) { try { return window.localStorage ? localStorage.getItem(key) : null; } catch (e) { return null; } }
   function setStore(key, value) { try { if (value === null) localStorage.removeItem(key); else localStorage.setItem(key, value); } catch (e) { /* storage unavailable */ } }
+  function recentChannels() {
+    var saved = getStore(RECENT_KEY), items = [];
+    if (!saved) return items;
+    try { items = JSON.parse(saved); } catch (e) { return []; }
+    if (!items || typeof items.length !== 'number') return [];
+    var valid = [];
+    for (var i = 0; i < items.length && valid.length < 6; i++) {
+      if (items[i] && items[i].name && /^(https?|rtmp|rtsp|udp):/i.test(items[i].url || '')) valid.push(items[i]);
+    }
+    return valid;
+  }
+  function rememberChannel(channel) {
+    var previous = recentChannels(), next = [{ name: channel.name, group: channel.group || '', url: channel.url }];
+    for (var i = 0; i < previous.length && next.length < 6; i++) if (previous[i].url !== channel.url) next.push(previous[i]);
+    setStore(RECENT_KEY, JSON.stringify(next));
+    updateDashboard();
+  }
+  function updateDashboard() {
+    var recent = recentChannels(), saved = recent.length ? recent[0] : null;
+    setText($('queue-summary'), saved ? 'Last watched: ' + saved.name + (saved.group ? ' · ' + saved.group : '') : 'No recently watched channels on this TV.');
+    setText($('queue-open'), saved ? 'Resume ' + saved.name : 'Browse channels');
+  }
+  function menuIndex(kind) {
+    for (var i = 0; i < MENU.length; i++) if (MENU[i].kind === kind) return i;
+    return -1;
+  }
   function call(method) {
     var args = Array.prototype.slice.call(arguments, 1);
     try { if (stb && typeof stb[method] === 'function') return stb[method].apply(stb, args); } catch (e) { /* not supported by this box */ }
@@ -211,6 +310,23 @@
     } else if (entry.kind === 'cast') {
       state.items = CAST.slice(0);
       state.note = 'Philips Saphi has no AirPlay or browser, so these are the ways to show a phone or computer screen on it.';
+    } else if (entry.kind === 'apps') {
+      state.items = [
+        { name: 'EYE3 Vision analysis tools', action: 'link', href: '../../index.html?tv=1' },
+        { name: 'Phone remote — pair your phone with this TV', action: 'menu', target: 'remote' },
+        { name: 'Cast & mirror instructions', action: 'menu', target: 'cast' },
+        { name: 'TV capability check', action: 'link', href: '../check/' }
+      ];
+      state.note = 'Apps and inputs available from this portal. Select an item and press OK.';
+    } else if (entry.kind === 'settings') {
+      state.items = [
+        { name: 'VPN: managed by your TV, set-top box, or router', info: true },
+        { name: 'This webpage cannot activate or deactivate a VPN connection.', info: true },
+        { name: 'To use a VPN, install or enable it in your device or router settings. Channel availability may depend on the broadcaster and your location.', info: true },
+        { name: 'Enter or change your playlist link', action: 'edit' },
+        { name: 'Phone remote: open the Phone remote menu to pair your phone with this TV.', info: true }
+      ];
+      state.note = 'Portal settings and connection guidance. VPN controls must come from the device, router, or VPN provider.';
     } else if (entry.kind === 'org') {
       state.note = 'Loading free channels...';
       loadList(ORG + entry.cat + '.m3u', function (items, problem) {
@@ -313,6 +429,7 @@
     var days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     var months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
     setText($('clock'), pad(now.getHours()) + ':' + pad(now.getMinutes()));
+    setText($('home-clock'), pad(now.getHours()) + ':' + pad(now.getMinutes()));
     setText($('date'), days[now.getDay()] + ', ' + now.getDate() + ' ' + months[now.getMonth()]);
   }
 
@@ -328,6 +445,7 @@
   function play(index) {
     var channel = state.items[index];
     if (!channel || !channel.url) return;
+    rememberChannel(channel);
     state.playing = index;
     $('wrap').style.display = 'none';
     if (stb && typeof stb.Play === 'function') {
@@ -494,6 +612,34 @@
 
   function isBack(code) { return code === 8 || code === 27 || code === 461 || code === 10009 || code === 166; }
   var splashOpen = true;
+  var featuredIndex = 0;
+  var DASH_IDS = ['nav-home', 'nav-apps', 'nav-live', 'nav-settings', 'feature-prev', 'feature-next', 'watch-now', 'apps-open', 'phone-open', 'queue-open', 'live-open'];
+  var dashFocus = 0;
+  function updateFeatured() {
+    var channel = FREE[featuredIndex];
+    setText($('feature-title'), channel.name);
+    setText($('feature-meta'), channel.group + ' · Free public stream');
+  }
+  function changeFeatured(step) {
+    featuredIndex = (featuredIndex + step + FREE.length) % FREE.length;
+    updateFeatured();
+  }
+  function showDashboard() {
+    splashOpen = true;
+    $('splash').style.display = 'block';
+    $('wrap').style.display = 'none';
+    try { $(DASH_IDS[dashFocus]).focus(); } catch (e) { /* focus is optional on older TV browsers */ }
+  }
+  function openDashboardSection(kind) {
+    var index = menuIndex(kind);
+    if (index < 0) return;
+    hideSplash();
+    openSection(index);
+  }
+  function focusDashboard(step) {
+    dashFocus = (dashFocus + step + DASH_IDS.length) % DASH_IDS.length;
+    try { $(DASH_IDS[dashFocus]).focus(); } catch (e) { /* focus is optional on older TV browsers */ }
+  }
   function hideSplash() {
     if (!splashOpen) return;
     splashOpen = false;
@@ -504,7 +650,13 @@
   document.onkeydown = function (event) {
     event = event || window.event;
     var code = event.keyCode || event.which || 0;
-    if (splashOpen) { hideSplash(); return false; }
+    if (splashOpen) {
+      if (code === 37 || code === 38) { focusDashboard(-1); return false; }
+      if (code === 39 || code === 40) { focusDashboard(1); return false; }
+      if (code === 13) { try { $(DASH_IDS[dashFocus]).click(); } catch (e) { hideSplash(); } return false; }
+      if (isBack(code) || code === 77) { hideSplash(); return false; }
+      return true;
+    }
     if (editing) {
       if (code === 13) { closeEditor(true); return false; }
       if (code === 27 || code === 461 || code === 10009) { closeEditor(false); return false; }
@@ -517,6 +669,8 @@
       if (code === 13) { osd(state.items[state.playing].name); return false; }
       return false;
     }
+    if (code === 72) { showDashboard(); return false; }
+    if (code === 77) { state.zone = 'menu'; render(); return false; }
     if (isBack(code)) { if (state.zone === 'list') { state.zone = 'menu'; render(); } return false; }
     if (state.zone === 'menu') {
       if (code === 38) { state.menu = (state.menu + MENU.length - 1) % MENU.length; render(); return false; }
@@ -532,18 +686,49 @@
       if (!item) return false;
       if (item.action === 'edit') openEditor('playlist');
       else if (item.action === 'remove') { setStore(PLAYLIST_KEY, null); osd('Playlist removed from this TV'); openSection(5); }
+      else if (item.action === 'menu') openSection(menuIndex(item.target));
+      else if (item.action === 'link') window.location.href = item.href;
       else if (item.url) play(state.row);
       return false;
     }
     return true;
   };
-  $('splash').onclick = hideSplash;
+  $('nav-home').onclick = showDashboard;
+  $('nav-apps').onclick = function () { openDashboardSection('apps'); };
+  $('nav-live').onclick = function () { openDashboardSection('free'); };
+  $('nav-settings').onclick = function () { openDashboardSection('settings'); };
+  $('feature-prev').onclick = function () { changeFeatured(-1); };
+  $('feature-next').onclick = function () { changeFeatured(1); };
+  $('watch-now').onclick = function () {
+    var index = menuIndex('free');
+    hideSplash();
+    openSection(index);
+    play(featuredIndex);
+  };
+  $('apps-open').onclick = function () { openDashboardSection('apps'); };
+  $('phone-open').onclick = function () { openDashboardSection('remote'); };
+  $('queue-open').onclick = function () {
+    var recent = recentChannels();
+    if (!recent.length) { openDashboardSection('free'); return; }
+    hideSplash();
+    state.open = -1;
+    state.title = 'Continue watching';
+    state.items = recent;
+    state.row = 0;
+    state.top = 0;
+    state.zone = 'list';
+    play(0);
+  };
+  $('live-open').onclick = function () { openDashboardSection('free'); };
 
   var fromAddress = linkFromAddress();
   if (fromAddress) setStore(PLAYLIST_KEY, fromAddress);
+  setText($('live-summary'), FREE.length + ' free public channels to start; add your own playlist in My playlist.');
+  updateFeatured();
+  updateDashboard();
   tick();
   setInterval(tick, 30000);
-  setTimeout(hideSplash, 4000);
+  setTimeout(function () { try { $('nav-home').focus(); } catch (e) { /* focus is optional on older TV browsers */ } }, 0);
 })();
 </script>
 </body>
