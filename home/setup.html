@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#08122b">
+<meta name="description" content="Turn a spare device into an always-on EYE3 box for your TV: old Android phone, Raspberry Pi, or an old laptop/mini-PC over HDMI.">
+<title>EYE3 Home — set up an always-on box</title>
+<style>
+  :root { color-scheme: dark; --bg:#08122b; --ink:#eef3fb; --muted:#9fb0cc; --line:rgba(239,233,220,.14); --panel:rgba(12,24,54,.72); --orange:#ff9a61; --cream:#efe9dc; font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; }
+  * { box-sizing: border-box; }
+  body { margin:0; background: radial-gradient(circle at 24% 12%, rgba(29,58,122,.7) 0, transparent 46%), var(--bg); color: var(--ink); line-height:1.6; }
+  .wrap { width: min(980px, calc(100% - 36px)); margin: 0 auto; padding: 28px 0 60px; }
+  .top { display:flex; align-items:center; gap:14px; }
+  .badge { display:grid; place-items:center; width:54px; height:54px; border:4px solid var(--cream); border-radius:12px; background:#0b1a3a; color:var(--cream); font-weight:800; line-height:.95; text-align:center; }
+  .badge b{ font-size:22px } .badge span{ font-size:8px; letter-spacing:2px; color:var(--orange) }
+  h1 { margin: 0; font-size: clamp(22px,3vw,34px); letter-spacing:-.02em; }
+  .lead { color: var(--muted); max-width: 70ch; }
+  a.back { color: var(--orange); text-decoration:none; font-weight:650; }
+  .card { border:1px solid var(--line); border-radius:16px; background:var(--panel); padding:20px 22px; margin:16px 0; }
+  .card h2 { margin:0 0 4px; font-size: clamp(17px,2vw,24px); }
+  .tag { display:inline-block; margin-left:10px; padding:2px 10px; border-radius:99px; font-size:.7em; vertical-align:middle; }
+  .best { background:#143e36; color:#a6f2df; } .ok { background:#27344a; color:#c6d8ff; }
+  ol { margin: 10px 0 0; padding-left: 22px; } li { margin: 6px 0; }
+  code, pre { background:#0d121b; border:1px solid var(--line); border-radius:8px; }
+  code { padding: 2px 7px; font-size:.92em; }
+  pre { padding: 12px 14px; overflow:auto; font-size:.86rem; line-height:1.5; }
+  .muted { color: var(--muted); }
+  .url { color: var(--orange); overflow-wrap:anywhere; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p><a class="back" href="./">← Back to EYE3 Home</a></p>
+  <div class="top"><div class="badge"><b>i3</b><span>DESIGN</span></div><h1>Make an always-on EYE3 box</h1></div>
+  <p class="lead">A screen can't run software by itself — a small device plugged into the TV's HDMI does. Set one up once with EYE3 Home as an app, leave it behind the TV, and the TV turns on straight into EYE3, online, with no laptop needed each time. Pick what you have.</p>
+  <p class="muted">EYE3 Home: <span class="url">https://j-janko420.github.io/EYE3-VISION/home/</span></p>
+
+  <div class="card">
+    <h2>Spare Android phone <span class="tag best">cheapest</span></h2>
+    <p class="muted">A phone you no longer use, plus a USB-C-to-HDMI adapter (about $8). This becomes your EYE3 stick.</p>
+    <ol>
+      <li>Open <b>Chrome</b> on the phone and go to the EYE3 Home link above.</li>
+      <li>Menu (⋮) → <b>Add to Home screen</b> / <b>Install app</b>. EYE3 Home installs as a fullscreen app with the i3 icon.</li>
+      <li>Open the EYE3 app once and press the <b>Settings</b> tile → it's already fullscreen.</li>
+      <li>In the phone's settings: <b>Display → Screen timeout → Never</b> (or "stay awake while charging" in Developer options), and keep it on the charger.</li>
+      <li>Plug the phone into the TV with the <b>USB-C-to-HDMI adapter</b>, pick that HDMI input on the TV, and tuck the phone behind the TV.</li>
+      <li>For a true "kiosk" that relaunches on boot, install <b>Fully Kiosk Browser</b> (free), set Start URL to the EYE3 Home link, and enable "Launch on boot" + "Keep screen on".</li>
+    </ol>
+  </div>
+
+  <div class="card">
+    <h2>Raspberry Pi <span class="tag ok">tidy & permanent</span></h2>
+    <p class="muted">A Raspberry Pi (3, 4, 5, or Zero 2 W) with Raspberry Pi OS. It boots straight into EYE3 Home in Chromium kiosk mode.</p>
+    <ol>
+      <li>Install Chromium: <code>sudo apt update &amp;&amp; sudo apt install -y chromium-browser unclutter</code></li>
+      <li>Create <code>~/.config/autostart/eye3.desktop</code> with:</li>
+    </ol>
+    <pre>[Desktop Entry]
+Type=Application
+Name=EYE3 Home
+Exec=chromium-browser --kiosk --noerrdialogs --disable-infobars \
+  --autoplay-policy=no-user-gesture-required \
+  https://j-janko420.github.io/EYE3-VISION/home/?app=1
+X-GNOME-Autostart-enabled=true</pre>
+    <p class="muted">Then disable screen blanking (<code>Preferences → Raspberry Pi Configuration → Display</code>, Screen Blanking Off) and reboot. The Pi now powers on into EYE3 Home.</p>
+  </div>
+
+  <div class="card">
+    <h2>Old laptop or mini-PC <span class="tag ok">reuse what you have</span></h2>
+    <p class="muted">Any old laptop or a cheap mini-PC left behind the TV, connected by HDMI. Set it to open EYE3 Home fullscreen on start.</p>
+    <ol>
+      <li><b>Windows:</b> make a shortcut with target<br><code>chrome.exe --kiosk --app=https://j-janko420.github.io/EYE3-VISION/home/?app=1</code><br>and put it in the Startup folder (<code>Win+R</code> → <code>shell:startup</code>).</li>
+      <li><b>Mac:</b> open the EYE3 Home link in Chrome, ⋮ → <b>Cast, save and share → Install page as app</b>, then add that app to <b>System Settings → General → Login Items</b>.</li>
+      <li><b>Linux:</b> use the same Chromium kiosk command as the Raspberry Pi above in your autostart.</li>
+      <li>Set the laptop to <b>never sleep</b> while plugged in, and to <b>turn on the screen / resume</b> on power. Close the lid only if "do nothing on lid close" is set.</li>
+    </ol>
+  </div>
+
+  <div class="card">
+    <h2>A bought Android TV stick <span class="tag ok">simplest, small cost</span></h2>
+    <p class="muted">A Google TV Streamer, Chromecast with Google TV, or a Fire TV stick (about $30–60). It's Android, so it also runs SmartTube, IPTV apps and more.</p>
+    <ol>
+      <li>Plug it into HDMI and finish its setup.</li>
+      <li>Install a browser (e.g. TV Bro or Chrome) and open the EYE3 Home link, or install the EYE3 Home app from the browser.</li>
+      <li>Optionally set it as the launcher with the CleanYourTV approach for a fully EYE3-branded home screen.</li>
+    </ol>
+  </div>
+
+  <p class="muted">Whichever you choose: the device stays plugged into HDMI and online; the Philips TV is untouched and just displays it. Unplug any time to go back to normal TV.</p>
+  <p><a class="back" href="./">← Back to EYE3 Home</a></p>
+</div>
+</body>
+</html>
