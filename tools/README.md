@@ -41,6 +41,9 @@ Open these on the laptop to jump straight to the right form (nothing is filled i
 
 Adult groups in your own accounts show only after you unlock the hidden section (see below).
 
+## MAG / Stalker portal says "a web page, not data"
+EYE3 Link tries the usual data addresses under your portal (`/server/load.php`, `/stalker_portal/server/load.php`, `/portal.php`, `/c/...`) and the error lists every address it tried and what came back. A "web page" answer usually means the address is the portal's front page or belongs to a different kind of service. Use the address your box or app uses (often ending in `/c/`), or paste the portal's `portal.php` / `load.php` address itself. The name you give the account is only a label (any name, in any language). The MAC must be the one that is active on the portal, and some portals only accept a MAC registered by your provider. If your app is "SmartPro"-style and logs in with a username and password instead of a MAC, add it as an Xtream Codes or M3U account.
+
 ## "Could not reach the server (getaddrinfo failed)"
 Your computer cannot find the provider's address, although the same address may work in another app or on another device (different DNS or network). Start EYE3 Link with its own lookup as a fallback:
 
