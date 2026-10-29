@@ -1,0 +1,11 @@
+#EXTM3U
+#EXTINF:-1 tvg-id="AlJazeeraEnglish" tvg-name="Al Jazeera English" group-title="EYE3 · News",Al Jazeera English
+https://live-hls-web-aje.getaj.net/AJE/index.m3u8
+#EXTINF:-1 tvg-id="DWEnglish" tvg-name="DW English" group-title="EYE3 · News",DW English
+https://dwamdstream102.akamaized.net/hls/live/2015525/dwstream102/index.m3u8
+#EXTINF:-1 tvg-id="France24English" tvg-name="France 24 English" group-title="EYE3 · News",France 24 English
+https://static.france24.com/live/F24_EN_LO_HLS/live_web.m3u8
+#EXTINF:-1 tvg-id="NASATV" tvg-name="NASA TV" group-title="EYE3 · Science",NASA TV
+https://ntv1.akamaized.net/hls/live/2014075/NASA-NTV1-HLS/master.m3u8
+#EXTINF:-1 tvg-id="RedBullTV" tvg-name="Red Bull TV" group-title="EYE3 · Sports",Red Bull TV
+https://rbmn-live.akamaized.net/hls/live/590964/BoRB-AT/master.m3u8
