@@ -59,7 +59,7 @@
   .greet { margin: clamp(18px, 3vh, 44px) 0 clamp(14px, 2vh, 26px); font-size: clamp(20px, 2.6vw, 40px); font-weight: 650; letter-spacing: -.02em; }
   .greet span { color: var(--orange-soft); }
 
-  .dock { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: clamp(12px, 1.4vw, 22px); }
+  .dock { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: clamp(12px, 1.4vw, 22px); }
   .tile {
     position: relative; display: flex; flex-direction: column; justify-content: space-between;
     min-height: clamp(130px, 22vh, 240px); padding: clamp(16px, 1.6vw, 26px);
@@ -80,7 +80,7 @@
   .dot.off { background: #e5584f; box-shadow: 0 0 10px #e5584faa; }
 
   /* Overlay (Live TV, Web, Cast, Settings) */
-  .ov { position: fixed; inset: 0; z-index: 10; display: none; flex-direction: column; padding: clamp(18px, 3vw, 46px); background: rgba(5, 9, 20, .96); }
+  .ov { position: fixed; inset: 0; z-index: 10; display: none; flex-direction: column; padding: clamp(18px, 3vw, 46px); background: #050914; }
   .ov.open { display: flex; }
   .ov-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: clamp(14px, 2vh, 24px); }
   .ov-top h2 { margin: 0; font-size: clamp(20px, 2.4vw, 34px); font-weight: 700; }
@@ -108,6 +108,17 @@
   .rows .kv { display: flex; gap: 10px; flex-wrap: wrap; }
   .toolbar { display: flex; flex-wrap: wrap; gap: 10px; }
 
+  .screen img { max-width: 100%; max-height: 100%; object-fit: contain; }
+  .screen .now { padding: 20px; text-align: center; font-size: clamp(18px, 2.2vw, 36px); font-weight: 650; line-height: 1.4; }
+  .screen .now small { display: block; margin-top: 8px; color: var(--muted); font-size: .55em; font-weight: 500; }
+  select.btn { appearance: none; padding-right: 18px; }
+  select.btn option { background: #0b1a3a; color: var(--ink); }
+  .saver { position: fixed; inset: 0; z-index: 50; display: none; background: #000; }
+  .saver.on { display: block; }
+  .saver .face { position: absolute; left: 8%; top: 18%; transition: left 12s linear, top 12s linear; }
+  .saver .t { font-size: clamp(64px, 15vw, 240px); font-weight: 700; line-height: 1; letter-spacing: -.02em; color: var(--cream); opacity: .85; }
+  .saver .d { margin-top: 8px; color: var(--muted); font-size: clamp(16px, 2vw, 34px); }
+
   @media (max-width: 900px) {
     .dock { grid-template-columns: repeat(2, 1fr); }
     .tv { grid-template-columns: 1fr; }
@@ -131,7 +142,7 @@
   <div class="dock" id="dock"></div>
 
   <div class="foot">
-    <div class="hintkeys"><b>Arrows</b> move · <b>Enter</b> open · <b>Back/Esc</b> return · <b>F</b> fullscreen</div>
+    <div class="hintkeys"><b>Arrows</b> move · <b>Enter</b> open · <b>Back/Esc</b> return · <b>F</b> fullscreen · <b>S</b> screensaver</div>
     <div class="net"><span class="dot" id="netdot"></span><span id="netlabel">Online</span></div>
   </div>
 </main>
@@ -141,6 +152,14 @@
   <div class="ov-top">
     <h2>Live TV<small>EYE3 channels &amp; your playlist</small></h2>
     <div class="toolbar">
+      <select class="btn" id="tv-preset" aria-label="Add a free channel list">
+        <option value="">Add a free list…</option>
+        <option value="https://iptv-org.github.io/iptv/categories/news.m3u">iptv-org · News</option>
+        <option value="https://iptv-org.github.io/iptv/categories/documentary.m3u">iptv-org · Documentary</option>
+        <option value="https://iptv-org.github.io/iptv/categories/kids.m3u">iptv-org · Kids</option>
+        <option value="https://iptv-org.github.io/iptv/categories/music.m3u">iptv-org · Music</option>
+        <option value="https://m3upt.com/iptv">M3UPT · Portuguese (some need a Portuguese IP)</option>
+      </select>
       <button class="btn" id="tv-add" type="button">Add my playlist</button>
       <button class="btn" id="tv-close" type="button">Close</button>
     </div>
@@ -154,6 +173,48 @@
     </div>
   </div>
 </section>
+
+<!-- Radio -->
+<section class="ov" id="ov-radio" aria-label="Radio">
+  <div class="ov-top">
+    <h2>Radio<small>Free internet stations</small></h2>
+    <div class="toolbar" id="r-genres"></div>
+    <button class="btn" id="r-close" type="button">Close</button>
+  </div>
+  <div class="tv">
+    <div class="chlist" id="rlist"></div>
+    <div class="screen">
+      <div class="now" id="r-now">Pick a station and press OK.</div>
+      <audio id="audio"></audio>
+    </div>
+  </div>
+</section>
+
+<!-- My media (USB drive / local files) -->
+<section class="ov" id="ov-media" aria-label="My media">
+  <div class="ov-top">
+    <h2>My media<small>Play from a USB drive or this computer</small></h2>
+    <div class="toolbar">
+      <button class="btn" id="m-files" type="button">Choose files</button>
+      <button class="btn" id="m-folder" type="button">Choose folder</button>
+      <button class="btn" id="m-close" type="button">Close</button>
+    </div>
+  </div>
+  <input id="m-files-in" type="file" multiple accept="video/*,audio/*,image/*,.mkv,.ts,.flac" hidden>
+  <input id="m-folder-in" type="file" webkitdirectory multiple hidden>
+  <div class="tv">
+    <div class="chlist" id="mlist"></div>
+    <div class="screen">
+      <video id="mvideo" playsinline controls style="display:none"></video>
+      <img id="mimg" alt="" style="display:none">
+      <div class="idle" id="m-idle">Plug in a USB drive, press Choose folder, then pick it. Files stay on this computer.</div>
+      <div class="label" id="m-label" style="display:none"></div>
+    </div>
+  </div>
+</section>
+
+<!-- Screensaver -->
+<div class="saver" id="saver" aria-hidden="true"><div class="face" id="saver-face"><div class="t" id="saver-t">--:--</div><div class="d" id="saver-d"></div></div></div>
 
 <!-- Web / YouTube -->
 <section class="ov" id="ov-web" aria-label="Web">
@@ -185,14 +246,25 @@
   var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   var FREE = [
-    { name: "Al Jazeera English", group: "News", url: "https://live-hls-web-aje.getaj.net/AJE/index.m3u8" },
     { name: "DW English", group: "News", url: "https://dwamdstream102.akamaized.net/hls/live/2015525/dwstream102/index.m3u8" },
     { name: "France 24 English", group: "News", url: "https://static.france24.com/live/F24_EN_LO_HLS/live_web.m3u8" },
     { name: "NASA TV", group: "Science", url: "https://ntv1.akamaized.net/hls/live/2014075/NASA-NTV1-HLS/master.m3u8" },
-    { name: "Red Bull TV", group: "Sports", url: "https://rbmn-live.akamaized.net/hls/live/590964/BoRB-AT/master.m3u8" }
+    { name: "Red Bull TV", group: "Sports", url: "https://rbmn-live.akamaized.net/hls/live/590964/BoRB-AT/master.m3u8" },
+    { name: "Arirang TV (English)", group: "News", url: "http://amdlive-ch01.ctnd.com.edgesuite.net/arirang_1ch/smil:arirang_1ch.smil/playlist.m3u8" },
+    { name: "Al Arabiya (Arabic)", group: "News", url: "https://live.alarabiya.net/alarabiapublish/alarabiya.smil/playlist.m3u8" }
   ];
+  var GENRES = [
+    { name: "News", tag: "news" }, { name: "Pop", tag: "pop" }, { name: "Jazz", tag: "jazz" },
+    { name: "Classical", tag: "classical" }, { name: "Talk", tag: "talk" }
+  ];
+  var RADIO_HOSTS = ["https://de1.api.radio-browser.info", "https://nl1.api.radio-browser.info", "https://at1.api.radio-browser.info"];
+  var SAVER_KEY = "eye3.home.saver";
+  var SAVER_STEPS = [0, 2, 5, 10, 30];
+  var MEDIA_EXT = /\.(mp4|m4v|webm|mkv|mov|ogv|ts|mp3|m4a|aac|flac|wav|ogg|opus|jpe?g|png|webp|gif|avif)$/i;
   var TILES = [
     { key: "tv", ico: "📺", name: "Live TV", sub: "News, sport, your playlist" },
+    { key: "radio", ico: "📻", name: "Radio", sub: "Free stations, all genres" },
+    { key: "media", ico: "💾", name: "My media", sub: "USB drive, photos, video" },
     { key: "vision", ico: "👁", name: "EYE3 Vision", sub: "AI image & camera tools" },
     { key: "youtube", ico: "▶", name: "YouTube", sub: "Big-screen player" },
     { key: "web", ico: "🌐", name: "Web", sub: "Search & browse" },
@@ -247,6 +319,7 @@
     dock.appendChild(tile);
   });
   var tiles = [].slice.call(dock.children);
+  function dockCols() { var n = getComputedStyle(dock).gridTemplateColumns.split(" ").length; return n > 0 ? n : 4; }
   function paintFocus() {
     tiles.forEach(function (el, i) { el.classList.toggle("on", i === focusIndex && !overlayOpen()); });
     if (!overlayOpen()) tiles[focusIndex].focus({ preventScroll: true });
@@ -274,6 +347,8 @@
   function openTile(key) {
     if (key === "vision") { location.href = ORIGIN + "index.html?tv=1"; return; }
     if (key === "tv") { openTV(); return; }
+    if (key === "radio") { openRadio(); return; }
+    if (key === "media") { openMedia(); return; }
     if (key === "youtube") { openWeb("YouTube", "https://www.youtube.com/tv", ""); return; }
     if (key === "web") { openWeb("Web", "", ""); return; }
     if (key === "cast") { openCast(); return; }
@@ -301,25 +376,30 @@
     }
     paintChannels();
   }
-  function fetchPlaylist(url) {
+  function fetchPlaylist(url, label) {
     var xhr = new XMLHttpRequest();
-    try { xhr.open("GET", url, true); } catch (e) { return; }
+    var fail = function (why) { channels = channels.filter(function (c) { return !c.status; }); channels.push({ name: (label || "Playlist") + ": " + why, group: "", status: true }); loadChannelsFromArray(); };
+    try { xhr.open("GET", url, true); } catch (e) { fail("bad link"); return; }
     xhr.onreadystatechange = function () {
-      if (xhr.readyState === 4 && xhr.status >= 200 && xhr.status < 300) {
-        var extra = parseM3U(xhr.responseText);
-        if (extra.length) { channels = channels.concat(extra); loadChannelsFromArray(); }
+      if (xhr.readyState !== 4) return;
+      if (xhr.status >= 200 && xhr.status < 300) {
+        var extra = parseM3U(xhr.responseText).slice(0, 500);
+        if (extra.length) { channels = channels.filter(function (c) { return !c.status; }).concat(extra); loadChannelsFromArray(); }
+        else fail("no playable channels in it");
+      } else {
+        fail("could not be loaded (the site may block browsers; try it in SS IPTV or Kodi)");
       }
     };
-    try { xhr.send(); } catch (e) {}
+    try { xhr.send(); } catch (e) { fail("could not be loaded"); }
   }
   function loadChannelsFromArray() {
     var list = $("chlist");
     while (list.firstChild) list.removeChild(list.firstChild);
     channels.forEach(function (c, i) {
-      var row = make("div", "ch");
+      var row = make("div", c.status ? "ch action" : "ch");
       row.appendChild(make("span", "", c.name));
       if (c.group) row.appendChild(make("small", "", c.group));
-      row.addEventListener("click", function () { chIndex = i; paintChannels(); playChannel(i); });
+      if (!c.status) row.addEventListener("click", function () { chIndex = i; paintChannels(); playChannel(i); });
       list.appendChild(row);
     });
     paintChannels();
@@ -372,10 +452,16 @@
     try { video.pause(); } catch (e) {}
     video.removeAttribute("src"); try { video.load(); } catch (e) {}
     $("idle").style.display = ""; $("chlabel").style.display = "none";
+    stopRadio(); stopMedia();
   }
   var tvFocus = "list";
   function openTV() { loadChannels(); tvFocus = "list"; chIndex = 0; openOverlay("ov-tv"); paintChannels(); }
   $("tv-close").addEventListener("click", closeOverlays);
+  $("tv-preset").addEventListener("change", function () {
+    var sel = $("tv-preset"), url = sel.value, label = sel.options[sel.selectedIndex].text;
+    sel.selectedIndex = 0;
+    if (url) fetchPlaylist(url, label);
+  });
   $("tv-add").addEventListener("click", function () {
     var cur = get(PLAYLIST_KEY) || "";
     var v = window.prompt("Paste your M3U or Xtream playlist link (saved on this computer only):", cur);
@@ -383,6 +469,195 @@
     v = v.replace(/^\s+|\s+$/g, "");
     if (!v) { set(PLAYLIST_KEY, null); } else if (/^https?:\/\//i.test(v)) { set(PLAYLIST_KEY, v); } else { window.alert("Link must start with http:// or https://"); return; }
     openTV();
+  });
+
+  // ---- Radio (radio-browser.info: free, open directory of internet stations) ----
+  var stations = [], rIndex = 0, rGenre = 0, rToken = 0;
+  function paintGenres() {
+    var box = $("r-genres");
+    while (box.firstChild) box.removeChild(box.firstChild);
+    GENRES.forEach(function (g, i) {
+      var b = make("button", "btn" + (i === rGenre ? " on" : ""), g.name);
+      b.type = "button";
+      b.addEventListener("click", function () { rGenre = i; loadStations(); });
+      box.appendChild(b);
+    });
+  }
+  function paintStations() {
+    var list = $("rlist");
+    while (list.firstChild) list.removeChild(list.firstChild);
+    stations.forEach(function (st, i) {
+      var row = make("div", "ch" + (i === rIndex ? " on" : st.status ? " action" : ""));
+      row.appendChild(make("span", "", st.name));
+      if (st.country) row.appendChild(make("small", "", st.country));
+      if (!st.status) row.addEventListener("click", function () { rIndex = i; paintStations(); playStation(i); });
+      list.appendChild(row);
+    });
+  }
+  function radioNote(text) { stations = [{ name: text, status: true }]; paintStations(); }
+  function loadStations() {
+    var token = ++rToken, g = GENRES[rGenre];
+    paintGenres(); rIndex = 0; radioNote("Loading " + g.name + " stations…");
+    var path = "/json/stations/search?tag=" + encodeURIComponent(g.tag) + "&limit=60&order=clickcount&reverse=true&hidebroken=true";
+    var tryHost = function (n) {
+      if (n >= RADIO_HOSTS.length) { if (token === rToken) radioNote("Could not reach the radio directory. Check the internet and try again."); return; }
+      var xhr = new XMLHttpRequest();
+      try { xhr.open("GET", RADIO_HOSTS[n] + path, true); } catch (e) { tryHost(n + 1); return; }
+      xhr.timeout = 12000;
+      xhr.onload = function () {
+        if (token !== rToken) return;
+        var data = [];
+        try { data = JSON.parse(xhr.responseText); } catch (e) {}
+        var seen = {}, out = [];
+        (data || []).forEach(function (r) {
+          var u = r.url_resolved || r.url || "";
+          if (/^https:\/\//i.test(u) && !/\.m3u8?($|\?)/i.test(u) && !seen[r.name]) { seen[r.name] = 1; out.push({ name: String(r.name || "Station").replace(/^\s+|\s+$/g, ""), country: r.countrycode || "", url: u }); }
+        });
+        if (out.length) { stations = out.slice(0, 40); paintStations(); } else if (xhr.status >= 200 && xhr.status < 300) radioNote("No stations found for this genre."); else tryHost(n + 1);
+      };
+      xhr.onerror = xhr.ontimeout = function () { tryHost(n + 1); };
+      try { xhr.send(); } catch (e) { tryHost(n + 1); }
+    };
+    tryHost(0);
+  }
+  function playStation(i) {
+    var st = stations[i]; if (!st || !st.url) return;
+    var a = $("audio");
+    $("r-now").textContent = st.name;
+    var sub = make("small", "", "Connecting…"); $("r-now").appendChild(sub);
+    a.onplaying = function () { sub.textContent = "Playing" + (st.country ? " · " + st.country : ""); };
+    a.onerror = function () { sub.textContent = "This station can't be played right now. Try another."; };
+    a.src = st.url;
+    var p = a.play(); if (p && p["catch"]) p["catch"](function (err) { sub.textContent = err && err.name === "NotAllowedError" ? "Press OK again to start playing." : "This station can't be played right now. Try another."; });
+  }
+  function stopRadio() {
+    var a = $("audio"); try { a.pause(); } catch (e) {}
+    a.removeAttribute("src"); try { a.load(); } catch (e) {}
+    $("r-now").textContent = "Pick a station and press OK.";
+  }
+  function openRadio() { rIndex = 0; openOverlay("ov-radio"); paintGenres(); loadStations(); }
+  $("r-close").addEventListener("click", closeOverlays);
+
+  // ---- My media: files from a USB drive or this computer. Nothing is uploaded; the browser plays them in place. ----
+  var media = [], mIndex = 0, mTimer = null;
+  function mediaKind(f) {
+    var t = f.type || "";
+    if (/^image\//.test(t) || /\.(jpe?g|png|webp|gif|avif)$/i.test(f.name)) return "image";
+    if (/^(video|audio)\//.test(t) || /\.(mp4|m4v|webm|mkv|mov|ogv|ts|mp3|m4a|aac|flac|wav|ogg|opus)$/i.test(f.name)) return "av";
+    return "";
+  }
+  function setMedia(fileList) {
+    media.forEach(function (m) { try { URL.revokeObjectURL(m.url); } catch (e) {} });
+    var arr = [].slice.call(fileList || []).filter(function (f) { return MEDIA_EXT.test(f.name) && mediaKind(f); });
+    arr.sort(function (a, b) { return (a.webkitRelativePath || a.name).localeCompare(b.webkitRelativePath || b.name, undefined, { numeric: true }); });
+    media = arr.map(function (f) { return { name: f.webkitRelativePath || f.name, kind: mediaKind(f), url: URL.createObjectURL(f) }; });
+    mIndex = 0; paintMedia();
+    $("m-idle").textContent = media.length ? "Pick a file on the left and press OK." : "No playable video, music or photos found there.";
+  }
+  function paintMedia() {
+    var list = $("mlist");
+    while (list.firstChild) list.removeChild(list.firstChild);
+    media.forEach(function (m, i) {
+      var row = make("div", "ch" + (i === mIndex ? " on" : ""));
+      row.appendChild(make("span", "", m.name.replace(/^.*\//, "")));
+      row.appendChild(make("small", "", m.kind === "image" ? "photo" : "play"));
+      row.addEventListener("click", function () { mIndex = i; paintMedia(); playMedia(i); });
+      list.appendChild(row);
+    });
+  }
+  function mLabel(text, isErr) { var l = $("m-label"); l.textContent = text; l.className = "label" + (isErr ? " err" : ""); l.style.display = "block"; }
+  function playMedia(i) {
+    var m = media[i]; if (!m) return;
+    clearTimeout(mTimer);
+    var v = $("mvideo"), img = $("mimg");
+    $("m-idle").style.display = "none";
+    mLabel(m.name.replace(/^.*\//, ""), false);
+    try { v.pause(); } catch (e) {}
+    if (m.kind === "image") {
+      v.style.display = "none"; img.style.display = ""; img.src = m.url;
+      if (i < media.length - 1) mTimer = setTimeout(function () { stepMedia(1); }, 8000);
+      return;
+    }
+    img.style.display = "none"; v.style.display = ""; v.src = m.url;
+    v.onerror = function () { mLabel(m.name.replace(/^.*\//, "") + " — this format isn't supported by the browser", true); };
+    v.onended = function () { stepMedia(1); };
+    var p = v.play(); if (p && p["catch"]) p["catch"](function () {});
+  }
+  function stepMedia(d) {
+    var n = mIndex + d;
+    if (n < 0 || n >= media.length) return;
+    mIndex = n; paintMedia(); playMedia(n); scrollList("mlist", mIndex);
+  }
+  function stopMedia() {
+    clearTimeout(mTimer);
+    var v = $("mvideo"); try { v.pause(); } catch (e) {}
+    v.removeAttribute("src"); v.style.display = "none"; try { v.load(); } catch (e) {}
+    $("mimg").style.display = "none"; $("mimg").removeAttribute("src");
+    $("m-label").style.display = "none"; $("m-idle").style.display = "";
+  }
+  function openMedia() { openOverlay("ov-media"); paintMedia(); setTimeout(function () { try { $("m-folder").focus(); } catch (e) {} }, 60); }
+  $("m-close").addEventListener("click", closeOverlays);
+  $("m-files").addEventListener("click", function () { $("m-files-in").click(); });
+  $("m-folder").addEventListener("click", function () { $("m-folder-in").click(); });
+  $("m-files-in").addEventListener("change", function () { setMedia(this.files); });
+  $("m-folder-in").addEventListener("change", function () { setMedia(this.files); });
+
+  // ---- Screensaver: a slow-drifting clock (protects the TV from burn-in); never starts while something is playing ----
+  var saverTimer = null, saverOn = false, driftTimer = null;
+  function saverMinutes() { var v = parseInt(get(SAVER_KEY), 10); return SAVER_STEPS.indexOf(v) > -1 ? v : 5; }
+  function anythingPlaying() {
+    return ["video", "audio", "mvideo"].some(function (id) { var el = $(id); return el && !el.paused && !el.ended && el.readyState > 2; }) || !!(media.length && $("mimg").style.display === "");
+  }
+  function drift() {
+    var f = $("saver-face"); if (!f) return;
+    f.style.left = (4 + Math.random() * 40) + "%"; f.style.top = (6 + Math.random() * 50) + "%";
+  }
+  function showSaver() {
+    if (saverOn || anythingPlaying()) { armSaver(); return; }
+    saverOn = true;
+    var now = new Date(), pad = function (n) { return (n < 10 ? "0" : "") + n; };
+    $("saver-t").textContent = pad(now.getHours()) + ":" + pad(now.getMinutes());
+    $("saver-d").textContent = now.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" });
+    $("saver").classList.add("on"); $("saver").setAttribute("aria-hidden", "false");
+    drift(); driftTimer = setInterval(function () {
+      var n = new Date(); $("saver-t").textContent = pad(n.getHours()) + ":" + pad(n.getMinutes()); drift();
+    }, reduceMotion ? 60000 : 12000);
+  }
+  function hideSaver() {
+    if (!saverOn) return false;
+    saverOn = false; clearInterval(driftTimer);
+    $("saver").classList.remove("on"); $("saver").setAttribute("aria-hidden", "true");
+    return true;
+  }
+  function armSaver() {
+    clearTimeout(saverTimer);
+    var m = saverMinutes(); if (!m) return;
+    saverTimer = setTimeout(showSaver, m * 60000);
+  }
+  ["mousemove", "pointerdown", "touchstart", "wheel"].forEach(function (ev) {
+    window.addEventListener(ev, function () { if (!hideSaver()) armSaver(); }, { passive: true });
+  });
+  // The key that wakes the screensaver is swallowed, so it doesn't also trigger whatever was focused.
+  document.addEventListener("keydown", function (e) {
+    if (hideSaver()) { e.preventDefault(); e.stopImmediatePropagation(); armSaver(); return; }
+    armSaver();
+  }, true);
+  armSaver();
+
+  // ---- keep the computer awake while something plays (so the TV picture doesn't drop out) ----
+  var wakeLock = null;
+  function keepAwake(on) {
+    try {
+      if (on && navigator.wakeLock && !wakeLock) {
+        navigator.wakeLock.request("screen").then(function (l) { wakeLock = l; l.addEventListener("release", function () { wakeLock = null; }); })["catch"](function () {});
+      } else if (!on && wakeLock) { wakeLock.release(); wakeLock = null; }
+    } catch (e) {}
+  }
+  ["video", "audio", "mvideo"].forEach(function (id) {
+    var el = $(id);
+    el.addEventListener("playing", function () { keepAwake(true); });
+    el.addEventListener("pause", function () { if (!anythingPlaying()) keepAwake(false); });
+    el.addEventListener("emptied", function () { if (!anythingPlaying()) keepAwake(false); });
   });
 
   // ---- Web / YouTube ----
@@ -435,7 +710,12 @@
     inst.type = "button"; inst.addEventListener("click", function () { if (!window.__installApp || !window.__installApp()) window.alert("To install: in your browser menu choose \"Install app\" or \"Add to Home screen\". On iPhone Safari: Share then Add to Home Screen."); });
     var setup = make("button", "btn", "Turn a spare device into an EYE3 box");
     setup.type = "button"; setup.addEventListener("click", function () { location.href = "setup.html"; });
-    var kv = make("div", "kv"); kv.appendChild(fs); kv.appendChild(pl); kv.appendChild(inst); kv.appendChild(setup); kv.appendChild(ph);
+    var sv = make("button", "btn", "");
+    sv.type = "button";
+    var paintSv = function () { var m = saverMinutes(); sv.textContent = "Screensaver: " + (m ? "after " + m + " min" : "off"); };
+    paintSv();
+    sv.addEventListener("click", function () { var i = SAVER_STEPS.indexOf(saverMinutes()); set(SAVER_KEY, String(SAVER_STEPS[(i + 1) % SAVER_STEPS.length])); paintSv(); armSaver(); });
+    var kv = make("div", "kv"); kv.appendChild(fs); kv.appendChild(sv); kv.appendChild(pl); kv.appendChild(inst); kv.appendChild(setup); kv.appendChild(ph);
     rowsHtml(body, [
       para("EYE3 Home runs in this browser and shows on the TV over HDMI. For the best look, press F or use the button below to go fullscreen."),
       kv,
@@ -461,15 +741,36 @@
       else if (e.key === "Enter") { e.preventDefault(); playChannel(chIndex); }
       return;
     }
+    if ($("ov-radio").classList.contains("open")) {
+      if (e.key === "ArrowDown") { e.preventDefault(); rIndex = Math.min(stations.length - 1, rIndex + 1); paintStations(); scrollList("rlist", rIndex); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); rIndex = Math.max(0, rIndex - 1); paintStations(); scrollList("rlist", rIndex); }
+      else if (e.key === "ArrowRight") { e.preventDefault(); rGenre = (rGenre + 1) % GENRES.length; loadStations(); }
+      else if (e.key === "ArrowLeft") { e.preventDefault(); rGenre = (rGenre + GENRES.length - 1) % GENRES.length; loadStations(); }
+      else if (e.key === "Enter") { e.preventDefault(); playStation(rIndex); }
+      return;
+    }
+    if ($("ov-media").classList.contains("open")) {
+      if (isTyping()) return;
+      var inList = !document.activeElement || document.activeElement === document.body || document.activeElement.className.indexOf("btn") === -1;
+      if (e.key === "ArrowDown" && media.length) { e.preventDefault(); mIndex = Math.min(media.length - 1, mIndex + 1); paintMedia(); scrollList("mlist", mIndex); }
+      else if (e.key === "ArrowUp" && media.length) { e.preventDefault(); mIndex = Math.max(0, mIndex - 1); paintMedia(); scrollList("mlist", mIndex); }
+      else if (e.key === "ArrowRight" && inList) { e.preventDefault(); stepMedia(1); }
+      else if (e.key === "ArrowLeft" && inList) { e.preventDefault(); stepMedia(-1); }
+      else if (e.key === " " && inList && $("mvideo").style.display !== "none") { e.preventDefault(); var v = $("mvideo"); if (v.paused) v.play(); else v.pause(); }
+      else if (e.key === "Enter" && inList && media.length) { e.preventDefault(); playMedia(mIndex); }
+      return;
+    }
     if (overlayOpen()) return; // web/info overlays use normal focus
 
     if (e.key === "ArrowRight") { e.preventDefault(); focusIndex = (focusIndex + 1) % tiles.length; paintFocus(); }
     else if (e.key === "ArrowLeft") { e.preventDefault(); focusIndex = (focusIndex + tiles.length - 1) % tiles.length; paintFocus(); }
-    else if (e.key === "ArrowDown") { e.preventDefault(); focusIndex = Math.min(tiles.length - 1, focusIndex + 3); paintFocus(); }
-    else if (e.key === "ArrowUp") { e.preventDefault(); focusIndex = Math.max(0, focusIndex - 3); paintFocus(); }
+    else if (e.key === "ArrowDown") { e.preventDefault(); focusIndex = Math.min(tiles.length - 1, focusIndex + dockCols()); paintFocus(); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); focusIndex = Math.max(0, focusIndex - dockCols()); paintFocus(); }
+    else if (e.key === "s" || e.key === "S") { e.preventDefault(); showSaver(); }
     else if (e.key === "Enter") { e.preventDefault(); openTile(TILES[focusIndex].key); }
   });
-  function scrollCh() { var rows = $("chlist").querySelectorAll(".ch"); if (rows[chIndex]) rows[chIndex].scrollIntoView({ block: "nearest", behavior: reduceMotion ? "auto" : "smooth" }); }
+  function scrollList(id, idx) { var rows = $(id).querySelectorAll(".ch"); if (rows[idx]) rows[idx].scrollIntoView({ block: "nearest", behavior: reduceMotion ? "auto" : "smooth" }); }
+  function scrollCh() { scrollList("chlist", chIndex); }
 
   // ---- installable app (PWA): register the service worker and keep an install prompt ----
   if ("serviceWorker" in navigator) {
