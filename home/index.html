@@ -229,7 +229,7 @@
   </div>
 <main class="home" id="home">
   <div class="top">
-    <div class="brand">
+    <div class="brand" id="brand">
       <svg class="mark" viewBox="0 0 160 160" aria-hidden="true">
       <path d="M80 7 153 80 80 153 7 80Z" fill="none" stroke="currentColor" stroke-width="3.4"/>
       <path d="M13 80Q80 18 147 80Q80 142 13 80Z" fill="#020001" stroke="currentColor" stroke-width="4.2"/>
@@ -287,6 +287,8 @@
     <select class="btn" id="tv-country" aria-label="Country"></select>
     <select class="btn" id="tv-group" aria-label="Group" hidden></select>
     <input class="field tv-search" id="tv-search" type="search" placeholder="Search channels  ( / )" autocomplete="off" spellcheck="false" aria-label="Search channels">
+    <button class="btn" id="tv-check" type="button" title="Test these channels from this computer's own connection (needs EYE3 Link)">Check from my connection</button>
+    <label class="chip" style="cursor:pointer"><input type="checkbox" id="tv-hidefailed" checked> hide failed</label>
     <span class="chip" id="tv-count">0 channels</span>
     <span class="hintkeys">↑↓ channel · ←→ category · 0-9 number · <b>L</b> favourite · <b>/</b> search</span>
   </div>
@@ -308,7 +310,9 @@
   </div>
   <div class="acct">
     <div class="acct-col">
-      <div class="linkstat"><span class="dot off" id="link-dot"></span><span id="link-text">Checking EYE3 Link…</span></div>
+      <div class="linkstat"><span class="dot off" id="link-dot"></span><span id="link-text">Checking EYE3 Link…</span>
+        <button class="btn" id="link-where" type="button" style="margin-left:auto" title="Asks ipinfo.io which country this connection appears to be in">Where is my connection?</button></div>
+      <p class="acct-note" id="link-where-text" hidden></p>
       <div class="linkhelp" id="link-help" hidden>
         Your provider cannot be read straight from a web page, so a small helper runs on <b>this computer</b>.
         <ol style="margin:8px 0 0;padding-left:20px">
@@ -316,6 +320,7 @@
           <li><a href="../tools/eye3-link.py" download="eye3-link.py">Download eye3-link.py</a></li>
           <li>Run <code>python3 eye3-link.py</code> (Windows: <code>py eye3-link.py</code>) and leave that window open.</li>
         </ol>
+        <p style="margin:10px 0 0">No Python? <a href="https://github.com/j-janko420/EYE3-VISION/releases/tag/eye3-link-latest" target="_blank" rel="noopener noreferrer">Download the ready-to-run program</a> for Windows, Mac (Apple chip) or Linux, then just open it. It is not code-signed, so your system may warn you.</p>
         <button class="btn" id="link-retry" type="button" style="margin-top:10px">Check again</button>
       </div>
       <div class="chlist" id="acct-list"></div>
@@ -343,6 +348,23 @@
       <p class="acct-note" id="acct-msg">Saved on this computer only. Use accounts you are entitled to watch. Adult groups stay hidden.</p>
     </form>
   </div>
+</section>
+
+<!-- Hidden: opened by double-clicking the eye logo (or Shift+X). Adult groups of the viewer's OWN accounts/playlists only. -->
+<section class="ov" id="ov-explicit" aria-label="Explicit content">
+  <div class="ov-top"><h2 id="ex-title">Explicit content<small>18+ only</small></h2><button class="btn" id="ex-close" type="button">Close</button></div>
+  <form class="acct-form" id="ex-form" autocomplete="off" style="max-width:640px">
+    <p class="acct-note">This shows adult groups from <b>your own</b> accounts and playlists. EYE3 does not provide any adult channels. It stays locked every time this page is opened.</p>
+    <label id="ex-age-row" style="display:flex;gap:10px;align-items:center;text-transform:none;letter-spacing:0;font-size:clamp(13px,1.1vw,18px);color:var(--ink)"><input type="checkbox" id="ex-age"> I am 18 or older and allowed to view this</label>
+    <label><span id="ex-pin-label">PIN</span> <input class="field" id="ex-pin" type="password" inputmode="numeric" maxlength="8" autocomplete="new-password" placeholder="4–8 digits"></label>
+    <div class="toolbar">
+      <button class="btn on" type="submit" id="ex-unlock">Unlock</button>
+      <button class="btn" type="button" id="ex-lock" hidden>Lock now</button>
+      <button class="btn" type="button" id="ex-removepin" hidden>Remove PIN</button>
+    </div>
+    <p class="acct-note" id="ex-msg"></p>
+    <p class="acct-note">A PIN only stops casual use on this computer; it is not strong security.</p>
+  </form>
 </section>
 
 <!-- Radio -->
@@ -535,9 +557,11 @@
   var CATALOGUE_URL = "../iptv/channels.json";
   var FAV_KEY = "eye3.home.favs", LAST_KEY = "eye3.home.last", FILTER_KEY = "eye3.home.tvfilter";
   var FAVS = "★ Favourites", MAXROWS = 400;
+  var EXPLICIT = "🔞 Explicit (18+)", ADULT_RX = /adult|xxx|18\+|porn|erotic|\bsex|playboy|hustler|brazzers|dorcel|penthouse|redlight/i;
+  var explicitUnlocked = false;   // only for this page load: it is locked again after a reload, the screensaver or the sleep timer
   var CATEGORY_ORDER = ["News", "General", "Entertainment", "Movies", "Series", "Sports", "Music", "Kids", "Documentary", "Lifestyle", "Culture", "Comedy", "Animation", "Business", "Education", "Science", "Religious", "Travel", "Cooking", "Outdoor", "Weather", "Family", "Classic", "Legislative", "Public", "Relax", "Shop", "Auto", "Interactive", "Other"];
   var allChannels = [], channels = [], chIndex = 0, hls = null;
-  var catalogue = [], catalogueState = "idle", extraChannels = [], tvNotes = [], tvTotal = 0, focusCat = "";
+  var catalogue = [], catalogueState = "idle", extraChannels = [], tvNotes = [], tvTotal = 0, tvHidden = 0, focusCat = "";
   var tvFilter = { cat: "All", country: "", group: "", q: "" };
   var favs = [];
   try { favs = JSON.parse(get(FAV_KEY) || "[]") || []; } catch (e) { favs = []; }
@@ -566,7 +590,7 @@
   function isOwnCat(k) { return k === "My playlist" || k === "Added list" || accounts.some(function (a) { return a.name === k; }); }
   function categoryList() {
     var counts = {}, order = [];
-    allChannels.forEach(function (c) { if (!counts[c.cat]) { counts[c.cat] = 0; order.push(c.cat); } counts[c.cat]++; });
+    allChannels.forEach(function (c) { if (c.adult) return; if (!counts[c.cat]) { counts[c.cat] = 0; order.push(c.cat); } counts[c.cat]++; });
     var mine = order.filter(isOwnCat);
     var rank = function (k) { var i = CATEGORY_ORDER.indexOf(k); return i === -1 ? CATEGORY_ORDER.length : i; };
     var rest = order.filter(function (k) { return mine.indexOf(k) === -1; }).sort(function (a, b) { return rank(a) - rank(b) || (a < b ? -1 : 1); });
@@ -576,14 +600,15 @@
     var cs = categoryList(), sel = $("tv-cat"), cur = tvFilter.cat;
     while (sel.firstChild) sel.removeChild(sel.firstChild);
     var addOpt = function (s, value, text) { var o = make("option", "", text); o.value = value; s.appendChild(o); };
-    addOpt(sel, "All", "All categories (" + allChannels.length + ")");
+    addOpt(sel, "All", "All categories (" + allChannels.filter(function (c) { return !c.adult; }).length + ")");
     addOpt(sel, FAVS, FAVS + " (" + favs.length + ")");
     cs.order.forEach(function (k) { addOpt(sel, k, k + " (" + cs.counts[k] + ")"); });
+    if (explicitUnlocked) addOpt(sel, EXPLICIT, EXPLICIT + " (" + allChannels.filter(function (c) { return c.adult; }).length + ")");
     if ([].slice.call(sel.options).every(function (o) { return o.value !== cur; })) cur = "All";
     sel.value = tvFilter.cat = cur;
     fillGroups();
     var cn = {}, codes = [];
-    allChannels.forEach(function (c) { if (c.country) { if (!cn[c.country]) { cn[c.country] = 0; codes.push(c.country); } cn[c.country]++; } });
+    allChannels.forEach(function (c) { if (c.adult) return; if (c.country) { if (!cn[c.country]) { cn[c.country] = 0; codes.push(c.country); } cn[c.country]++; } });
     codes.sort(function (a, b) { return countryName(a).localeCompare(countryName(b)); });
     var cSel = $("tv-country"), curC = tvFilter.country;
     while (cSel.firstChild) cSel.removeChild(cSel.firstChild);
@@ -594,7 +619,7 @@
   }
   function fillGroups() {
     var sel = $("tv-group"), cat = tvFilter.cat, counts = {}, keys = [];
-    if (cat !== "All" && cat !== FAVS) allChannels.forEach(function (c) { if (c.cat === cat && c.grp) { if (!counts[c.grp]) { counts[c.grp] = 0; keys.push(c.grp); } counts[c.grp]++; } });
+    if (cat !== "All" && cat !== FAVS) allChannels.forEach(function (c) { if ((cat === EXPLICIT ? c.adult : c.cat === cat && !c.adult) && c.grp) { if (!counts[c.grp]) { counts[c.grp] = 0; keys.push(c.grp); } counts[c.grp]++; } });
     while (sel.firstChild) sel.removeChild(sel.firstChild);
     if (keys.length < 2) { sel.hidden = true; tvFilter.group = ""; return; }
     keys.sort(function (a, b) { return a.localeCompare(b); });
@@ -605,12 +630,18 @@
   }
   function applyFilter(keepUrl) {
     var q = tvFilter.q.toLowerCase();
+    var hideFailed = $("tv-hidefailed").checked, hiddenByCheck = 0;
     var list = allChannels.filter(function (c) {
-      if (tvFilter.cat === FAVS ? !isFav(c.url) : (tvFilter.cat !== "All" && c.cat !== tvFilter.cat)) return false;
+      if (tvFilter.cat === EXPLICIT) { if (!(explicitUnlocked && c.adult)) return false; }
+      else if (c.adult) return false;
+      else if (tvFilter.cat === FAVS ? !isFav(c.url) : (tvFilter.cat !== "All" && c.cat !== tvFilter.cat)) return false;
       if (tvFilter.country && c.country !== tvFilter.country) return false;
       if (tvFilter.group && c.grp !== tvFilter.group) return false;
-      return !q || c.name.toLowerCase().indexOf(q) > -1;
+      if (q && c.name.toLowerCase().indexOf(q) === -1) return false;
+      if (hideFailed && failedRecently(c.url)) { hiddenByCheck++; return false; }
+      return true;
     });
+    tvHidden = hiddenByCheck;
     tvTotal = list.length;
     channels = list.slice(0, MAXROWS);
     chIndex = 0;
@@ -627,6 +658,7 @@
       var meta = [c.q ? c.q + "p" : "", c.country, c.sub || (tvFilter.cat === "All" || tvFilter.cat === FAVS ? c.grp : "")].filter(Boolean).join(" · ");
       if (meta) row.appendChild(make("small", "", meta));
       if (isFav(c.url)) row.appendChild(make("i", "fav", "★"));
+      if (health[c.url] && health[c.url][0] === 1 && Date.now() - health[c.url][1] < HEALTH_TTL) row.appendChild(make("i", "fav", "✓"));
       row.addEventListener("click", function () { chIndex = i; paintChannels(); playChannel(i); });
       list.appendChild(row);
     });
@@ -636,7 +668,7 @@
     if (catalogueState === "loading") note("Loading the full channel list…");
     if (catalogueState === "failed") note("The full channel list could not be loaded (offline?). Showing EYE3 picks and your lists.");
     tvNotes.forEach(note);
-    $("tv-count").textContent = tvTotal + " channel" + (tvTotal === 1 ? "" : "s");
+    $("tv-count").textContent = tvTotal + " channel" + (tvTotal === 1 ? "" : "s") + (tvHidden ? " · " + tvHidden + " hidden (failed your check)" : "");
     paintChannels();
   }
   function loadCatalogue() {
@@ -700,7 +732,8 @@
       } else if (line.charAt(0) !== "#" && /^(https?):/i.test(line)) {
         var item = info || { name: line, sub: "" }; item.url = line; item.country = ""; item.q = 0;
         item.grp = item.sub; item.sub = "";
-        if (!/adult|xxx|18\+|porn/i.test(item.grp + " " + item.name)) out.push(item);
+        item.adult = ADULT_RX.test(item.grp + " " + item.name);
+        out.push(item);
         info = null;
       }
     }
@@ -819,9 +852,9 @@
     paintAccounts();
     var req = acctRequest(a);
     return linkGet(req[0], req[1]).then(function (d) {
-      acctChannels[a.id] = (d.channels || []).map(function (c) { return { name: c.n, cat: a.name, grp: c.c || "", country: "", url: c.u, q: 0, sub: "" }; });
+      acctChannels[a.id] = (d.channels || []).map(function (c) { return { name: c.n, cat: a.name, grp: c.c || "", country: "", url: c.u, q: 0, sub: "", adult: !!c.x }; });
       var info = d.account || {};
-      var bits = [(d.channels || []).length + " channels"];
+      var bits = [acctChannels[a.id].filter(function (c) { return !c.adult; }).length + " channels"];
       if (info.status) bits.push(info.status);
       if (info.expires) bits.push("until " + info.expires);
       acctState[a.id] = { ok: true, text: bits.join(" · ") };
@@ -874,6 +907,7 @@
     [].slice.call(document.querySelectorAll("#acct-form [data-for]")).forEach(function (d) { d.hidden = d.getAttribute("data-for") !== t; });
   }
   function openAccounts() {
+    $("link-where-text").hidden = true;
     paintAccounts(); showAcctFields(); acctMessage("Saved on this computer only. Use accounts you are entitled to watch. Adult groups stay hidden.");
     openOverlay("ov-acct"); checkLink();
     setTimeout(function () { try { $("acct-name").focus(); } catch (e) {} }, 60);
@@ -924,6 +958,117 @@
     openOverlay("ov-info");
     setTimeout(function () { try { first.focus(); } catch (e) {} }, 60);
   }
+
+  // ---- Explicit section: hidden behind a double-click on the eye logo (or Shift+X). Own accounts/playlists only. ----
+  var PIN_KEY = "eye3.home.pin", pinFails = 0, pinBlockedUntil = 0;
+  function pinInfo() { try { return JSON.parse(get(PIN_KEY) || "null"); } catch (e) { return null; } }
+  function sha(text) {
+    return crypto.subtle.digest("SHA-256", new TextEncoder().encode(text)).then(function (b) {
+      return [].map.call(new Uint8Array(b), function (x) { return ("0" + x.toString(16)).slice(-2); }).join("");
+    });
+  }
+  function exMsg(t, kind) { var m = $("ex-msg"); m.textContent = t; m.className = "acct-note" + (kind ? " " + kind : ""); }
+  function refreshLists() { var keep = channels[chIndex] && channels[chIndex].url; buildAll(); fillSelects(); applyFilter(keep); }
+  function paintExplicit() {
+    var pin = pinInfo();
+    $("ex-age-row").hidden = explicitUnlocked;
+    $("ex-pin").parentNode.hidden = explicitUnlocked && !pin;
+    $("ex-pin-label").textContent = pin ? "Your PIN" : "Optional: set a PIN (4–8 digits) to protect this";
+    $("ex-unlock").hidden = explicitUnlocked; $("ex-lock").hidden = !explicitUnlocked; $("ex-removepin").hidden = !(explicitUnlocked && pin);
+    $("ex-pin").value = ""; $("ex-age").checked = false;
+    exMsg(explicitUnlocked ? "Unlocked for this session. It locks again after a reload, the screensaver or the sleep timer." : "", explicitUnlocked ? "good" : "");
+  }
+  function openExplicit() {
+    paintExplicit(); openOverlay("ov-explicit");
+    setTimeout(function () { try { (explicitUnlocked ? $("ex-lock") : $("ex-age")).focus(); } catch (e) {} }, 60);
+  }
+  function lockExplicit(quiet) {
+    if (!explicitUnlocked) return;
+    explicitUnlocked = false;
+    if (tvFilter.cat === EXPLICIT) { tvFilter.cat = "All"; tvFilter.group = ""; }
+    stopPlayback(); refreshLists();
+    if (!quiet) toast("Explicit section locked");
+  }
+  $("ex-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    if (explicitUnlocked) return;
+    if (!$("ex-age").checked) return exMsg("Please confirm you are 18 or older.", "bad");
+    if (Date.now() < pinBlockedUntil) return exMsg("Too many wrong tries. Wait half a minute.", "bad");
+    var pin = $("ex-pin").value, info = pinInfo();
+    var done = function () { explicitUnlocked = true; pinFails = 0; refreshLists(); closeOverlays(); toast("Explicit section unlocked"); };
+    if (info) {
+      sha(info.s + ":" + pin).then(function (h) {
+        if (h === info.h) done();
+        else { pinFails++; if (pinFails >= 5) { pinBlockedUntil = Date.now() + 30000; pinFails = 0; } exMsg("Wrong PIN.", "bad"); }
+      });
+    } else if (pin) {
+      if (!/^\d{4,8}$/.test(pin)) return exMsg("A PIN is 4 to 8 digits.", "bad");
+      var b = new Uint8Array(8); crypto.getRandomValues(b);
+      var salt = [].map.call(b, function (x) { return ("0" + x.toString(16)).slice(-2); }).join("");
+      sha(salt + ":" + pin).then(function (h) { set(PIN_KEY, JSON.stringify({ s: salt, h: h })); done(); });
+    } else done();
+  });
+  $("ex-lock").addEventListener("click", function () { lockExplicit(); closeOverlays(); });
+  $("ex-removepin").addEventListener("click", function () {
+    var info = pinInfo(); if (!info) return;
+    sha(info.s + ":" + $("ex-pin").value).then(function (h) {
+      if (h === info.h) { set(PIN_KEY, null); paintExplicit(); exMsg("PIN removed.", "good"); }
+      else exMsg("Enter your current PIN to remove it.", "bad");
+    });
+  });
+  $("ex-close").addEventListener("click", function () { closeOverlays(); });
+  $("brand").addEventListener("dblclick", function (e) { e.preventDefault(); if (!overlayOpen()) openExplicit(); });
+  var lastTap = 0;   // double-tap on a touch screen
+  $("brand").addEventListener("pointerup", function (e) {
+    if (e.pointerType !== "touch") return;
+    var n = Date.now();
+    if (n - lastTap < 400) { lastTap = 0; if (!overlayOpen()) openExplicit(); } else lastTap = n;
+  });
+
+  // ---- check channels from THIS connection (via EYE3 Link, and through your own proxy/VPN if you set one) ----
+  var HEALTH_KEY = "eye3.home.health", HIDE_KEY = "eye3.home.hidefailed", HEALTH_TTL = 24 * 3600 * 1000;
+  var health = {};
+  try { health = JSON.parse(get(HEALTH_KEY) || "{}") || {}; } catch (e) { health = {}; }
+  function failedRecently(url) { var h = health[url]; return !!h && h[0] === 0 && Date.now() - h[1] < HEALTH_TTL; }
+  function saveHealth() {
+    var keys = Object.keys(health);
+    if (keys.length > 6000) keys.sort(function (a, b) { return health[a][1] - health[b][1]; }).slice(0, keys.length - 6000).forEach(function (k) { delete health[k]; });
+    set(HEALTH_KEY, JSON.stringify(health));
+  }
+  $("tv-hidefailed").checked = get(HIDE_KEY) !== "0";
+  $("tv-hidefailed").addEventListener("change", function () { set(HIDE_KEY, this.checked ? "1" : "0"); applyFilter(channels[chIndex] && channels[chIndex].url); });
+  var checking = false, stopCheck = false;
+  function runHealthCheck() {
+    var btn = $("tv-check");
+    if (checking) { stopCheck = true; btn.textContent = "Stopping…"; return; }
+    var todo = channels.filter(function (c) { return c.url; });   // what is listed right now (at most 400)
+    if (!todo.length) { toast("Nothing to check in this list"); return; }
+    var total = todo.length, done = 0, good = 0, idx = 0, active = 0, label = "Check from my connection";
+    checking = true; stopCheck = false;
+    var update = function () { btn.textContent = "Checking " + done + "/" + total + " (click to stop)"; };
+    update();
+    linkHello().then(function () {
+      var finish = function () {
+        checking = false; btn.textContent = label; saveHealth();
+        applyFilter(channels[chIndex] && channels[chIndex].url);
+        toast(good + " of " + done + " channels work from your connection" + (stopCheck ? " (stopped)" : ""));
+      };
+      var next = function () {
+        if (stopCheck || idx >= total) { if (!active) finish(); return; }
+        var c = todo[idx++]; active++;
+        linkGet("/api/probe", { u: c.url }).then(function (r) { health[c.url] = [r.ok ? 1 : 0, Date.now(), r.why || ""]; if (r.ok) good++; })["catch"](function () {}).then(function () { active--; done++; update(); next(); });
+      };
+      for (var i = 0; i < 10; i++) next();
+    })["catch"](function (err) { checking = false; btn.textContent = label; toast(err.message + " See Settings → IPTV accounts."); });
+  }
+  $("tv-check").addEventListener("click", runHealthCheck);
+  $("link-where").addEventListener("click", function () {
+    var out = $("link-where-text"); out.hidden = false; out.className = "acct-note"; out.textContent = "Asking ipinfo.io…";
+    linkGet("/api/where", {}).then(function (d) {
+      out.textContent = "This connection appears to be in " + countryName(d.country) + " (" + d.country + ")" + (d.viaProxy ? ", through your proxy." : ". Channels are checked from here.");
+      out.className = "acct-note good";
+    })["catch"](function (err) { out.textContent = err.message; out.className = "acct-note bad"; });
+  });
 
   // ---- Help: why a channel will not play, VPN guidance, and a few free tools ----
   var TOOLS = [
@@ -1110,6 +1255,7 @@
   function showSaver() {
     if (saverOn || anythingPlaying()) { armSaver(); return; }
     saverOn = true;
+    lockExplicit(true);
     var now = new Date(), pad = function (n) { return (n < 10 ? "0" : "") + n; };
     $("saver-t").textContent = pad(now.getHours()) + ":" + pad(now.getMinutes());
     $("saver-d").textContent = now.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" });
@@ -1241,6 +1387,7 @@
   document.addEventListener("keydown", function (e) {
     if ((e.key === "f" || e.key === "F") && !isTyping()) { toggleFullscreen(); return; }
     if ((e.key === "z" || e.key === "Z") && !isTyping()) { e.preventDefault(); cycleSleep(); return; }
+    if (e.shiftKey && (e.key === "X" || e.key === "x") && !isTyping() && !overlayOpen()) { e.preventDefault(); openExplicit(); return; }
     if (isBack(e)) { if (overlayOpen()) { e.preventDefault(); closeOverlays(); } return; }
 
     if ($("ov-tv").classList.contains("open")) {
