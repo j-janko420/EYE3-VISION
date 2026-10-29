@@ -28,6 +28,15 @@ https://github.com/j-janko420/EYE3-VISION/releases/tag/eye3-link-latest (Windows
 
 Your channels appear in Live TV under the account's name, with a group filter for the provider's own groups.
 
+### Direct links
+Open these on the laptop to jump straight to the right form (nothing is filled in or saved from the link):
+- M3U link: `https://j-janko420.github.io/EYE3-VISION/home/?add=m3u`
+- Xtream Codes login: `https://j-janko420.github.io/EYE3-VISION/home/?add=xtream`
+- MAG / Stalker portal (address + MAC): `https://j-janko420.github.io/EYE3-VISION/home/?add=mag`
+- Playlist maker (your own channels, M3U import/export): `https://j-janko420.github.io/EYE3-VISION/home/?add=playlist`
+
+Adult groups in your own accounts show only after you unlock the hidden section (see below).
+
 ## Channels blocked in your country (VPN / proxy)
 EYE3 does **not** include a VPN: a VPN needs servers and software that a web page or this small helper cannot provide, and pretending otherwise would be unsafe. Options:
 - Use a VPN you are allowed to use on this computer. EYE3 Home and EYE3 Link then use it automatically.

@@ -1657,7 +1657,7 @@
   // ---- splash: once per browser session; any key or click skips it; ?splash=0 turns it off ----
   (function () {
     var sp = $("splash"), seen = false, done = false, timer = null;
-    try { seen = /[?&]splash=0/.test(location.search) || sessionStorage.getItem("eye3.home.splash") === "1"; } catch (e) {}
+    try { seen = /[?&](splash=0|add=)/.test(location.search) || sessionStorage.getItem("eye3.home.splash") === "1"; } catch (e) {}
     function close() {
       if (done) return; done = true; clearTimeout(timer);
       try { sessionStorage.setItem("eye3.home.splash", "1"); } catch (e) {}
@@ -1847,6 +1847,17 @@
   };
 
   window.addEventListener("pagehide", stopPlayback);
+  // Direct links: ?add=m3u | xtream | mag opens "IPTV accounts" on that type, ?add=playlist opens the Playlist maker.
+  // Nothing is filled in or saved from the link; the viewer types their own details and presses Add.
+  (function () {
+    var m = /[?&]add=([a-z0-9]+)/.exec(location.search); if (!m) return;
+    var kind = m[1], types = { m3u: "m3u", xtream: "xtream", mag: "stalker", stalker: "stalker" };
+    setTimeout(function () {
+      if (kind === "playlist") { openMaker(); return; }
+      if (!types[kind]) return;
+      openAccounts(); $("acct-type").value = types[kind]; showAcctFields();
+    }, 300);
+  })();
   startLang();
 })();
 </script>
