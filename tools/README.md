@@ -31,6 +31,9 @@ Your channels appear in Live TV under the account's name, with a group filter fo
 ### Movies and series on demand
 Add your Xtream Codes account (server, username, password), then Live TV → **Movies & series**. Pick Movies or Series, a category, or search. Series open into seasons and episodes. Big libraries can take a minute to load the first time. Files the browser can play (mp4) start in the page; `.mkv` and some others need VLC.
 
+### Free movies (no account)
+In Live TV → **Movies & series** press **Free movies**: public-domain films from the [Internet Archive](https://archive.org), by genre or search. No account and no EYE3 Link needed, only an internet connection that can reach archive.org (a VPN or proxy can block it).
+
 ### Direct links
 Open these on the laptop to jump straight to the right form (nothing is filled in or saved from the link):
 - M3U link: `https://j-janko420.github.io/EYE3-VISION/home/?add=m3u`
