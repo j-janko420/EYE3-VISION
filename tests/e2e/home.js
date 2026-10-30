@@ -71,8 +71,7 @@ const toast = (p) => p.evaluate(() => [...document.querySelectorAll('.toast')].m
   });
 
   await suite('Xtream account: guide, recently watched, TS fallback, next episode', async () => {
-    const p = await open(browser, { 'eye3.home.accts': [XT] });
-    await p.route('https://cdn.jsdelivr.net/npm/mpegts.js**', (r) => r.fulfill({ status: 200, contentType: 'application/javascript', body: MPEGTS_STUB }));
+    const p = await open(browser, { 'eye3.home.accts': [XT] }, { init: MPEGTS_STUB });   // a stand-in TS player: the real one needs H.264, which test browsers lack
     await openTv(p); await pickCat(p, 'Mock TV');
     await p.click('#chlist .ch >> text=Xtream One');
     await p.waitForFunction(() => (window.__tsCalls || []).length > 0, null, { timeout: 25000 }).catch(() => {});   // real hls.js retries before giving up

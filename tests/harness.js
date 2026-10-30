@@ -28,6 +28,7 @@ async function open(browser, seed, extra) {
     localStorage.setItem('__seeded', '1');
     Object.keys(s || {}).forEach((k) => localStorage.setItem(k, typeof s[k] === 'string' ? s[k] : JSON.stringify(s[k])));
   }, seed || {});
+  if (extra && extra.init) await page.addInitScript(extra.init);   // a script that runs before the page's own (for stand-ins of CDN libraries)
   await page.goto((extra && extra.url) || HOME, { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(700);
   return page;
