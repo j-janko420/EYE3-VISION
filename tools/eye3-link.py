@@ -27,7 +27,7 @@ import urllib.parse as up
 import urllib.request as ur
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.6"
+VERSION = "1.7"
 ALLOWED_ORIGINS = ["https://j-janko420.github.io"]          # more: EYE3_ORIGINS=https://a,https://b
 LOCAL_ORIGIN = re.compile(r"^http://(localhost|127\.0\.0\.1)(:\d+)?$")
 BAD = re.compile(r"adult|xxx|18\+|porn|erotic|\bsex|playboy|hustler|brazzers|dorcel|penthouse|redlight", re.I)
@@ -42,7 +42,8 @@ class LinkError(Exception):
     """An error whose message is safe and useful to show to the viewer."""
 
 
-STATE = {"token": secrets.token_urlsafe(24), "port": 0, "insecure": False, "proxy": "", "origins": list(ALLOWED_ORIGINS), "sessions": {}, "hdrs": {}}
+STATE = {"token": secrets.token_urlsafe(24), "port": 0, "insecure": False, "proxy": "", "origins": list(ALLOWED_ORIGINS), "sessions": {}, "hdrs": {}, "events": [], "auto_fix": False, "auto_update": False, "playlists": "", "started": 0.0,
+         "last_stream": 0.0, "update": {}, "update_base": os.environ.get("EYE3_UPDATE_BASE", ""), "conf_path": ""}
 
 
 def ssl_context():
@@ -101,8 +102,14 @@ def _getaddrinfo(host, port, *args, **kw):
     try:
         return _real_getaddrinfo(host, port, *args, **kw)
     except socket.gaierror:
-        if not STATE.get("dns") or not isinstance(host, str) or not host or is_ip(host) or host.lower() == "localhost":
+        if not isinstance(host, str) or not host or is_ip(host) or host.lower() == "localhost":
             raise
+        if not STATE.get("dns"):
+            if not STATE.get("auto_fix"):
+                raise
+            # the agent: this computer cannot find a provider's address, so use secure DNS from now on (only when the normal lookup fails)
+            STATE["dns"] = DOH["cloudflare"]
+            note_event("dns", "Your computer could not find %s. EYE3 now asks a secure DNS service when that happens." % host)
         out = []
         for ip in doh_lookup(host):
             out += _real_getaddrinfo(ip, port, *args, **kw)
@@ -198,6 +205,238 @@ def base_hid(extra=None):
 
 def stream_url(upstream, hid=""):
     return link_url("/stream", u=upstream, h=hid) if hid else link_url("/stream", u=upstream)
+
+
+# ------------------------------------------------------------------------------- the agent: config, events, local playlists, updates
+def note_event(kind, text):
+    """A short note about something the agent did on its own; EYE3 Home shows the newest ones."""
+    ev = STATE["events"]
+    if ev and ev[-1]["k"] == kind and ev[-1]["t"] == text:
+        return
+    ev.append({"k": kind, "t": text, "at": int(time.time())})
+    del ev[:-20]
+
+
+CONF_KEYS = {"port": int, "dns": str, "proxy": str, "auto_fix": bool, "auto_update": bool, "playlists": str, "origins": list}
+
+
+def load_conf(path):
+    """eye3-link.conf: a small JSON file next to the program. Unknown keys are ignored; bad values are skipped."""
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            raw = json.load(f)
+    except (OSError, ValueError):
+        return {}
+    if not isinstance(raw, dict):
+        return {}
+    return {k: v for k, v in raw.items() if k in CONF_KEYS and isinstance(v, CONF_KEYS[k]) and not (CONF_KEYS[k] is int and isinstance(v, bool))}
+
+
+def save_conf_flag(key, value):
+    """Remember a switch the viewer flipped in EYE3 Home, if there is a config file to remember it in."""
+    path = STATE.get("conf_path") or ""
+    if not path:
+        return
+    try:
+        conf = {}
+        if os.path.exists(path):
+            with open(path, "r", encoding="utf-8") as f:
+                conf = json.load(f)
+        conf[key] = value
+        tmp = path + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(conf, f, indent=2)
+        os.replace(tmp, path)
+    except (OSError, ValueError):
+        pass
+
+
+LOCAL_EXT = (".m3u", ".m3u8", ".txt")
+LOCAL_MAX_FILES = 200
+_local_cache = {}
+
+
+def parse_link_list(text, base=""):
+    """A plain list: every http(s) link becomes a channel named by the text before it (or the line above)."""
+    out, prev = [], ""
+    for raw in text.replace("\r", "").split("\n"):
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        urls = re.findall(r"https?://[^\s\"'<>]+", line)
+        if not urls:
+            prev = line[:120]
+            continue
+        before = re.sub(r"^\s*\d+[.)]\s+", "", re.sub(r"[\s:|=>\-–—•·]+$", "", line[:line.index(urls[0])])).strip()
+        for k, u in enumerate(urls):
+            u = u.rstrip("),.;")
+            name = ((before or prev) if k == 0 else "") or (up.urlparse(u).hostname or "Channel")
+            ch = {"n": name[:120], "c": "Other", "u": stream_url(u, base_hid()), "l": ""}
+            if BAD.search(name):
+                ch["x"] = True
+            out.append(ch)
+        prev = ""
+    return out
+
+
+def local_playlists():
+    """Read the playlists folder (next to the program, or --playlists): the viewer's OWN files, never anything bundled.
+    Only direct children with a known extension are read; links that leave the folder are ignored."""
+    root = STATE.get("playlists") or ""
+    if not root or not os.path.isdir(root):
+        return {"files": [], "channels": []}
+    real_root = os.path.realpath(root)
+    files, channels = [], []
+    for name in sorted(os.listdir(root))[:LOCAL_MAX_FILES * 2]:
+        full = os.path.join(root, name)
+        real = os.path.realpath(full)
+        if not name.lower().endswith(LOCAL_EXT) or os.path.dirname(real) != real_root or not os.path.isfile(real):
+            continue
+        try:
+            st = os.stat(real)
+        except OSError:
+            continue
+        if st.st_size > MAX_LIST or len(files) >= LOCAL_MAX_FILES:
+            continue
+        key = (real, st.st_mtime, st.st_size, current_ua())
+        hit = _local_cache.get(real)
+        if hit and hit[0] == key:
+            rows = hit[1]
+        else:
+            try:
+                with open(real, "rb") as f:
+                    body = f.read(MAX_LIST + 1)
+            except OSError:
+                continue
+            if body[:2] == b"\x1f\x8b":
+                try:
+                    body = gzip.decompress(body)
+                except OSError:
+                    continue
+            text = body.decode("utf-8-sig", "replace")
+            rows = parse_m3u(text) if re.search(r"#EXTINF", text, re.I) else parse_link_list(text)
+            _local_cache[real] = (key, rows)
+        label = os.path.splitext(name)[0][:60]
+        files.append({"name": label, "file": name, "count": len(rows), "mtime": int(st.st_mtime)})
+        for r in rows[:MAX_CHANNELS]:
+            row = dict(r)
+            row["f"] = label
+            channels.append(row)
+    return {"files": files, "channels": channels[:MAX_CHANNELS]}
+
+
+def ver_tuple(v):
+    return tuple(int(x) for x in re.findall(r"\d+", str(v))[:4]) or (0,)
+
+
+def update_base():
+    return (STATE.get("update_base") or "https://github.com/j-janko420/EYE3-VISION/releases/download/eye3-link-latest").rstrip("/")
+
+
+def asset_name():
+    if sys.platform.startswith("win"):
+        return "eye3-link-windows.exe"
+    return "eye3-link-macos" if sys.platform == "darwin" else "eye3-link-linux"
+
+
+def check_update(force=False):
+    """Is there a newer EYE3 Link on the release page? (A small text file; cached for an hour.)"""
+    u = STATE["update"]
+    if not force and u.get("checked") and time.time() - u["checked"] < 3600:
+        return u
+    try:
+        body, _, _ = fetch(update_base() + "/eye3-link-version.txt", limit=200)
+        latest = body.decode("utf-8", "replace").strip().splitlines()[0].strip()
+        if not re.fullmatch(r"\d+(\.\d+){1,3}", latest):
+            raise LinkError("The version file is not valid.")
+        u.update(checked=time.time(), latest=latest, available=ver_tuple(latest) > ver_tuple(VERSION), error="")
+        if u["available"] and not u.get("noted") == latest:
+            u["noted"] = latest
+            note_event("update", "EYE3 Link %s is available (you have %s)." % (latest, VERSION))
+    except LinkError as e:
+        u.update(checked=time.time(), error=str(e))
+    return u
+
+
+def exe_dir(exe=None):
+    return os.path.dirname(os.path.abspath(exe or sys.executable))
+
+
+def stage_update(exe=None, frozen=None):
+    """Download the new program next to the running one and check its SHA-256 against the release's SHA256SUMS.txt.
+    Nothing is replaced yet: the swap happens at the next start (apply_staged_update)."""
+    if frozen is None:
+        frozen = bool(getattr(sys, "frozen", False))
+    if not frozen:
+        raise LinkError("This copy runs from the Python file, so it cannot replace itself. Download the new eye3-link.py (or the program) again.")
+    u = check_update(force=True)
+    if not u.get("available"):
+        return {"staged": False, "latest": u.get("latest", VERSION), "message": "You already have the newest version."}
+    name = asset_name()
+    sums, _, _ = fetch(update_base() + "/SHA256SUMS.txt", limit=20000)
+    want = ""
+    for line in sums.decode("utf-8", "replace").splitlines():
+        parts = line.split()
+        if len(parts) >= 2 and parts[-1].lstrip("*") == name and re.fullmatch(r"[0-9a-fA-F]{64}", parts[0]):
+            want = parts[0].lower()
+    if not want:
+        raise LinkError("The release has no checksum for %s, so the update was not installed." % name)
+    data, _, _ = fetch(update_base() + "/" + name, limit=200 * 1024 * 1024, timeout=120)
+    got = hashlib.sha256(data).hexdigest()
+    if got != want:
+        raise LinkError("The downloaded update did not match its checksum, so it was not installed.")
+    d = exe_dir(exe)
+    tmp = os.path.join(d, "eye3-link.update")
+    with open(tmp, "wb") as f:
+        f.write(data)
+    if not sys.platform.startswith("win"):
+        os.chmod(tmp, 0o755)
+    with open(os.path.join(d, "eye3-link.update.ok"), "w", encoding="utf-8") as f:
+        f.write(u["latest"])
+    note_event("update", "EYE3 Link %s was downloaded and checked. It starts on the next restart." % u["latest"])
+    return {"staged": True, "latest": u["latest"], "message": "Downloaded and checked. Restart EYE3 Link to finish."}
+
+
+def apply_staged_update(exe=None):
+    """At start-up: if a checked update is waiting next to the program, swap it in. Returns True when swapped."""
+    exe = os.path.abspath(exe or sys.executable)
+    d = os.path.dirname(exe)
+    new, ok, old = os.path.join(d, "eye3-link.update"), os.path.join(d, "eye3-link.update.ok"), os.path.join(d, "eye3-link.old")
+    if not (os.path.exists(new) and os.path.exists(ok)):
+        return False
+    try:
+        with open(ok, "r", encoding="utf-8") as f:
+            latest = f.read().strip()
+        if ver_tuple(latest) <= ver_tuple(VERSION):          # already current: drop the leftovers
+            os.remove(new)
+            os.remove(ok)
+            return False
+        if os.path.exists(old):
+            os.remove(old)
+        os.replace(exe, old)                                  # a running program can be renamed, not overwritten
+        os.replace(new, exe)
+        os.remove(ok)
+        return True
+    except OSError:
+        return False
+
+
+def agent_loop():
+    """Background agent: look for updates now and then; with auto_update, stage one and restart when nobody is watching."""
+    time.sleep(20)
+    while True:
+        try:
+            u = check_update()
+            if STATE.get("auto_update") and u.get("available") and getattr(sys, "frozen", False):
+                if not os.path.exists(os.path.join(exe_dir(), "eye3-link.update.ok")):
+                    stage_update()
+                if time.time() - STATE.get("last_stream", 0) > 180 and os.path.exists(os.path.join(exe_dir(), "eye3-link.update.ok")):
+                    note_event("update", "Restarting to finish the update.")
+                    time.sleep(1)
+                    os._exit(75)                              # the start-up script (or service) starts it again, and the swap happens
+        except Exception as e:                                # the agent must never crash the helper
+            note_event("agent", "The agent had a problem and carries on: %s" % str(e)[:120])
+        time.sleep(1800)
 
 
 # ------------------------------------------------------------------------ check from this connection
@@ -863,6 +1102,32 @@ class Handler(BaseHTTPRequestHandler):
     def api(self, path, q):
         one = lambda k: (q.get(k, [""])[0]).strip()
         set_ua(one("ua"))
+        if path == "/api/health":
+            u = STATE["update"]
+            pl = local_playlists() if STATE.get("playlists") else {"files": []}
+            return self.send_json(200, {"ok": True, "version": VERSION, "uptime": int(time.time() - STATE["started"]),
+                                        "auto_fix": bool(STATE["auto_fix"]), "auto_update": bool(STATE["auto_update"]), "dns": bool(STATE.get("dns")),
+                                        "proxy": bool(STATE["proxy"]), "packaged": bool(getattr(sys, "frozen", False)), "managed": os.environ.get("EYE3_MANAGED") == "1",
+                                        "update": {"latest": u.get("latest", ""), "available": bool(u.get("available")), "error": u.get("error", ""),
+                                                   "staged": os.path.exists(os.path.join(exe_dir(), "eye3-link.update.ok"))},
+                                        "playlists": [{"name": f["name"], "count": f["count"], "mtime": f["mtime"]} for f in pl["files"]],
+                                        "events": STATE["events"][-8:]})
+        if path == "/api/agent":      # flip the agent's switches (remembered in eye3-link.conf when there is one)
+            for key in ("auto_fix", "auto_update"):
+                if one(key) in ("0", "1"):
+                    STATE[key] = one(key) == "1"
+                    save_conf_flag(key, STATE[key])
+            return self.send_json(200, {"ok": True, "auto_fix": STATE["auto_fix"], "auto_update": STATE["auto_update"]})
+        if path == "/api/update":
+            if one("apply") == "1":
+                return self.send_json(200, stage_update())
+            return self.send_json(200, check_update(force=one("force") == "1"))
+        if path == "/api/restart":    # used after a staged update; the start-up script starts EYE3 Link again
+            self.send_json(200, {"ok": True})
+            threading.Timer(0.5, lambda: os._exit(75)).start()
+            return
+        if path == "/api/local":
+            return self.send_json(200, local_playlists())
         if path == "/api/probe":
             return self.send_json(200, probe_stream(one("u")))
         if path == "/api/where":
@@ -897,6 +1162,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_error_json(404, "Unknown request.")
 
     def stream(self, target, hid=""):
+        STATE["last_stream"] = time.time()
         if not re.match(r"^https?://", target, re.I):
             raise LinkError("Only http:// and https:// streams are supported.")
         if up.urlparse(target).netloc in ("127.0.0.1:%d" % STATE["port"], "localhost:%d" % STATE["port"]):
@@ -977,14 +1243,39 @@ def main():
     ap.add_argument("--dns", default="", metavar="cloudflare|google|URL", help="if this computer cannot find a provider's address, ask this DNS-over-HTTPS resolver (only then)")
     ap.add_argument("--verbose", action="store_true")
     ap.add_argument("--origin", action="append", default=[], help="also allow this web page origin (for your own copy of EYE3)")
+    ap.add_argument("--config", default="", help="a JSON settings file (default: eye3-link.conf next to the program, if it exists)")
+    ap.add_argument("--playlists", default="", help="a folder with your own .m3u/.m3u8/.txt playlists (default: 'playlists' next to the program, if it exists)")
+    ap.add_argument("--auto-fix", action="store_true", help="the agent fixes problems by itself while running (for example secure DNS when an address cannot be found)")
+    ap.add_argument("--auto-update", action="store_true", help="the agent downloads and installs new versions by itself (programs only; checked with SHA-256)")
     a = ap.parse_args()
+    base_dir = exe_dir() if getattr(sys, "frozen", False) else os.path.dirname(os.path.abspath(__file__))
+    conf_path = a.config or os.path.join(base_dir, "eye3-link.conf")
+    conf = load_conf(conf_path) if os.path.exists(conf_path) else {}
+    if conf.get("port") and a.port == 8765:
+        a.port = conf["port"]
+    a.dns = a.dns or conf.get("dns", "")
+    a.proxy = a.proxy or conf.get("proxy", "")
+    a.auto_fix = a.auto_fix or bool(conf.get("auto_fix"))
+    a.auto_update = a.auto_update or bool(conf.get("auto_update"))
+    a.origin = list(a.origin) + [o for o in conf.get("origins", []) if isinstance(o, str)]
+    play_dir = a.playlists or conf.get("playlists") or os.path.join(base_dir, "playlists")
+    if getattr(sys, "frozen", False) and apply_staged_update():
+        print("EYE3 Link was updated. Starting the new version…")
+        if sys.platform.startswith("win"):
+            if os.environ.get("EYE3_MANAGED") == "1":
+                return 75                                     # the start-up script starts the new version (and keeps watching it)
+            import subprocess
+            subprocess.Popen([sys.executable] + sys.argv[1:])
+            return 0
+        os.execv(sys.executable, [sys.executable] + sys.argv[1:])
     if a.proxy and not re.match(r"^https?://[^/\s]+$", a.proxy):
         print("The proxy must look like http://127.0.0.1:8080 (SOCKS proxies are not supported by this helper).")
         return 1
     if a.dns and a.dns not in DOH and not re.match(r"^https://[^/\s]+/\S*$", a.dns):
         print("--dns must be cloudflare, google or an https:// DNS-over-HTTPS address.")
         return 1
-    STATE.update(port=a.port, insecure=a.insecure, verbose=a.verbose, proxy=a.proxy)
+    STATE.update(port=a.port, insecure=a.insecure, verbose=a.verbose, proxy=a.proxy, auto_fix=a.auto_fix, auto_update=a.auto_update,
+                 playlists=play_dir if os.path.isdir(play_dir) else "", started=time.time(), conf_path=conf_path if os.path.exists(conf_path) else "")
     if a.dns:
         install_dns(a.dns)
     STATE["where_url"] = os.environ.get("EYE3_WHERE_URL", "")  # for tests only
@@ -1000,6 +1291,13 @@ def main():
         print("All traffic goes through your proxy: %s" % re.sub(r"//[^@/]*@", "//", a.proxy))
     if a.dns:
         print("If your computer cannot find an address, EYE3 Link asks %s (DNS-over-HTTPS)." % (a.dns if a.dns in DOH else "your DNS-over-HTTPS server"))
+    if a.auto_fix:
+        print("Agent: fixes problems by itself (secure DNS when an address cannot be found).")
+    if a.auto_update:
+        print("Agent: installs new versions by itself.")
+    if STATE["playlists"]:
+        print("Your playlists folder: %s" % STATE["playlists"])
+    threading.Thread(target=agent_loop, daemon=True).start()
     print("Leave this window open while you watch. Press Ctrl+C to stop.")
     try:
         srv.serve_forever()

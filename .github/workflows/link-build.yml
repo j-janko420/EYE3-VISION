@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main, 'claude/**']
-    paths: ['tools/eye3-link.py', 'tools/smoke_binary.py', 'tools/test_eye3_link.py', '.github/workflows/link-build.yml']
+    paths: ['tools/eye3-link.py', 'tools/smoke_binary.py', 'tools/test_eye3_link.py', 'box/**', '.github/workflows/link-build.yml']
 
 permissions:
   contents: read
@@ -57,11 +57,12 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           path: out
           merge-multiple: true
-      - name: Checksums and release
+      - name: Checksums, install kits and release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -69,8 +70,21 @@ jobs:
           chmod +x eye3-link-linux eye3-link-macos || true
           sha256sum eye3-link-* > SHA256SUMS.txt
           cat SHA256SUMS.txt
+          # the version the running programs compare themselves with (EYE3 agent, auto-update)
+          VER=$(grep -oE '^VERSION = "[^"]+"' ../tools/eye3-link.py | cut -d'"' -f2)
+          printf '%s\n' "$VER" > eye3-link-version.txt
+          # install kits (USB stick or download): the scripts, a README, the playlists folder and the program for that system
+          K=../box
+          mkdir -p kit/win kit/linux kit/mac
+          for d in win linux mac; do mkdir -p kit/$d/playlists; cp $K/eye3-link.conf.example $K/README.txt kit/$d/; cp $K/playlists/README.txt kit/$d/playlists/; done
+          cp $K/install.bat $K/install.ps1 $K/eye3-start.bat $K/eye3-browser.bat kit/win/ && cp eye3-link-windows.exe kit/win/
+          cp $K/install.sh $K/eye3-start.sh kit/linux/ && cp eye3-link-linux kit/linux/
+          cp $K/install.sh $K/eye3-start.sh kit/mac/ && cp eye3-link-macos kit/mac/
+          (cd kit/win && zip -r ../../EYE3-Box-Windows.zip .)
+          (cd kit/linux && zip -r ../../EYE3-Box-Linux.zip .)
+          (cd kit/mac && zip -r ../../EYE3-Box-Mac.zip .)
           gh release delete eye3-link-latest --yes --cleanup-tag --repo "$GITHUB_REPOSITORY" || true
           gh release create eye3-link-latest --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease \
             --title "EYE3 Link (ready-to-run programs)" \
-            --notes "Ready-to-run EYE3 Link for Windows, macOS (Apple silicon) and Linux. Built automatically from tools/eye3-link.py. Not code-signed: your system may warn. Check the SHA-256 in SHA256SUMS.txt. Guide: tools/README.md" \
-            eye3-link-linux eye3-link-macos eye3-link-windows.exe SHA256SUMS.txt
+            --notes "Ready-to-run EYE3 Link for Windows, macOS (Apple silicon) and Linux. Built automatically from tools/eye3-link.py. Not code-signed: your system may warn. Check the SHA-256 in SHA256SUMS.txt. EYE3-Box-*.zip are the one-time install kits for the computer behind your TV (USB stick or download). Guide: box/README.txt and tools/README.md" \
+            eye3-link-linux eye3-link-macos eye3-link-windows.exe SHA256SUMS.txt eye3-link-version.txt EYE3-Box-Windows.zip EYE3-Box-Linux.zip EYE3-Box-Mac.zip

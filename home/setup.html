@@ -37,6 +37,18 @@
   <p class="muted">EYE3 Home: <span class="url">https://j-janko420.github.io/EYE3-VISION/home/</span></p>
 
   <div class="card">
+    <h2>One-time install kit <span class="tag best">PC, mini-PC, Raspberry Pi, Mac</span></h2>
+    <p class="muted">Install once, from a USB stick or by download. After that the computer behind the TV starts EYE3 by itself, keeps EYE3 Link running, fixes connection problems and updates itself. The TV itself (for example a Philips Saphi) cannot install software from a USB stick, so this goes on the box plugged into its HDMI port.</p>
+    <ol>
+      <li>Download the kit for your system from the <a class="back" href="https://github.com/j-janko420/EYE3-VISION/releases/tag/eye3-link-latest" target="_blank" rel="noopener noreferrer">release page</a>: <code>EYE3-Box-Windows.zip</code>, <code>EYE3-Box-Linux.zip</code> or <code>EYE3-Box-Mac.zip</code>. Unzip it onto a USB stick (or anywhere).</li>
+      <li>Put <b>your own</b> playlists (<code>.m3u</code>, <code>.m3u8</code>, <code>.txt</code>) into the <code>playlists</code> folder first, if you like. They show up in Live TV by themselves; adult groups only inside the hidden Explicit section.</li>
+      <li><b>Windows:</b> double-click <code>install.bat</code>. <b>Linux, Raspberry Pi, Mac:</b> open a terminal in the folder and run <code>sh install.sh</code>.</li>
+      <li>Reboot or sign in again: EYE3 Link and EYE3 Home open fullscreen. The <b>Agent</b> chip on the top bar shows what the agent did.</li>
+    </ol>
+    <p class="muted">Try it first without changing anything: <code>sh install.sh --dry-run</code> (Windows: <code>install.bat -DryRun</code>). The program is checked against its published SHA-256 before it is used, and it is not code-signed, so your system may warn. EYE3 does not include a VPN or any channels.</p>
+  </div>
+
+  <div class="card">
     <h2>Spare Android phone <span class="tag best">cheapest</span></h2>
     <p class="muted">A phone you no longer use, plus a USB-C-to-HDMI adapter (about $8). This becomes your EYE3 stick.</p>
     <ol>

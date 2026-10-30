@@ -15,6 +15,7 @@ SEGMENT = b"\x47" + bytes(187)
 class Mock(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
     seen = {}
+    release = {}      # path -> bytes: a stand-in for the GitHub release page (updates)
 
     def log_message(self, *a):
         pass
@@ -126,6 +127,8 @@ class Mock(BaseHTTPRequestHandler):
         if u.path == "/ua/list.m3u":
             Mock.seen["m3u_ua"] = self.headers.get("User-Agent")
             return self.reply('#EXTM3U x-tvg-url="%s/epg/guide.xml"\n#EXTINF:-1 tvg-id="news.one" group-title="N",News One\n%s/hdr/stream.ts\n' % (host, host), "audio/x-mpegurl")
+        if u.path.startswith("/rel/") and u.path[5:] in Mock.release:
+            return self.reply(Mock.release[u.path[5:]], "application/octet-stream")
         if u.path == "/where":
             return self.reply("AE\n", "text/plain")
         if u.path == "/forbidden/index.m3u8":
@@ -319,6 +322,135 @@ class LinkTests(unittest.TestCase):
         self.assertTrue(up.unquote(d["u"]).split("?")[0].endswith(".ts") or ".ts&" in up.unquote(d["u"]) or ".ts" in up.unquote(d["u"]))
         self.assertEqual(d.get("t"), 1)
         self.assertNotIn("a", d)
+
+    # --- the agent: config file, your own playlists folder, updates, self-fixing DNS
+    def test_config_file_keeps_only_valid_known_settings(self):
+        import tempfile
+        d = tempfile.mkdtemp()
+        path = os.path.join(d, "eye3-link.conf")
+        with open(path, "w") as f:
+            json.dump({"port": 8800, "auto_fix": True, "auto_update": "yes", "dns": "cloudflare", "evil": 1, "port2": 5, "origins": ["https://a.example"]}, f)
+        self.assertEqual(link.load_conf(path), {"port": 8800, "auto_fix": True, "dns": "cloudflare", "origins": ["https://a.example"]})
+        with open(path, "w") as f:
+            f.write("not json")
+        self.assertEqual(link.load_conf(path), {})
+        self.assertEqual(link.load_conf(os.path.join(d, "missing.conf")), {})
+
+    def test_local_playlists_folder_reads_only_its_own_files(self):
+        import tempfile, gzip as _gz
+        root = tempfile.mkdtemp()
+        outside = tempfile.mkdtemp()
+        open(os.path.join(root, "My News.m3u"), "w").write('#EXTM3U\n#EXTINF:-1 tvg-id="n1" group-title="News",Local News\nhttps://example.test/news.m3u8\n#EXTINF:-1 group-title="XXX",Adult Test\nhttps://example.test/a.m3u8\n')
+        open(os.path.join(root, "links.txt"), "w").write("1. Sport One - https://example.test/s1.m3u8\nhttps://example.test/bare.m3u8\n")
+        open(os.path.join(root, "zipped.m3u"), "wb").write(_gz.compress(b"#EXTM3U\n#EXTINF:-1,Zipped Local\nhttps://example.test/z.m3u8\n"))
+        open(os.path.join(root, "program.exe"), "w").write("#EXTM3U\n#EXTINF:-1,Nope\nhttps://example.test/no.m3u8\n")
+        open(os.path.join(outside, "secret.m3u"), "w").write("#EXTM3U\n#EXTINF:-1,Outside\nhttps://example.test/out.m3u8\n")
+        try:
+            os.symlink(os.path.join(outside, "secret.m3u"), os.path.join(root, "escape.m3u"))
+        except OSError:
+            pass
+        os.mkdir(os.path.join(root, "sub"))
+        open(os.path.join(root, "sub", "deep.m3u"), "w").write("#EXTM3U\n#EXTINF:-1,Deep\nhttps://example.test/deep.m3u8\n")
+        old = link.STATE["playlists"]
+        link.STATE["playlists"] = root
+        try:
+            code, _, body = self.api("/api/local")
+            self.assertEqual(code, 200)
+            d = json.loads(body)
+        finally:
+            link.STATE["playlists"] = old
+        names = sorted(f["file"] for f in d["files"])
+        self.assertEqual(names, ["My News.m3u", "links.txt", "zipped.m3u"])               # no .exe, no symlink out, no sub-folders
+        chans = {c["n"]: c for c in d["channels"]}
+        self.assertEqual(set(chans), {"Local News", "Adult Test", "Sport One", "example.test", "Zipped Local"})
+        self.assertTrue(chans["Adult Test"]["x"])                                           # flagged, so Home keeps it behind the Explicit unlock
+        self.assertEqual(chans["Local News"]["f"], "My News")
+        self.assertEqual(chans["Local News"]["i"], "n1")
+        self.assertIn("/stream?", chans["Sport One"]["u"])
+        link.STATE["playlists"] = ""
+        self.assertEqual(json.loads(self.api("/api/local")[2]), {"files": [], "channels": []})
+
+    def test_health_and_agent_switches_are_remembered(self):
+        import tempfile
+        conf = os.path.join(tempfile.mkdtemp(), "eye3-link.conf")
+        open(conf, "w").write('{"auto_fix": false}')
+        old = (link.STATE["conf_path"], link.STATE["auto_fix"], link.STATE["auto_update"])
+        link.STATE["conf_path"] = conf
+        try:
+            d = json.loads(self.api("/api/health")[2])
+            self.assertEqual((d["version"], d["auto_fix"], d["auto_update"], d["packaged"]), (link.VERSION, old[1], old[2], False))
+            self.assertFalse(d["managed"])                                                    # not started by the box launcher
+            self.api("/api/agent", auto_fix="1", auto_update="1")
+            d = json.loads(self.api("/api/health")[2])
+            self.assertTrue(d["auto_fix"] and d["auto_update"])
+            self.assertEqual(json.load(open(conf)), {"auto_fix": True, "auto_update": True})   # kept for the next start
+        finally:
+            link.STATE["conf_path"], link.STATE["auto_fix"], link.STATE["auto_update"] = old
+
+    def test_update_is_checked_downloaded_verified_and_swapped(self):
+        import hashlib as _h, tempfile
+        new_bin = b"#!/bin/sh\necho new eye3 link\n"
+        name = link.asset_name()
+        Mock.release = {"eye3-link-version.txt": b"9.9\n", name: new_bin,
+                        "SHA256SUMS.txt": ("%s  %s\n%s  other-file\n" % (_h.sha256(new_bin).hexdigest(), name, "0" * 64)).encode()}
+        old_base = link.STATE["update_base"]
+        link.STATE["update_base"] = self.up_url + "/rel"
+        try:
+            u = link.check_update(force=True)
+            self.assertEqual((u["latest"], u["available"]), ("9.9", True))
+            self.assertTrue(any("9.9" in e["t"] for e in link.STATE["events"]))
+            d = tempfile.mkdtemp()
+            exe = os.path.join(d, "eye3-link")
+            open(exe, "w").write("old program")
+            with self.assertRaises(link.LinkError):                                          # a copy that runs from the .py cannot replace itself
+                link.stage_update(exe, frozen=False)
+            Mock.release["SHA256SUMS.txt"] = ("%s  %s\n" % ("1" * 64, name)).encode()       # a wrong checksum: nothing is installed
+            with self.assertRaises(link.LinkError) as cm:
+                link.stage_update(exe, frozen=True)
+            self.assertIn("checksum", str(cm.exception))
+            self.assertFalse(os.path.exists(os.path.join(d, "eye3-link.update")))
+            Mock.release["SHA256SUMS.txt"] = ("%s  %s\n" % (_h.sha256(new_bin).hexdigest(), name)).encode()
+            r = link.stage_update(exe, frozen=True)
+            self.assertTrue(r["staged"])
+            self.assertEqual(open(exe).read(), "old program")                                 # staging replaces nothing
+            self.assertTrue(link.apply_staged_update(exe))                                     # the swap at the next start
+            self.assertEqual(open(exe, "rb").read(), new_bin)
+            self.assertEqual(open(os.path.join(d, "eye3-link.old")).read(), "old program")
+            self.assertFalse(os.path.exists(os.path.join(d, "eye3-link.update.ok")))
+            self.assertFalse(link.apply_staged_update(exe))                                    # nothing waiting any more
+            # an update that is not newer is dropped, not installed
+            open(os.path.join(d, "eye3-link.update"), "w").write("x")
+            open(os.path.join(d, "eye3-link.update.ok"), "w").write(link.VERSION)
+            self.assertFalse(link.apply_staged_update(exe))
+            self.assertFalse(os.path.exists(os.path.join(d, "eye3-link.update")))
+            Mock.release["eye3-link-version.txt"] = b"not a version"
+            self.assertTrue(link.check_update(force=True)["error"])                            # a broken version file is an error, not a crash
+        finally:
+            link.STATE["update_base"] = old_base
+            link.STATE["update"] = {}
+            Mock.release = {}
+
+    def test_agent_turns_on_secure_dns_by_itself_when_a_name_cannot_be_found(self):
+        server = "http://panel.eye3test.invalid:%d" % self.up_port
+        doh = serve(Doh)
+        old = (link.STATE["auto_fix"], link.STATE.get("dns", ""), dict(link.DOH), list(link.STATE["events"]))
+        link.install_dns("")
+        link.DOH["cloudflare"] = "http://127.0.0.1:%d/dns-query" % doh.server_port
+        try:
+            link.STATE["auto_fix"] = False
+            code, _, body = self.api("/api/xtream", server=server, user="u", **{"pass": "p"})
+            self.assertEqual(code, 502)                                                       # without the agent the name stays unknown
+            link.STATE["auto_fix"] = True
+            code, _, body = self.api("/api/xtream", server=server, user="u", **{"pass": "p"})
+            self.assertEqual(code, 200)                                                       # with it, one failed lookup fixes it
+            h = json.loads(self.api("/api/health")[2])
+            self.assertTrue(h["dns"] and any(e["k"] == "dns" and "panel.eye3test.invalid" in e["t"] for e in h["events"]))
+            self.assertEqual(json.loads(self.api("/api/xtream", server=self.up_url, user="u", **{"pass": "p"})[2])["channels"][0]["n"], "Xtream One")   # normal names still use the system
+        finally:
+            link.STATE["auto_fix"], link.STATE["dns"] = old[0], ""
+            link.DOH.clear(); link.DOH.update(old[2])
+            link.install_dns("")
+            doh.shutdown()
 
     # --- XMLTV guide, custom User-Agent
     def xmltv(self, path="/epg/guide.xml", **kw):

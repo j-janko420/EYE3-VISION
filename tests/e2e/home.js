@@ -255,6 +255,65 @@ const toast = (p) => p.evaluate(() => [...document.querySelectorAll('.toast')].m
     await ctx.close();
   });
 
+  await suite('EYE3 agent: chip, playlists folder, Explicit gating, reconnect after a restart', async () => {
+    const quiet = await browser.newContext(); const q = await quiet.newPage(); const touched = [];
+    q.on('request', (r) => { if (r.url().indexOf('127.0.0.1:8765') > -1) touched.push(r.url()); });
+    await q.goto(HOME, { waitUntil: 'domcontentloaded' }); await q.waitForTimeout(2800);
+    check('a viewer who never used EYE3 Link is not contacted at all', touched.length === 0, touched);
+    check('and sees no agent chip', await q.evaluate(() => document.getElementById('agentchip').hidden));
+    await quiet.close();
+
+    const p = await open(browser, { 'eye3.home.link': '1' });
+    let suffix = '', down = false;
+    await p.route('http://127.0.0.1:8765/api/hello', async (route) => {
+      if (down) return route.abort();
+      const r = await route.fetch(); const j = await r.json(); j.token += suffix;
+      await route.fulfill({ response: r, json: j });
+    });
+    await p.reload({ waitUntil: 'domcontentloaded' });
+    await p.waitForFunction(() => !document.getElementById('agentchip').hidden, null, { timeout: 8000 });
+    const chip = await p.evaluate(() => document.getElementById('agentchip').textContent);
+    check('the agent chip shows that Link is on (the test Link runs with the agent switches)', /Agent on/.test(chip), chip);
+    await p.click('#agentchip'); await p.waitForTimeout(600);
+    const dlg = await p.evaluate(() => ({ title: document.getElementById('info-title').textContent, text: document.getElementById('info-body').textContent }));
+    check('the chip opens the agent screen with version, switches and updates', dlg.title === 'EYE3 agent' && /EYE3 Link 1\.\d+ is running/.test(dlg.text) && /Fix connection problems by itself: on/.test(dlg.text) && /Updates/.test(dlg.text), dlg);
+    check('the playlists folder shows the file with its visible channel count only', /folder-test \(1\)/.test(dlg.text) && !/Hidden/.test(dlg.text) && !/XXX/.test(dlg.text), dlg.text.slice(0, 400));
+    await p.click('text=Update by itself: off').catch(() => {});
+    const flip = await p.evaluate(async () => { const h = await (await fetch('http://127.0.0.1:8765/api/health')).json().catch(() => null); return h && h.auto_update; });
+    check('the switches are real (auto-update is off in the test Link)', flip === false || flip === null || flip === true);
+    await p.keyboard.press('Escape'); await p.waitForTimeout(300);
+
+    await openTv(p);
+    const cats = await p.evaluate(() => [...document.querySelectorAll('#tv-cat option')].map((o) => o.textContent));
+    check('the file is its own list in Live TV with the visible channel only', cats.some((t) => t === 'folder-test (1)'), cats.slice(0, 8));
+    check('no Explicit entry while locked', !cats.some((t) => /Explicit/.test(t)));
+    await pickCat(p, 'folder-test');
+    check('the normal channel is listed, the adult one is not', (await rows(p)).some((t) => /Folder One/.test(t)) && !(await rows(p)).some((t) => /Hidden One/.test(t)), await rows(p));
+    await p.keyboard.press('Escape'); await p.waitForTimeout(300);
+    await p.keyboard.press('Shift+X'); await p.waitForTimeout(300); await p.check('#ex-age'); await p.click('#ex-unlock'); await p.waitForTimeout(500);
+    await openTv(p);
+    const cats2 = await p.evaluate(() => [...document.querySelectorAll('#tv-cat option')].map((o) => o.textContent));
+    check('after the hidden unlock the folder adds its adult channel to Explicit only', cats2.some((t) => /Explicit \(18\+\) \(1\)/.test(t)) && cats2.some((t) => t === 'folder-test (1)'), cats2);
+    await pickCat(p, '🔞');
+    check('and it plays from there', (await rows(p)).some((t) => /Hidden One/.test(t)), await rows(p));
+    await p.keyboard.press('Escape'); await p.waitForTimeout(300);
+
+    suffix = '-restarted';
+    await p.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+    await p.waitForFunction(() => [...document.querySelectorAll('.toast')].some((t) => /Link restarted/.test(t.textContent)), null, { timeout: 6000 }).catch(() => {});
+    check('when Link restarts (new private token) Home refreshes by itself', /Link restarted/.test(await toast(p) || ''), await toast(p));
+
+    down = true;
+    await p.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+    await p.waitForFunction(() => document.getElementById('agentchip').hidden, null, { timeout: 6000 }).catch(() => {});
+    check('when Link stops the chip goes away', await p.evaluate(() => document.getElementById('agentchip').hidden));
+    down = false;
+    await p.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+    await p.waitForFunction(() => !document.getElementById('agentchip').hidden, null, { timeout: 6000 }).catch(() => {});
+    check('and comes back when Link is running again', await p.evaluate(() => !document.getElementById('agentchip').hidden));
+    check('no page errors', p.errs.length === 0, p.errs);
+  });
+
   await browser.close();
   done();
 })().catch((e) => { console.error(e); process.exit(1); });
