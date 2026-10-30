@@ -1518,24 +1518,106 @@
     mkMsg("Added. Find it in Live TV under “My channels”.", "good");
     try { $("mk-name").focus(); } catch (er) {}
   });
+  // PDF import: the text of the PDF is read with pdf.js (loaded from a pinned CDN version only when a PDF is picked)
+  var PDFJS_BASE = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/", PDF_MAX_BYTES = 25 * 1024 * 1024, PDF_MAX_PAGES = 150;
+  function loadPdfjs() {
+    if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+    return new Promise(function (resolve, reject) {
+      var sc = document.createElement("script"); sc.src = PDFJS_BASE + "pdf.min.js";
+      sc.onload = function () {
+        if (!window.pdfjsLib) return reject(new Error("The PDF reader did not start."));
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_BASE + "pdf.worker.min.js"; resolve(window.pdfjsLib);
+      };
+      sc.onerror = function () { reject(new Error("Could not load the PDF reader (offline, or a blocker?). Copy the text into a .txt file and import that instead.")); };
+      document.head.appendChild(sc);
+    });
+  }
+  // text items -> lines: items on the same height form one line, read left to right, top to bottom
+  function pdfPageText(tc) {
+    var rows = [];
+    tc.items.forEach(function (it) {
+      if (typeof it.str !== "string" || !it.transform) return;
+      var y = it.transform[5], row = null;
+      for (var i = 0; i < rows.length; i++) if (Math.abs(rows[i].y - y) <= 2.5) { row = rows[i]; break; }
+      if (!row) { row = { y: y, items: [] }; rows.push(row); }
+      row.items.push({ x: it.transform[4], w: it.width || 0, s: it.str });
+    });
+    rows.sort(function (a, b) { return b.y - a.y; });
+    return rows.map(function (r) {
+      r.items.sort(function (a, b) { return a.x - b.x; });
+      var line = "", prevEnd = null;
+      r.items.forEach(function (it) { if (prevEnd !== null && it.x - prevEnd > 1.5 && line && !/\s$/.test(line) && !/^\s/.test(it.s)) line += " "; line += it.s; prevEnd = it.x + it.w; });
+      return line.replace(/\s+$/, "");
+    }).filter(Boolean).join("\n");
+  }
+  function pdfToText(buf) {
+    return loadPdfjs().then(function (lib) {
+      return lib.getDocument({ data: new Uint8Array(buf) }).promise;
+    }).then(function (doc) {
+      var n = Math.min(doc.numPages, PDF_MAX_PAGES), chain = Promise.resolve(""), pages = [];
+      var step = function (i) { chain = chain.then(function () { return doc.getPage(i); }).then(function (pg) { return pg.getTextContent(); }).then(function (tc) { pages.push(pdfPageText(tc)); }); };
+      for (var i = 1; i <= n; i++) step(i);
+      return chain.then(function () { return pages.join("\n"); });
+    });
+  }
+  // a PDF that is a plain list (name and link) instead of M3U lines: each link becomes a channel, named by the text before it or on the line above
+  function parseLinkText(text) {
+    var out = [], prev = "";
+    String(text).split(/\r?\n/).forEach(function (raw) {
+      var line = raw.replace(/^\s+|\s+$/g, ""); if (!line) return;
+      var urls = line.match(/https?:\/\/[^\s"'<>]+/g);
+      if (!urls) { prev = line.slice(0, 120); return; }
+      var before = line.slice(0, line.indexOf(urls[0])).replace(/[\s:|=>\-–—•·]+$/, "").replace(/^\s*\d+[.)]\s+/, "").trim();
+      urls.forEach(function (u, k) {
+        u = u.replace(/[),.;]+$/, "");
+        var host = ""; try { host = new URL(u).hostname; } catch (e) { return; }
+        var name = (k === 0 ? (before || prev) : "") || host;
+        out.push({ name: name.slice(0, 120), url: u, grp: "", logo: "", tvgid: "", sub: "", country: "", q: 0, adult: ADULT_RX.test(name) });
+      });
+      prev = "";
+    });
+    return out;
+  }
+  function importItems(items, input) {
+    var have = {}, added = 0;
+    myChannels.forEach(function (c) { have[c.u] = 1; });
+    items.forEach(function (c) {
+      if (myChannels.length >= MY_MAX || have[c.url] || !/^https?:\/\//i.test(c.url)) return;
+      have[c.url] = 1;
+      if (!c.adult || explicitUnlocked) added++;   // while locked, only visible channels are counted
+      myChannels.push({ n: c.name, u: c.url, g: c.grp || "", l: c.logo || "", i: c.tvgid || "" });
+    });
+    saveMy(); paintMaker(); refreshLists(); input.value = "";
+    mkMsg(added ? "Imported " + added + " channel" + (added === 1 ? "" : "s") + ". Find them in Live TV under “My channels”." : "No new playable channels in that file.", added ? "good" : "bad");
+  }
   $("mk-import").addEventListener("change", function () {
     var f = this.files && this.files[0], input = this;
     if (!f) return;
+    var isPdf = f.type === "application/pdf" || /\.pdf$/i.test(f.name || "");
     var r = new FileReader();
+    r.onerror = function () { input.value = ""; mkMsg("Could not read that file.", "bad"); };
+    if (isPdf) {
+      if (f.size > PDF_MAX_BYTES) { input.value = ""; return mkMsg("That PDF is larger than 25 MB.", "bad"); }
+      mkMsg("Reading the PDF…", "");
+      r.onload = function () {
+        pdfToText(r.result).then(function (text) {
+          if (!/\S/.test(text)) throw new Error("This PDF has no readable text (it may be a scan or pictures).");
+          var items = /#EXTINF/i.test(text) ? parseM3U(text) : parseLinkText(text);
+          if (!items.length) throw new Error("No stream links (http:// or https://) were found in this PDF.");
+          importItems(items, input);
+        })["catch"](function (err) {
+          input.value = "";
+          mkMsg(err && err.name === "PasswordException" ? "This PDF is password protected. Remove the password and try again." : (err && err.message) || "Could not read that PDF.", "bad");
+        });
+      };
+      r.readAsArrayBuffer(f);
+      return;
+    }
     r.onload = function () {
-      var text = String(r.result || ""), items = parseM3U(text), have = {}, added = 0;
+      var text = String(r.result || ""), items = parseM3U(text);
       if (!items.length && !/#EXTM3U/i.test(text)) { input.value = ""; return mkMsg("That file does not look like an M3U playlist (it should start with #EXTM3U).", "bad"); }
-      myChannels.forEach(function (c) { have[c.u] = 1; });
-      items.forEach(function (c) {
-        if (myChannels.length >= MY_MAX || have[c.url] || !/^https?:\/\//i.test(c.url)) return;
-        have[c.url] = 1;
-        if (!c.adult || explicitUnlocked) added++;   // while locked, only visible channels are counted
-        myChannels.push({ n: c.name, u: c.url, g: c.grp || "", l: c.logo || "", i: c.tvgid || "" });
-      });
-      saveMy(); paintMaker(); refreshLists(); input.value = "";
-      mkMsg(added ? "Imported " + added + " channel" + (added === 1 ? "" : "s") + ". Find them in Live TV under “My channels”." : "No new playable channels in that file.", added ? "good" : "bad");
+      importItems(items, input);
     };
-    r.onerror = function () { mkMsg("Could not read that file.", "bad"); };
     r.readAsText(f);
   });
   $("mk-export").addEventListener("click", function () {
