@@ -100,6 +100,32 @@ class Mock(BaseHTTPRequestHandler):
                               "#EXTINF:-1 group-title=\"H\",Needs Headers\n#EXTVLCOPT:http-user-agent=MyAgent/9\n#EXTVLCOPT:http-referrer=https://ref.example/\n%s/hdr/index.m3u8\n"
                               "#EXTINF:-1,Kodi Style\n%s/hdr/stream.ts|User-Agent=KodiUA&Referer=https%%3A%%2F%%2Fk.example%%2F&X-Evil=1\n"
                               "#EXTINF:-1,Injection\n%s/hdr/stream.ts|User-Agent=Bad%%0D%%0AX-Evil%%3A%%20y\n" % (host, host, host), "audio/x-mpegurl")
+        if u.path in ("/epg/guide.xml", "/epg/guide.xml.gz", "/epg/bad.xml", "/epg/evil.xml"):
+            import time as _t, gzip as _gz
+            Mock.seen["xmltv_hits"] = Mock.seen.get("xmltv_hits", 0) + 1
+            Mock.seen["xmltv_ua"] = self.headers.get("User-Agent")
+            if u.path == "/epg/bad.xml":
+                return self.reply("<tv><channel id='x'>", "text/xml")
+            if u.path == "/epg/evil.xml":
+                return self.reply('<?xml version="1.0"?><!DOCTYPE tv [<!ENTITY a "aaaa">]><tv></tv>', "text/xml")
+            now = int(_t.time())
+            fmt = lambda t, tz="+0100": _t.strftime("%Y%m%d%H%M%S", _t.gmtime(t + 3600)) + " " + tz       # +0100 local time of the epoch t
+            body = ('<?xml version="1.0" encoding="UTF-8"?><tv>'
+                    '<channel id="news.one"><display-name>News One HD</display-name></channel>'
+                    '<channel id="other"><display-name>Other</display-name></channel>'
+                    '<programme start="%s" stop="%s" channel="news.one"><title>Gone By</title></programme>'
+                    '<programme start="%s" stop="%s" channel="news.one"><title lang="en">Evening Bulletin</title><desc>All the news</desc></programme>'
+                    '<programme start="%s" stop="%s" channel="news.one"><title>Late Talk</title></programme>'
+                    '<programme start="%s" stop="%s" channel="news.one"><title>Far Future</title></programme>'
+                    '<programme start="%s" stop="%s" channel="other"><title>Other Show</title></programme>'
+                    '</tv>') % (fmt(now - 7200), fmt(now - 3700), fmt(now - 600), fmt(now + 1200), fmt(now + 1200), fmt(now + 3000),
+                               fmt(now + 90 * 3600), fmt(now + 91 * 3600), fmt(now - 100), fmt(now + 100))
+            if u.path.endswith(".gz"):
+                return self.reply(_gz.compress(body.encode()), "application/gzip")
+            return self.reply(body, "text/xml")
+        if u.path == "/ua/list.m3u":
+            Mock.seen["m3u_ua"] = self.headers.get("User-Agent")
+            return self.reply('#EXTM3U x-tvg-url="%s/epg/guide.xml"\n#EXTINF:-1 tvg-id="news.one" group-title="N",News One\n%s/hdr/stream.ts\n' % (host, host), "audio/x-mpegurl")
         if u.path == "/where":
             return self.reply("AE\n", "text/plain")
         if u.path == "/forbidden/index.m3u8":
@@ -293,6 +319,44 @@ class LinkTests(unittest.TestCase):
         self.assertTrue(up.unquote(d["u"]).split("?")[0].endswith(".ts") or ".ts&" in up.unquote(d["u"]) or ".ts" in up.unquote(d["u"]))
         self.assertEqual(d.get("t"), 1)
         self.assertNotIn("a", d)
+
+    # --- XMLTV guide, custom User-Agent
+    def xmltv(self, path="/epg/guide.xml", **kw):
+        return self.api("/api/xmltv", url=self.up_url + path, **kw)
+
+    def test_xmltv_now_next_by_id_and_by_name_with_time_zones(self):
+        Mock.seen["xmltv_hits"] = 0
+        code, _, body = self.xmltv(id="news.one")
+        self.assertEqual(code, 200)
+        items = json.loads(body)["items"]
+        self.assertEqual([i["t"] for i in items], ["Evening Bulletin", "Late Talk"])       # finished and far-future programmes are left out
+        self.assertEqual(items[0]["d"], "All the news")
+        import time as _t
+        self.assertTrue(items[0]["s"] < _t.time() < items[0]["e"])                         # it is on now (+0100 was converted to UTC)
+        by_name = json.loads(self.xmltv(id="", name="news one hd")[2])["items"]
+        self.assertEqual(by_name[0]["t"], "Evening Bulletin")                              # display-name fallback
+        self.assertEqual(Mock.seen["xmltv_hits"], 1)                                       # one download, then cached
+        gz = json.loads(self.xmltv("/epg/guide.xml.gz", id="news.one")[2])["items"]
+        self.assertEqual(gz[0]["t"], "Evening Bulletin")                                   # gzip guides work
+        self.assertEqual(json.loads(self.xmltv(id="nobody")[2])["items"], [])
+
+    def test_xmltv_rejects_bad_files(self):
+        self.assertEqual(self.xmltv("/epg/bad.xml", id="x")[0], 502)
+        code, _, body = self.xmltv("/epg/evil.xml", id="x")
+        self.assertEqual(code, 502)
+        self.assertIn("not allowed", json.loads(body)["error"])
+
+    def test_custom_user_agent_and_guide_link_in_m3u_header(self):
+        d = json.loads(self.api("/api/m3u", url=self.up_url + "/ua/list.m3u", ua="MyPlayer/7.1")[2])
+        self.assertEqual(Mock.seen["m3u_ua"], "MyPlayer/7.1")                              # the playlist itself is fetched with it
+        self.assertEqual(d["account"]["epg"], self.up_url + "/epg/guide.xml")             # x-tvg-url is reported
+        ch = d["channels"][0]
+        self.assertEqual(ch["i"], "news.one")                                              # tvg-id is passed on
+        get(self.port, ch["u"].split("127.0.0.1:%d" % self.port)[1])
+        self.assertEqual(Mock.seen["/hdr/stream.ts"]["ua"], "MyPlayer/7.1")                # and the stream carries it
+        d = json.loads(self.api("/api/xtream", server=self.up_url, user="u", ua="XtreamUA/2", **{"pass": "p"})[2])["channels"][0]
+        url = d["u"].split("127.0.0.1:%d" % self.port)[1]
+        self.assertIn("&h=", url)                                                          # Xtream streams carry a header id too
 
     # --- TV guide (EPG): now and next
     def test_epg_decodes_titles_sorts_and_skips_bad_rows(self):
