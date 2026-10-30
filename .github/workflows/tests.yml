@@ -75,4 +75,4 @@ jobs:
           >> "%D%\eye3-link.py" echo sys.exit(75 if n==0 else 0)
           call "%D%\eye3-start.bat"
           type "%D%\n.txt"
-          findstr /x "2" "%D%\n.txt" || exit /b 1
+          python -c "import sys; sys.exit(0 if open(r'%D%\n.txt').read().strip() == '2' else 1)"
