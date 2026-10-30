@@ -233,9 +233,9 @@ const toast = (p) => p.evaluate(() => [...document.querySelectorAll('.toast')].m
   });
 
   await suite('phone remote controls Home through the relay', async () => {
-    const L = await open(browser, { 'eye3.home.rc': 'KBB98EMJ' }, { url: H('&signal=http://127.0.0.1:9292') });
+    const L = await open(browser, { 'eye3.home.rc': 'TESTRC23' }, { url: H('&signal=http://127.0.0.1:9292') });
     await L.waitForTimeout(800);
-    const P = await open(browser, {}, { url: HOME.replace(/home\/.*/, 'remote/') + '?signal=http://127.0.0.1:9292#c=KBB98EMJ', ctx: { viewport: { width: 390, height: 844 } } });
+    const P = await open(browser, {}, { url: HOME.replace(/home\/.*/, 'remote/') + '?signal=http://127.0.0.1:9292#c=TESTRC23', ctx: { viewport: { width: 390, height: 844 } } });
     check('the remote shows it is connected', /Connected/.test(await P.evaluate(() => document.body.innerText)));
     const before = await L.evaluate(() => document.querySelector('.tile.on').textContent);
     await P.click('button:text-is("▶")'); await P.waitForTimeout(2000);
