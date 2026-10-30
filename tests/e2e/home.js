@@ -74,9 +74,9 @@ const toast = (p) => p.evaluate(() => [...document.querySelectorAll('.toast')].m
     const p = await open(browser, { 'eye3.home.accts': [XT] });
     await p.route('https://cdn.jsdelivr.net/npm/mpegts.js**', (r) => r.fulfill({ status: 200, contentType: 'application/javascript', body: MPEGTS_STUB }));
     await openTv(p); await pickCat(p, 'Mock TV');
-    await p.click('#chlist .ch >> text=Xtream One'); await p.waitForTimeout(3500);
-    const label = await p.textContent('#chlabel');
-    check('HLS fails, the TS player is tried with the Link address', (await p.evaluate(() => window.__tsCalls || [])).some((u) => /127\.0\.0\.1:8765\/stream\?/.test(u) && /11\.ts/.test(decodeURIComponent(u))));
+    await p.click('#chlist .ch >> text=Xtream One');
+    await p.waitForFunction(() => (window.__tsCalls || []).length > 0, null, { timeout: 25000 }).catch(() => {});   // real hls.js retries before giving up
+    check('HLS fails, the TS player is tried with the Link address', (await p.evaluate(() => window.__tsCalls || [])).some((u) => /127\.0\.0\.1:8765\/stream\?/.test(u) && /11\.ts/.test(decodeURIComponent(u))), await p.evaluate(() => window.__tsCalls));
     await p.click('#chlist .ch >> text=Xtream Two'); await p.waitForTimeout(600);
     check('recently watched appears and lists newest first', JSON.parse(await p.evaluate(() => localStorage.getItem('eye3.home.recent')))[0] === 'Mock TV|Xtream Two');
     check('the category "Recently watched" exists at once', (await p.evaluate(() => [...document.querySelectorAll('#tv-cat option')].map((o) => o.textContent))).some((t) => /Recently watched/.test(t)));
@@ -252,7 +252,7 @@ const toast = (p) => p.evaluate(() => [...document.querySelectorAll('.toast')].m
     await p.goto('https://localhost:8443/home/?splash=0', { waitUntil: 'domcontentloaded' }); await p.waitForTimeout(800);
     await openTv(p); await pickCat(p, 'My channels');
     await p.click('#chlist .ch >> text=Plain Http Channel'); await p.waitForTimeout(2000);
-    check('the stream is fetched through EYE3 Link with its token', sent.length === 1 && /[?&]t=/.test(sent[0]), sent);
+    check('the stream is fetched through EYE3 Link with its token', sent.length >= 1 && sent.every((u) => /[?&]t=/.test(u) && /u=http%3A%2F%2Fexample\.test/.test(u)), sent);
     await ctx.close();
   });
 
