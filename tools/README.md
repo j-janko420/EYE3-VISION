@@ -40,6 +40,11 @@ In EYE3 Home on one device open **Settings → Sync phone and laptop → Create 
 ### Import a playlist from a PDF
 In **Playlist maker → Import an M3U file** you can also pick a **PDF**. EYE3 reads its text on your own device (nothing is uploaded; the PDF reader is downloaded once from a public library host). If the PDF contains M3U lines it is read as an M3U playlist. Otherwise every `http://` or `https://` link becomes a channel, named by the text before the link on the same line or on the line above (a link with no name uses its website name). Scanned pictures, password-protected PDFs and links broken across two lines are not supported: copy the text into a `.txt` file instead.
 
+### TV guide, recently watched and resume
+- **Now and next:** for Xtream accounts, the label on the video shows what is on now and what is next for the channel you play (if your provider supplies a guide). It needs EYE3 Link 1.4 or newer.
+- **Recently watched:** the last 30 channels you played, newest first, under the category **🕘 Recently watched**.
+- **Resume:** movies, episodes and free movies continue where you stopped (a "continue at" note appears in the list). It is stored on that device only.
+
 ### Direct links
 Open these on the laptop to jump straight to the right form (nothing is filled in or saved from the link):
 - M3U link: `https://j-janko420.github.io/EYE3-VISION/home/?add=m3u`

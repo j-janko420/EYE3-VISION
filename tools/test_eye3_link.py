@@ -46,6 +46,16 @@ class Mock(BaseHTTPRequestHandler):
             if act == "get_live_streams":
                 return self.reply([{"name": "Xtream One", "stream_id": 11, "category_id": "1", "stream_icon": "i.png"},
                                    {"name": "Hidden", "stream_id": 12, "category_id": "2"}])
+            if act == "get_short_epg":
+                import base64 as _b
+                enc = lambda t: _b.b64encode(t.encode()).decode()
+                if q.get("stream_id") == "11":
+                    return self.reply({"epg_listings": [
+                        {"title": enc("Evening News"), "description": enc("Headlines of the day"), "start_timestamp": "2000", "stop_timestamp": "3000"},
+                        {"title": enc("Weather"), "description": "", "start_timestamp": "1000", "stop_timestamp": "2000"},
+                        {"title": "Plain Title", "description": "plain words", "start_timestamp": "3000", "stop_timestamp": "4000"},
+                        {"title": enc("Broken"), "start_timestamp": "x", "stop_timestamp": "5000"}]})
+                return self.reply({"epg_listings": []})
             if act == "get_vod_categories":
                 return self.reply([{"category_id": "7", "category_name": "Action"}, {"category_id": "8", "category_name": "XXX Adult"}])
             if act == "get_vod_streams":
@@ -208,6 +218,19 @@ class LinkTests(unittest.TestCase):
         self.assertNotEqual(code, 200)
         code, _, _ = get(self.port, "/api/vod?" + up.urlencode({"server": self.up_url, "user": "u", "pass": "p", "kind": "movie"}), {"Origin": "https://evil.example"})
         self.assertEqual(code, 403)
+
+    # --- TV guide (EPG): now and next
+    def test_epg_decodes_titles_sorts_and_skips_bad_rows(self):
+        code, _, body = self.vod("/api/epg", id="11")
+        self.assertEqual(code, 200)
+        items = json.loads(body)["items"]
+        self.assertEqual([i["t"] for i in items], ["Weather", "Evening News", "Plain Title"])
+        self.assertEqual(items[1], {"t": "Evening News", "d": "Headlines of the day", "s": 2000, "e": 3000})
+        self.assertEqual(items[2]["d"], "plain words")                       # plain text is kept as it is
+        self.assertEqual(json.loads(self.vod("/api/epg", id="99")[2])["items"], [])
+        self.assertEqual(self.vod("/api/epg", id="1;rm")[0], 502)            # ids must be numeric
+        code, _, body = self.api("/api/xtream", server=self.up_url, user="u", **{"pass": "p"})
+        self.assertEqual(json.loads(body)["channels"][0]["e"], 11)           # live rows carry their stream id
 
     # --- --dns: DNS-over-HTTPS only when the normal lookup fails
     def test_dns_off_gives_a_hint_and_on_resolves_through_doh(self):

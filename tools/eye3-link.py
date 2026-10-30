@@ -20,13 +20,13 @@ If your computer cannot find a provider's address ("getaddrinfo failed") but ano
 
 Run:   python3 eye3-link.py          (Windows: py eye3-link.py)      Stop: Ctrl+C
 """
-import argparse, hashlib, ipaddress, json, os, re, secrets, socket, ssl, sys, time
+import argparse, base64, hashlib, ipaddress, json, os, re, secrets, socket, ssl, sys, time
 import urllib.error as ue
 import urllib.parse as up
 import urllib.request as ur
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.3"
+VERSION = "1.4"
 ALLOWED_ORIGINS = ["https://j-janko420.github.io"]          # more: EYE3_ORIGINS=https://a,https://b
 LOCAL_ORIGIN = re.compile(r"^http://(localhost|127\.0\.0\.1)(:\d+)?$")
 BAD = re.compile(r"adult|xxx|18\+|porn|erotic|\bsex|playboy|hustler|brazzers|dorcel|penthouse|redlight", re.I)
@@ -276,7 +276,7 @@ def channels_from_xtream(server, user, password):
         if not s.get("stream_id"):
             continue
         direct = "%s/live/%s/%s/%s.m3u8" % (base, up.quote(user, safe=""), up.quote(password, safe=""), s["stream_id"])
-        ch = {"n": name, "c": cat, "u": stream_url(direct), "l": str(s.get("stream_icon") or "")}
+        ch = {"n": name, "c": cat, "u": stream_url(direct), "l": str(s.get("stream_icon") or ""), "e": s["stream_id"]}
         if BAD.search(name + " " + cat):
             ch["x"] = True
         chans.append(ch)
@@ -373,6 +373,38 @@ def vod_series_info(server, user, password, series_id):
     if not out:
         raise LinkError("No episodes were listed for this series.")
     return {"title": str(meta.get("name") or ""), "plot": str(meta.get("plot") or "")[:600], "seasons": out}
+
+
+def b64text(v):
+    """Xtream panels send programme titles and descriptions as base64; some send plain text."""
+    v = str(v or "")
+    try:
+        out = base64.b64decode(v, validate=True).decode("utf-8")
+        return out if out.isprintable() or "\n" in out else v
+    except Exception:
+        return v
+
+
+def xtream_epg(server, user, password, stream_id, limit=4):
+    """What is on now and next for one live channel (Xtream get_short_epg)."""
+    base, api = xtream_api(server, user, password)
+    if not str(stream_id).isdigit():
+        raise LinkError("That channel has no valid id.")
+    data = vod_json(api + "&action=get_short_epg&stream_id=%s&limit=%d" % (stream_id, limit))
+    rows = data.get("epg_listings") if isinstance(data, dict) else []
+    out = []
+    for r in rows or []:
+        if not isinstance(r, dict):
+            continue
+        try:
+            start, stop = int(r.get("start_timestamp")), int(r.get("stop_timestamp"))
+        except (TypeError, ValueError):
+            continue
+        title = b64text(r.get("title")).strip()
+        if title and stop > start:
+            out.append({"t": title[:160], "d": b64text(r.get("description")).strip()[:300], "s": start, "e": stop})
+    out.sort(key=lambda x: x["s"])
+    return {"items": out}
 
 
 def vod_play_url(server, user, password, kind, ident, ext):
@@ -608,6 +640,10 @@ class Handler(BaseHTTPRequestHandler):
             if not (one("server") and one("user") and one("pass")):
                 raise LinkError("Enter the server, username and password.")
             return self.send_json(200, channels_from_xtream(one("server"), one("user"), one("pass")))
+        if path == "/api/epg":
+            if not (one("server") and one("user") and one("pass")):
+                raise LinkError("Enter the server, username and password.")
+            return self.send_json(200, xtream_epg(one("server"), one("user"), one("pass"), one("id")))
         if path in ("/api/vod", "/api/vod/series", "/api/vod/play"):
             if not (one("server") and one("user") and one("pass")):
                 raise LinkError("Enter the server, username and password.")

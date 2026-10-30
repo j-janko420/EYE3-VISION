@@ -24,6 +24,12 @@ Live TV → Movies & series (`#ov-vod`, also `home/?add=movies`) lists the movie
 
 "Free movies" (button in the same screen, no account and no EYE3 Link) lists public-domain feature films from the Internet Archive: the browser calls `archive.org/advancedsearch.php` (collection `feature_films`, adult subjects and titles excluded, paged, genre via `subject:`) and `archive.org/metadata/<id>`, picks the h.264 mp4 (else any mp4/webm/ogv, no trailers) and plays it from `archive.org/download/`. The API answers with `Access-Control-Allow-Origin: *` (checked from a GitHub runner). Keep it to that curated collection; do not add scraped or unlicensed movie sources, and never list adult titles from it.
 
+## Pro player features (guide, recents, resume)
+- **TV guide:** Xtream live channels carry their stream id (`e` from EYE3 Link, `eid` in Home). Playing one asks `GET /api/epg?id=` (Xtream `get_short_epg`, titles base64-decoded, bad rows skipped, ids must be numeric) and adds "Now: … (until hh:mm) · Next: … (hh:mm)" to the channel label; cached 2 minutes and refreshed when the current programme ends. Channels without a guide just show their name.
+- **Recently watched:** category "🕘 Recently watched" (last 30, newest first, `eye3.home.recent`). Keyed by `category|name`, not by URL, because EYE3 Link URLs change at every start. Adult channels are never recorded.
+- **Resume:** `eye3.home.resume` keeps the position (and duration) of movies, episodes and free movies (200 entries). It resumes after 30 s unless fewer than 60 s remain, saves every 8 s, forgets a title when it ends, and the title row shows "continue at m:ss".
+- Next on the "pro" list: wider stream support (raw `.ts`, more codecs), profiles with a parental PIN, a packaged desktop installer, and license activation. Ship no channels or movies of the product's own.
+
 ## Language (English only)
 EYE3 Home runs in **English only** by request: there is no language setting, `startLang()` ignores the browser language and clears any saved `eye3.home.lang`. The paragraph below describes the dormant engine, kept so a language can be switched back on later; do not re-add a visible language switch without the owner asking.
 

@@ -757,6 +757,7 @@
     var addOpt = function (s, value, text) { var o = make("option", "", text); o.value = value; s.appendChild(o); };
     addOpt(sel, "All", "All categories (" + allChannels.filter(function (c) { return !c.adult; }).length + ")");
     addOpt(sel, FAVS, FAVS + " (" + favs.length + ")");
+    if (recent.length) addOpt(sel, RECENT, RECENT + " (" + recent.length + ")");
     cs.order.forEach(function (k) { addOpt(sel, k, k + " (" + cs.counts[k] + ")"); });
     if (explicitUnlocked) addOpt(sel, EXPLICIT, EXPLICIT + " (" + allChannels.filter(function (c) { return c.adult; }).length + ")");
     if ([].slice.call(sel.options).every(function (o) { return o.value !== cur; })) cur = "All";
@@ -774,7 +775,7 @@
   }
   function fillGroups() {
     var sel = $("tv-group"), cat = tvFilter.cat, counts = {}, keys = [];
-    if (cat !== "All" && cat !== FAVS) allChannels.forEach(function (c) { if ((cat === EXPLICIT ? c.adult : c.cat === cat && !c.adult) && c.grp) { if (!counts[c.grp]) { counts[c.grp] = 0; keys.push(c.grp); } counts[c.grp]++; } });
+    if (cat !== "All" && cat !== FAVS && cat !== RECENT) allChannels.forEach(function (c) { if ((cat === EXPLICIT ? c.adult : c.cat === cat && !c.adult) && c.grp) { if (!counts[c.grp]) { counts[c.grp] = 0; keys.push(c.grp); } counts[c.grp]++; } });
     while (sel.firstChild) sel.removeChild(sel.firstChild);
     if (keys.length < 2) { sel.hidden = true; tvFilter.group = ""; return; }
     keys.sort(function (a, b) { return a.localeCompare(b); });
@@ -789,13 +790,14 @@
     var list = allChannels.filter(function (c) {
       if (tvFilter.cat === EXPLICIT) { if (!(explicitUnlocked && c.adult)) return false; }
       else if (c.adult) return false;
-      else if (tvFilter.cat === FAVS ? !isFav(c.url) : (tvFilter.cat !== "All" && c.cat !== tvFilter.cat)) return false;
+      else if (tvFilter.cat === FAVS ? !isFav(c.url) : tvFilter.cat === RECENT ? recent.indexOf(rkey(c)) < 0 : (tvFilter.cat !== "All" && c.cat !== tvFilter.cat)) return false;
       if (tvFilter.country && c.country !== tvFilter.country) return false;
       if (tvFilter.group && c.grp !== tvFilter.group) return false;
       if (q && c.name.toLowerCase().indexOf(q) === -1) return false;
       if (hideFailed && failedRecently(c.url)) { hiddenByCheck++; return false; }
       return true;
     });
+    if (tvFilter.cat === RECENT) list.sort(function (x, y) { return recent.indexOf(rkey(x)) - recent.indexOf(rkey(y)); });   // newest first
     tvHidden = hiddenByCheck;
     tvTotal = list.length;
     channels = list.slice(0, MAXROWS);
@@ -810,7 +812,7 @@
       var row = make("div", "ch");
       row.appendChild(make("b", "num", String(i + 1)));
       row.appendChild(nt(make("span", "", c.name)));
-      var meta = [c.q ? c.q + "p" : "", c.country, c.sub || (tvFilter.cat === "All" || tvFilter.cat === FAVS ? c.grp : "")].filter(Boolean).join(" · ");
+      var meta = [c.q ? c.q + "p" : "", c.country, c.sub || (tvFilter.cat === "All" || tvFilter.cat === FAVS || tvFilter.cat === RECENT ? c.grp : "")].filter(Boolean).join(" · ");
       if (meta) row.appendChild(make("small", "", meta));
       if (isFav(c.url)) row.appendChild(make("i", "fav", "★"));
       if (health[c.url] && health[c.url][0] === 1 && Date.now() - health[c.url][1] < HEALTH_TTL) row.appendChild(make("i", "fav", "✓"));
@@ -818,7 +820,7 @@
       list.appendChild(row);
     });
     var note = function (t) { list.appendChild(make("div", "ch action", t)); };
-    if (!channels.length) note(tvFilter.cat === FAVS ? "No favourites yet. Press L on a channel to add it." : "No channels match. Try another category, country or search.");
+    if (!channels.length) note(tvFilter.cat === FAVS ? "No favourites yet. Press L on a channel to add it." : tvFilter.cat === RECENT ? "Nothing watched yet." : "No channels match. Try another category, country or search.");
     if (tvTotal > channels.length) note("Showing the first " + channels.length + " of " + tvTotal + ". Narrow it with a category, country or search.");
     if (catalogueState === "loading") note("Loading the full channel list…");
     if (catalogueState === "failed") note("The full channel list could not be loaded (offline?). Showing EYE3 picks and your lists.");
@@ -902,13 +904,48 @@
   function showLabel(text, isErr) {
     var l = $("chlabel"); l.textContent = text; l.className = "label" + (isErr ? " err" : ""); l.style.display = "block";
   }
+  // ---- Recently watched (by name, so it survives EYE3 Link restarts) ----
+  var RECENT_KEY = "eye3.home.recent", RECENT = "🕘 Recently watched", recent = [];
+  try { recent = (JSON.parse(get(RECENT_KEY) || "[]") || []).filter(function (x) { return typeof x === "string"; }).slice(0, 30); } catch (e) { recent = []; }
+  function rkey(c) { return c.cat + "|" + c.name; }
+  function noteRecent(c) {
+    if (c.adult) return;                               // adult channels leave no trace in this list
+    var k = rkey(c), first = !recent.length; recent = recent.filter(function (x) { return x !== k; }); recent.unshift(k); recent = recent.slice(0, 30);
+    set(RECENT_KEY, JSON.stringify(recent));
+    if (first) fillSelects();                          // the category appears as soon as there is something in it
+  }
+  // ---- TV guide: what is on now and next (Xtream accounts, read through EYE3 Link) ----
+  var epgCache = {}, playToken = 0, epgTimer = null;
+  function clock(sec) { var d = new Date(sec * 1000); return ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2); }
+  function epgFor(c, title, token) {
+    clearTimeout(epgTimer);
+    if (!c.eid || !c.acct) return;
+    var a = accounts.filter(function (x) { return x.id === c.acct && x.type === "xtream"; })[0]; if (!a) return;
+    var key = a.id + "|" + c.eid, hit = epgCache[key];
+    var show = function (items) {
+      if (token !== playToken) return;
+      var now = Date.now() / 1000, cur = null, next = null;
+      items.forEach(function (it) { if (it.s <= now && now < it.e) cur = it; else if (it.s >= now && !next) next = it; });
+      var bits = [];
+      if (cur) bits.push("Now: " + cur.t + " (until " + clock(cur.e) + ")");
+      if (next) bits.push("Next: " + next.t + " (" + clock(next.s) + ")");
+      if (bits.length) showLabel(title + " — " + bits.join(" · "), false);
+      var wait = cur ? Math.min(Math.max(cur.e - now + 2, 20), 600) : 300;
+      epgTimer = setTimeout(function () { delete epgCache[key]; if (token === playToken) epgFor(c, title, token); }, wait * 1000);
+    };
+    if (hit && Date.now() - hit.t < 120000) return show(hit.items);
+    linkGet("/api/epg", { server: a.server, user: a.user, pass: a.pass, id: String(c.eid) }).then(function (d) {
+      epgCache[key] = { t: Date.now(), items: d.items || [] }; show(epgCache[key].items);
+    })["catch"](function () { /* no guide for this channel: the channel name alone is fine */ });
+  }
   function playChannel(i) {
     var c = channels[i]; if (!c || !c.url) return;
     $("idle").style.display = "none";
     set(LAST_KEY, c.url);
     var video = $("video"), title = (i + 1) + " · " + c.name + (c.q ? " · " + c.q + "p" : "") + (c.country ? " · " + c.country : "");
     stopHls();
-    showLabel(title, false);
+    var token = ++playToken;
+    showLabel(title, false); noteRecent(c); epgFor(c, title, token);
     if (video.canPlayType("application/vnd.apple.mpegurl")) {
       video.src = c.url;
     } else if (window.Hls && window.Hls.isSupported()) {
@@ -1008,7 +1045,7 @@
     paintAccounts();
     var req = acctRequest(a);
     return linkGet(req[0], req[1]).then(function (d) {
-      acctChannels[a.id] = (d.channels || []).map(function (c) { return { name: c.n, cat: a.name, grp: c.c || "", country: "", url: c.u, q: 0, sub: "", adult: !!c.x }; });
+      acctChannels[a.id] = (d.channels || []).map(function (c) { return { name: c.n, cat: a.name, grp: c.c || "", country: "", url: c.u, q: 0, sub: "", adult: !!c.x, eid: c.e || 0, acct: a.id }; });
       var info = d.account || {};
       var bits = [acctChannels[a.id].filter(function (c) { return !c.adult; }).length + " channels"];
       if (info.status) bits.push(info.status);
@@ -1260,6 +1297,29 @@
     for (var k in extra) o[k] = extra[k];
     return o;
   }
+  // ---- Resume: where you stopped in a movie or episode, kept on this device ----
+  var RESUME_KEY = "eye3.home.resume", resume = {};
+  try { resume = JSON.parse(get(RESUME_KEY) || "{}") || {}; } catch (e) { resume = {}; }
+  function resumeSave() {
+    var keys = Object.keys(resume);
+    if (keys.length > 200) keys.sort(function (a, b) { return resume[a].t - resume[b].t; }).slice(0, keys.length - 200).forEach(function (k) { delete resume[k]; });
+    set(RESUME_KEY, JSON.stringify(resume));
+  }
+  function mmss(sec) { sec = Math.max(0, Math.floor(sec)); var h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60; return (h ? h + ":" + ("0" + m).slice(-2) : m) + ":" + ("0" + s).slice(-2); }
+  function resumeAttach(video, key, title) {
+    var last = 0; video._rs = "";
+    video.onloadedmetadata = function () {
+      var r = resume[key];
+      if (r && r.p > 30 && isFinite(video.duration) && video.duration - r.p > 60) { try { video.currentTime = r.p; video._rs = mmss(r.p); } catch (e) {} }
+    };
+    video.ontimeupdate = function () {
+      var now = Date.now();
+      if (now - last < 8000 || !isFinite(video.duration) || video.currentTime < 5) return;
+      last = now; resume[key] = { p: Math.floor(video.currentTime), d: Math.floor(video.duration), t: now }; resumeSave();
+    };
+    video.onended = function () { delete resume[key]; resumeSave(); };
+    video.onplaying = function () { vodLabel(title + (video._rs ? " — resumed at " + video._rs : ""), false); setTimeout(function () { $("vod-label").style.display = "none"; }, 4000); };
+  }
   function vodLabel(text, isErr) { var l = $("vod-label"); l.textContent = text; l.className = "label" + (isErr ? " err" : ""); l.style.display = "block"; }
   function vodStop() {
     var v = $("vod-video");
@@ -1331,7 +1391,8 @@
     vod.titles.forEach(function (it, i) {
       var row = make("div", "ch" + (i === vod.idx ? " on" : "")); row.tabIndex = 0;
       row.appendChild(nt(make("span", "", it.n)));
-      var meta = [it.y, it.r ? "★ " + it.r : "", vod.cat === "All" ? it.c : ""].filter(Boolean).join(" · ");
+      var rs = vod.kind === "movie" && resume[vod.acct + "|movie|" + it.id];
+      var meta = [rs ? "continue at " + mmss(rs.p) : "", it.y, it.r ? "★ " + it.r : "", vod.cat === "All" ? it.c : ""].filter(Boolean).join(" · ");
       if (meta) row.appendChild(nt(make("small", "", meta)));
       row.addEventListener("click", function () { vod.idx = i; vodPick(it); vodRender(); });
       row.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); vod.idx = i; vodPick(it); } });
@@ -1377,7 +1438,7 @@
       v.onerror = function () {
         vodLabel(title + " — can't play this file here." + (/^(mkv|avi|ts|flv|wmv)$/.test(d.ext) ? " A ." + d.ext + " file often needs VLC." : " Is EYE3 Link still running?"), true);
       };
-      v.onplaying = function () { vodLabel(title, false); setTimeout(function () { $("vod-label").style.display = "none"; }, 4000); };
+      resumeAttach(v, a.id + "|" + vod.kind + "|" + ep.id, title);
       v.src = d.url;
       var p = v.play(); if (p && p["catch"]) p["catch"](function () {});
     })["catch"](function (err) { vodLabel(title + " — " + err.message, true); });
@@ -1455,7 +1516,7 @@
       if (!f) throw new Error("has no video file a browser can play");
       var v = $("vod-video");
       v.onerror = function () { vodLabel(title + " — can't play this file here. Try another movie.", true); };
-      v.onplaying = function () { vodLabel(title, false); setTimeout(function () { $("vod-label").style.display = "none"; }, 4000); };
+      resumeAttach(v, "free|" + it.id, title);
       v.src = "https://archive.org/download/" + encodeURIComponent(it.id) + "/" + f.name.split("/").map(encodeURIComponent).join("/");
       var p = v.play(); if (p && p["catch"]) p["catch"](function () {});
     })["catch"](function (err) { vodLabel(title + " — " + (err && err.message || "could not load") + ".", true); });
@@ -1472,7 +1533,8 @@
     free.items.forEach(function (it) {
       var row = make("div", "ch"); row.tabIndex = 0;
       row.appendChild(nt(make("span", "", it.n)));
-      if (it.y) row.appendChild(make("small", "", it.y));
+      var frs = resume["free|" + it.id];
+      if (frs || it.y) row.appendChild(make("small", "", [frs ? "continue at " + mmss(frs.p) : "", it.y].filter(Boolean).join(" · ")));
       row.addEventListener("click", function () { freePlay(it); });
       row.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); freePlay(it); } });
       list.appendChild(row);
