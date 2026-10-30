@@ -34,6 +34,9 @@ Add your Xtream Codes account (server, username, password), then Live TV → **M
 ### Free movies (no account)
 In Live TV → **Movies & series** press **Free movies**: public-domain films from the [Internet Archive](https://archive.org), by genre or search. No account and no EYE3 Link needed, only an internet connection that can reach archive.org (a VPN or proxy can block it).
 
+### Keep your phone and laptop the same
+In EYE3 Home on one device open **Settings → Sync phone and laptop → Create a new code**, then type that code on the other device (or open the link shown under the code and press Start). From then on, channels you add, import or delete under **My channels**, and your favourites (★), update on both devices within a few seconds while both have EYE3 Home open and online. The first time, the two lists are combined. Your IPTV account logins, passwords and MAC addresses are never synced (add them on each computer), and the updates are encrypted with the code before they pass through a free relay, so keep the code private. **Stop syncing** turns it off on that device.
+
 ### Direct links
 Open these on the laptop to jump straight to the right form (nothing is filled in or saved from the link):
 - M3U link: `https://j-janko420.github.io/EYE3-VISION/home/?add=m3u`

@@ -351,7 +351,7 @@
         <button class="btn on" type="submit">Add channel</button>
       </form>
       <div class="acct-form">
-        <label>Import an M3U file <input class="field" id="mk-import" type="file" accept=".m3u,.m3u8,audio/x-mpegurl,text/plain"></label>
+        <label>Import an M3U file <input class="field" id="mk-import" type="file"></label>
         <label>Export
           <select class="btn" id="mk-scope" aria-label="What to export">
             <option value="favs">My favourites (★)</option>
@@ -727,7 +727,7 @@
   function toggleFav(url) {
     var i = favs.indexOf(url);
     if (i > -1) favs.splice(i, 1); else favs.push(url);
-    set(FAV_KEY, JSON.stringify(favs));
+    set(FAV_KEY, JSON.stringify(favs)); syncChanged();
     return i === -1;
   }
 
@@ -1229,7 +1229,7 @@
   // ---- Playlist maker: add your own channels, import an M3U file, export an M3U file (nothing is uploaded) ----
   var MY_KEY = "eye3.home.mychannels", MY_MAX = 2000, myChannels = [];
   try { myChannels = (JSON.parse(get(MY_KEY) || "[]") || []).filter(function (c) { return c && c.n && /^https?:\/\//i.test(c.u || ""); }); } catch (e) { myChannels = []; }
-  function saveMy() { set(MY_KEY, JSON.stringify(myChannels.slice(0, MY_MAX))); }
+  function saveMy() { set(MY_KEY, JSON.stringify(myChannels.slice(0, MY_MAX))); syncChanged(); }
   function myAsChannels() {
     return myChannels.map(function (c) {
       return { name: c.n, cat: "My channels", grp: c.g || "", country: "", url: c.u, q: 0, sub: "", logo: c.l || "", tvgid: c.i || "", adult: ADULT_RX.test((c.g || "") + " " + c.n) };
@@ -1523,7 +1523,8 @@
     if (!f) return;
     var r = new FileReader();
     r.onload = function () {
-      var items = parseM3U(String(r.result || "")), have = {}, added = 0;
+      var text = String(r.result || ""), items = parseM3U(text), have = {}, added = 0;
+      if (!items.length && !/#EXTM3U/i.test(text)) { input.value = ""; return mkMsg("That file does not look like an M3U playlist (it should start with #EXTM3U).", "bad"); }
       myChannels.forEach(function (c) { have[c.u] = 1; });
       items.forEach(function (c) {
         if (myChannels.length >= MY_MAX || have[c.url] || !/^https?:\/\//i.test(c.url)) return;
@@ -1853,7 +1854,9 @@
     ts.type = "button"; ts.addEventListener("click", openTvSetup);
     var hp = make("button", "btn", "Help, VPN & useful tools");
     hp.type = "button"; hp.addEventListener("click", openHelp);
-    var kv = make("div", "kv"); kv.appendChild(fs); kv.appendChild(ac); kv.appendChild(ts); kv.appendChild(hp); kv.appendChild(rc); kv.appendChild(sl); kv.appendChild(sv); kv.appendChild(pl); kv.appendChild(inst); kv.appendChild(setup); kv.appendChild(ph);
+    var sy = make("button", "btn", syncCode ? "Sync phone and laptop: on" : "Sync phone and laptop");
+    sy.type = "button"; sy.addEventListener("click", function () { openSyncInfo(); });
+    var kv = make("div", "kv"); kv.appendChild(fs); kv.appendChild(ac); kv.appendChild(ts); kv.appendChild(hp); kv.appendChild(rc); kv.appendChild(sy); kv.appendChild(sl); kv.appendChild(sv); kv.appendChild(pl); kv.appendChild(inst); kv.appendChild(setup); kv.appendChild(ph);
     rowsHtml(body, [
       para("EYE3 Home runs in this browser and shows on the TV over HDMI. For the best look, press F or use the button below to go fullscreen."),
       kv,
@@ -2119,6 +2122,223 @@
     setTimeout(function () { try { first.focus(); } catch (e) {} }, 60);
   }
   (function () { var c = get(RC_KEY); if (c && /^[A-Z0-9]{8}$/.test(c)) rcStart(c); })();
+
+  // ---- Sync devices: keep "My channels" and favourites the same on your phone and laptop ----
+  // Both devices type the same 12-character code. The code makes an AES-GCM key (PBKDF2) and, separately, a relay topic.
+  // Only encrypted, chunked snapshots go through the free ntfy relay. Account logins, passwords and MACs are never synced.
+  var SYNC_KEY = "eye3.home.sync", SYNC_STATE = "eye3.home.sync.state", SYNC_ALPHABET = "ABCDEFGHJKMNPQRSTVWXYZ23456789", SYNC_CHUNK = 3000;
+  var syncCode = "", syncTopic = "", syncAes = null, syncSource = null, syncPoll = null, syncSince = "12h", syncSeen = {}, syncParts = {}, syncTimer = null;
+  var syncApplying = false, syncSending = false, syncPending = false, syncStatus = "";
+  var syncState = { ts: 0, merged: false, dev: "" };
+  try { var ss = JSON.parse(get(SYNC_STATE) || "null"); if (ss && typeof ss.ts === "number") syncState = { ts: ss.ts, merged: !!ss.merged, dev: String(ss.dev || "") }; } catch (e) {}
+  if (!syncState.dev) { syncState.dev = Math.random().toString(16).slice(2, 10); }
+  function syncSave() { set(SYNC_STATE, JSON.stringify(syncState)); }
+  function syncPretty(c) { return c.slice(0, 4) + "-" + c.slice(4, 8) + "-" + c.slice(8); }
+  function syncNorm(v) { return String(v || "").toUpperCase().replace(/[^A-Z0-9]/g, ""); }
+  function syncValid(c) { return c.length === 12 && c.split("").every(function (ch) { return SYNC_ALPHABET.indexOf(ch) > -1; }); }
+  function syncNewCode() {
+    var out = "", buf = new Uint32Array(12); window.crypto.getRandomValues(buf);
+    for (var i = 0; i < 12; i++) out += SYNC_ALPHABET.charAt(buf[i] % SYNC_ALPHABET.length);
+    return out;
+  }
+  function b64u(bytes) { var s = ""; for (var i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]); return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); }
+  function unb64u(t) { var s = atob(t.replace(/-/g, "+").replace(/_/g, "/")), b = new Uint8Array(s.length); for (var i = 0; i < s.length; i++) b[i] = s.charCodeAt(i); return b; }
+  function streamBytes(bytes, transform) { return new Response(new Blob([bytes]).stream().pipeThrough(transform)).arrayBuffer().then(function (b) { return new Uint8Array(b); }); }
+  function syncDerive(code) {
+    var enc = new TextEncoder();
+    return window.crypto.subtle.digest("SHA-256", enc.encode("eye3-sync-topic:" + code)).then(function (d) {
+      syncTopic = "eye3sync-" + Array.prototype.map.call(new Uint8Array(d), function (x) { return ("0" + x.toString(16)).slice(-2); }).join("").slice(0, 32);
+      return window.crypto.subtle.importKey("raw", enc.encode(code), "PBKDF2", false, ["deriveKey"]);
+    }).then(function (k) {
+      return window.crypto.subtle.deriveKey({ name: "PBKDF2", salt: enc.encode("eye3-sync-key"), iterations: 150000, hash: "SHA-256" }, k, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
+    }).then(function (key) { syncAes = key; });
+  }
+  function syncSnapshot() {
+    return { v: 1, dev: syncState.dev, ts: syncState.ts, mine: myChannels.slice(0, MY_MAX), favs: favs.slice(0, 5000) };
+  }
+  // what a snapshot from another device may contain: plain strings and http(s) links only, bounded sizes
+  function syncClean(snap) {
+    var str = function (v, n) { return typeof v === "string" ? v.slice(0, n) : ""; };
+    var link = function (v) { return typeof v === "string" && v.length <= 2000 && /^https?:\/\//i.test(v) && v.indexOf(LINK_BASE) !== 0; };
+    if (!snap || snap.v !== 1 || typeof snap.ts !== "number" || !Array.isArray(snap.mine) || !Array.isArray(snap.favs)) return null;
+    var mine = [], seen = {};
+    snap.mine.forEach(function (c) {
+      if (!c || typeof c !== "object" || mine.length >= MY_MAX || !link(c.u) || seen[c.u]) return;
+      var n = str(c.n, 120).trim(); if (!n) return;
+      seen[c.u] = 1; mine.push({ n: n, u: c.u, g: str(c.g, 80), l: link(c.l) ? c.l : "", i: str(c.i, 100) });
+    });
+    var f = [], fs = {};
+    snap.favs.forEach(function (u) { if (f.length < 5000 && link(u) && !fs[u]) { fs[u] = 1; f.push(u); } });
+    return { ts: snap.ts, dev: str(snap.dev, 20), mine: mine, favs: f };
+  }
+  function syncApply(snap, merge) {
+    syncApplying = true;
+    try {
+      if (merge) {
+        var have = {}; myChannels.forEach(function (c) { have[c.u] = 1; });
+        snap.mine.forEach(function (c) { if (myChannels.length < MY_MAX && !have[c.u]) { have[c.u] = 1; myChannels.push(c); } });
+        snap.favs.forEach(function (u) { if (favs.indexOf(u) < 0) favs.push(u); });
+      } else {
+        myChannels = snap.mine; favs = snap.favs;
+      }
+      saveMy(); set(FAV_KEY, JSON.stringify(favs));
+      if ($("ov-maker").classList.contains("open")) paintMaker();
+      refreshLists();
+    } finally { syncApplying = false; }
+  }
+  function syncRelay() {
+    if (location.hostname === "localhost" || location.hostname === "127.0.0.1") { var m = /[?&]signal=([^&#]+)/.exec(location.search); if (m) return decodeURIComponent(m[1]); }
+    return "https://ntfy.sh";
+  }
+  function syncEncrypt(obj) {
+    var raw = new TextEncoder().encode(JSON.stringify(obj));
+    var pack = window.CompressionStream ? streamBytes(raw, new CompressionStream("gzip")).then(function (z) { var o = new Uint8Array(z.length + 1); o[0] = 1; o.set(z, 1); return o; })
+      : Promise.resolve((function () { var o = new Uint8Array(raw.length + 1); o[0] = 0; o.set(raw, 1); return o; })());
+    return pack.then(function (plain) {
+      var iv = window.crypto.getRandomValues(new Uint8Array(12));
+      return window.crypto.subtle.encrypt({ name: "AES-GCM", iv: iv }, syncAes, plain).then(function (ct) {
+        var out = new Uint8Array(12 + ct.byteLength); out.set(iv, 0); out.set(new Uint8Array(ct), 12); return out;
+      });
+    });
+  }
+  function syncDecrypt(bytes) {
+    return window.crypto.subtle.decrypt({ name: "AES-GCM", iv: bytes.slice(0, 12) }, syncAes, bytes.slice(12)).then(function (pl) {
+      var b = new Uint8Array(pl), body = b.slice(1);
+      if (b[0] === 1) { if (!window.DecompressionStream) throw new Error("This browser cannot unpack the update."); return streamBytes(body, new DecompressionStream("gzip")); }
+      return body;
+    }).then(function (bytes) { return JSON.parse(new TextDecoder().decode(bytes)); });
+  }
+  function syncPost(text) {
+    return fetch(syncRelay() + "/" + syncTopic, { method: "POST", body: text }).then(function (r) { if (!r.ok) throw new Error("The relay answered " + r.status + "."); });
+  }
+  function syncSend() {
+    if (!syncCode || !syncAes) return Promise.resolve();
+    if (syncSending) { syncPending = true; return Promise.resolve(); }
+    syncSending = true; syncPending = false;
+    syncState.ts = Math.max(Date.now(), syncState.ts + 1); syncSave();
+    var snap = syncSnapshot(), count = snap.mine.length;
+    return syncEncrypt(snap).then(function (bytes) {
+      var text = b64u(bytes), sid = Math.random().toString(36).slice(2, 8), n = Math.ceil(text.length / SYNC_CHUNK), chain = Promise.resolve();
+      var post = function (i) { chain = chain.then(function () { return syncPost("S1|" + sid + "|" + i + "|" + n + "|" + text.slice(i * SYNC_CHUNK, (i + 1) * SYNC_CHUNK)); }).then(function () { return new Promise(function (r) { setTimeout(r, 120); }); }); };
+      for (var i = 0; i < n; i++) post(i);
+      return chain;
+    }).then(function () { syncStatus = "Sent " + count + " channel" + (count === 1 ? "" : "s") + " and your favourites at " + new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + "."; })
+      ["catch"](function (err) { syncStatus = "Could not send: " + (err && err.message || "no connection") + " It retries on your next change."; })
+      .then(function () { syncSending = false; paintSyncInfo(); if (syncPending) syncChanged(); });
+  }
+  // called whenever "My channels" or favourites change on this device
+  function syncChanged() {
+    if (!syncCode || syncApplying) return;
+    clearTimeout(syncTimer); syncTimer = setTimeout(syncSend, 2000);
+  }
+  function syncHandle(text) {
+    var data; try { data = JSON.parse(text); } catch (e) { return; }
+    if (!data || (data.event && data.event !== "message") || typeof data.message !== "string") return;
+    if (data.id) { if (syncSeen[data.id]) return; syncSeen[data.id] = 1; }
+    var m = /^S1\|([a-z0-9]{1,12})\|(\d{1,3})\|(\d{1,3})\|([A-Za-z0-9_-]+)$/.exec(data.message); if (!m) return;
+    var sid = m[1], i = +m[2], n = +m[3];
+    if (n < 1 || n > 200 || i >= n) return;
+    var p = syncParts[sid] || (syncParts[sid] = { n: n, got: {}, count: 0, t: Date.now() });
+    if (p.n !== n || p.got[i] !== undefined) return;
+    p.got[i] = m[4]; p.count++;
+    var ids = Object.keys(syncParts); if (ids.length > 8) ids.sort(function (a, b) { return syncParts[a].t - syncParts[b].t; }).slice(0, ids.length - 8).forEach(function (k) { delete syncParts[k]; });
+    if (p.count < p.n) return;
+    delete syncParts[sid];
+    var joined = ""; for (var k = 0; k < p.n; k++) joined += p.got[k];
+    var key = syncAes;
+    syncDecrypt(unb64u(joined)).then(function (raw) {
+      if (key !== syncAes) return;
+      var snap = syncClean(raw);
+      if (!snap || snap.dev === syncState.dev) return;
+      if (syncState.merged && snap.ts <= syncState.ts) return;   // already have this or newer (before the first merge every snapshot counts)
+      var merge = !syncState.merged;
+      syncState.ts = snap.ts; syncState.merged = true; syncSave();
+      syncApply(snap, merge);
+      syncStatus = "Updated from your other device at " + new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + " (" + myChannels.length + " channels).";
+      toast("Playlist updated from your other device");
+      paintSyncInfo();
+      if (merge) syncChanged();   // first connection: send the combined list back
+    })["catch"](function (err) {
+      // not for this code, damaged or old: ignore; only a too-old browser is worth telling the viewer about
+      if (err && /cannot unpack/.test(err.message || "")) { syncStatus = "Your other device sent an update this browser cannot unpack. Update this browser (Safari 16.4 or newer)."; paintSyncInfo(); }
+    });
+  }
+  function syncStop() {
+    if (syncSource) { try { syncSource.close(); } catch (e) {} syncSource = null; }
+    clearTimeout(syncPoll); syncPoll = null; clearTimeout(syncTimer); syncSeen = {}; syncParts = {};
+  }
+  function syncStartPoll(topic) {
+    var loop = function () {
+      if (!syncCode || syncTopic !== topic) return;
+      var xhr = new XMLHttpRequest();
+      try { xhr.open("GET", syncRelay() + "/" + topic + "/json?poll=1&since=" + syncSince, true); } catch (e) { return; }
+      xhr.onloadend = function () {
+        if (xhr.status >= 200 && xhr.status < 300 && xhr.responseText) xhr.responseText.split(/\n/).forEach(function (l) { if (l.replace(/\s+/g, "")) { try { var d = JSON.parse(l); if (d.time) syncSince = String(d.time); } catch (e) {} syncHandle(l); } });
+        syncPoll = setTimeout(loop, 3000);
+      };
+      try { xhr.send(); } catch (e) { syncPoll = setTimeout(loop, 5000); }
+    };
+    loop();
+  }
+  function syncStart(code) {
+    syncStop(); syncCode = code; syncSince = "12h"; syncStatus = "Connecting…";
+    if (!window.crypto || !window.crypto.subtle) { syncStatus = "This page needs a secure connection (https) to sync."; syncCode = ""; paintSyncInfo(); return Promise.resolve(false); }
+    return syncDerive(code).then(function () {
+      var topic = syncTopic;
+      syncStatus = "Connected. Waiting for your other device…";
+      if (window.EventSource) {
+        try {
+          syncSource = new EventSource(syncRelay() + "/" + topic + "/sse?since=12h");
+          syncSource.onmessage = function (e) { syncHandle(e.data); };
+          syncSource.onerror = function () { if (syncSource && syncSource.readyState === 2) { syncSource = null; syncStartPoll(topic); } };
+        } catch (e) { syncSource = null; syncStartPoll(topic); }
+      } else syncStartPoll(topic);
+      paintSyncInfo();
+      setTimeout(function () { if (syncCode === code && syncState.merged === false && (myChannels.length || favs.length)) syncSend(); }, 2500);   // let an existing snapshot arrive first
+      return true;
+    })["catch"](function () { syncStatus = "Could not start syncing."; paintSyncInfo(); return false; });
+  }
+  function syncOff() { syncStop(); syncCode = ""; syncTopic = ""; syncAes = null; syncState.merged = false; syncSave(); set(SYNC_KEY, null); syncStatus = ""; }
+  function paintSyncInfo() {
+    if (!$("ov-info").classList.contains("open") || $("info-title").textContent !== "Sync phone and laptop") return;
+    openSyncInfo(true);
+  }
+  function openSyncInfo(keepFocus) {
+    $("info-title").textContent = "Sync phone and laptop";
+    var nodes = [], kv = make("div", "kv"), first = null;
+    var mk = function (label, fn) { var b = make("button", "btn", label); b.type = "button"; b.addEventListener("click", fn); kv.appendChild(b); if (!first) first = b; return b; };
+    if (syncCode) {
+      nodes.push(para("Syncing is on. On your other device open EYE3 Home, go to Settings → Sync phone and laptop, and type this code:"));
+      nodes.push(nt(make("div", "bigcode", syncPretty(syncCode))));
+      var link = ORIGIN + "home/#sync=" + syncCode, l = nt(make("p", "", link)); l.style.color = "var(--orange-soft)"; l.style.overflowWrap = "anywhere";
+      nodes.push(para("Or open this link on the other device (it only fills in the code; you still press Start):")); nodes.push(l);
+      nodes.push(para(syncStatus || "Connected."));
+      nodes.push(para("Synced: your own channels (My channels) and favourites. Never synced: IPTV account logins, passwords and MAC addresses. The updates are encrypted with this code before they pass through a free relay, so keep the code private. Both devices must be open and online."));
+      mk("Send now", function () { syncSend().then(openSyncInfo); });
+      mk("Stop syncing", function () { syncOff(); openSyncInfo(); });
+    } else {
+      nodes.push(para("Keep “My channels” and favourites the same on your phone and laptop. Create a code on one device and type it on the other. Account logins are never synced."));
+      var input = make("input", "field"); input.type = "text"; input.maxLength = 20; input.setAttribute("autocapitalize", "characters"); input.setAttribute("autocomplete", "off");
+      input.setAttribute("aria-label", "Sync code"); input.placeholder = "Code from your other device"; input.setAttribute("translate", "no");
+      var m = /[#&]sync=([A-Za-z0-9-]+)/.exec(location.hash || ""); if (m) input.value = syncNorm(m[1]);
+      nodes.push(input);
+      var msg = para(syncStatus || ""); nodes.push(msg);
+      mk("Start syncing with this code", function () {
+        var c = syncNorm(input.value);
+        if (!syncValid(c)) { msg.textContent = "That code is not valid. It has 12 letters and numbers."; msg.style.color = "#ffb020"; return; }
+        set(SYNC_KEY, c); syncState.merged = false; syncSave(); syncStart(c).then(function () { openSyncInfo(); });
+      });
+      mk("Create a new code", function () { var c = syncNewCode(); set(SYNC_KEY, c); syncState.merged = false; syncSave(); syncStart(c).then(function () { openSyncInfo(); }); });
+    }
+    nodes.push(kv);
+    rowsHtml($("info-body"), nodes);
+    openOverlay("ov-info");
+    if (!keepFocus) setTimeout(function () { try { first.focus(); } catch (e) {} }, 60);
+  }
+  (function () {
+    var c = get(SYNC_KEY); if (c && syncValid(c)) syncStart(c);
+    else if (/[#&]sync=/.test(location.hash || "")) setTimeout(openSyncInfo, 500);   // a link from the other device: only opens the form
+  })();
 
   // ---- installable app (PWA): register the service worker and keep an install prompt ----
   if ("serviceWorker" in navigator) {
