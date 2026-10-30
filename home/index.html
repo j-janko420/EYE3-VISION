@@ -1709,6 +1709,55 @@
     ["Threadfin", "A self-hosted manager that merges M3U playlists and guides into one tidy list.", "https://github.com/Threadfin/Threadfin"],
     ["awesome-selfhosted", "An index of free self-hosted apps.", "https://awesome-selfhosted.net/"]
   ];
+  // ---- Support report: what a person needs to find a problem, with logins, passwords, MACs and codes left out ----
+  function scrub(text) {
+    var t = String(text == null ? "" : text);
+    accounts.forEach(function (a) { [a.user, a.pass, a.mac].forEach(function (v) { if (v && String(v).length > 3) t = t.split(String(v)).join("***"); }); });
+    // server addresses stay (they help find the problem); only credentials, MACs and tokens are removed
+    t = t.replace(/\b([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}\b/g, "**:**:**:**:**:**");
+    t = t.replace(/([?&](?:username|password|user|pass|token|t)=)[^&\s]+/gi, "$1***");
+    t = t.replace(/(\/(?:live|movie|series)\/)[^/\s]+\/[^/\s]+\//gi, "$1***/***/");
+    return t;
+  }
+  function buildReport() {
+    var L = [];
+    var hv = linkUp && linkUp.ok ? "running, version " + linkUp.version + (linkUp.proxy ? ", through a proxy" : "") : linkUp === false ? "not running" : "not checked yet";
+    L.push("EYE3 support report");
+    L.push("Time: " + new Date().toISOString());
+    L.push("Page: " + location.origin + location.pathname);
+    L.push("Browser: " + navigator.userAgent);
+    L.push("Window: " + innerWidth + "x" + innerHeight + ", online: " + navigator.onLine + ", secure page: " + window.isSecureContext);
+    L.push("EYE3 Link: " + hv);
+    L.push("Free catalogue: " + catalogue.length + " channels (" + catalogueState + ")");
+    L.push("My channels: " + myChannels.length + ", favourites: " + favs.length + ", recently watched: " + recent.length);
+    L.push("Sync: " + (syncCode ? "on" : "off") + ", phone remote: " + (rcCode ? "on" : "off"));
+    L.push("Player libraries: hls.js " + (window.Hls ? "loaded" : "missing") + ", PDF reader " + (window.pdfjsLib ? "loaded" : "not loaded yet") + ", TS player " + (window.mpegts ? "loaded" : "not loaded yet"));
+    L.push("Accounts: " + accounts.length);
+    accounts.forEach(function (a, i) {
+      var st = acctState[a.id] || {};
+      L.push("  " + (i + 1) + ". " + TYPE_LABEL[a.type] + " — " + (st.loading ? "loading" : st.bad ? "ERROR: " + st.text : st.ok ? "ok: " + st.text : "not loaded"));
+    });
+    return scrub(L.join("\n"));
+  }
+  function openReport() {
+    $("info-title").textContent = "Support report";
+    var text = buildReport(), nodes = [];
+    nodes.push(para("This text leaves out your usernames, passwords, MAC addresses and codes. Copy it and paste it in the chat, and add what you were doing and the exact message you saw."));
+    var ta = make("textarea", "field"); ta.readOnly = true; ta.value = text; ta.rows = 14; ta.style.width = "100%"; ta.style.fontFamily = "ui-monospace, Menlo, Consolas, monospace"; ta.setAttribute("aria-label", "Support report"); ta.setAttribute("translate", "no");
+    nodes.push(ta);
+    var msg = para(""), kv = make("div", "kv");
+    var b = make("button", "btn", "Copy report"); b.type = "button";
+    b.addEventListener("click", function () {
+      var ok = function () { msg.textContent = "Copied. Paste it in the chat."; }, no = function () { try { ta.focus(); ta.select(); document.execCommand("copy"); ok(); } catch (e) { msg.textContent = "Select the text above and copy it."; } };
+      try { navigator.clipboard.writeText(ta.value).then(ok, no); } catch (e) { no(); }
+    });
+    kv.appendChild(b);
+    var a = make("a", "btn", "How to send a big file"); a.href = "send-files.html"; a.target = "_blank"; a.rel = "noopener noreferrer"; kv.appendChild(a);
+    nodes.push(kv); nodes.push(msg);
+    rowsHtml($("info-body"), nodes);
+    openOverlay("ov-info");
+    setTimeout(function () { try { b.focus(); } catch (e) {} }, 60);
+  }
   function openHelp() {
     $("info-title").textContent = "Help, VPN & useful tools";
     var nodes = [make("h3", "", "A channel will not play")];
@@ -1723,9 +1772,12 @@
       "If you already use a VPN you are allowed to use, turn it on for this computer: the browser and EYE3 Home then use it automatically.",
       "For your own IPTV accounts only, EYE3 Link can send its traffic through a proxy you already have: python3 eye3-link.py --proxy http://127.0.0.1:PORT (HTTP proxies only). Check your provider’s and the broadcaster’s terms first."
     ].forEach(function (t) { nodes.push(para("• " + t)); });
+    nodes.push(make("h3", "", "Something is wrong and I need help"));
+    nodes.push(para("Make a report with your settings and errors (no logins or passwords) and paste it in the chat."));
+    var rb = make("button", "btn", "Copy support report"); rb.type = "button"; rb.addEventListener("click", openReport); nodes.push(rb);
     nodes.push(make("h3", "", "Useful free tools"));
     nodes.push(para("These are separate projects, not part of EYE3. They open in a new tab."));
-    var first = null;
+    var first = rb;
     TOOLS.forEach(function (t) {
       var row = make("div", "copyrow"), a = nt(make("a", "btn", t[0]));
       a.href = t[2]; a.target = "_blank"; a.rel = "noopener noreferrer";
