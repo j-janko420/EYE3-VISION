@@ -1,0 +1,32 @@
+name: Tests
+
+# Runs every automatic test on each pull request and on pushes to main and claude/** branches:
+# the Python unit tests (EYE3 Link, channel builder) and the browser tests of EYE3 Home against local mock servers.
+on:
+  pull_request:
+  push:
+    branches: ['main', 'claude/**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install the browser test tools
+        run: |
+          cd tests
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Run all tests
+        env:
+          EYE3_ONLINE: '1'   # also tests the real PDF reader from its CDN
+        run: sh tests/run.sh

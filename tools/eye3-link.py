@@ -20,26 +20,29 @@ If your computer cannot find a provider's address ("getaddrinfo failed") but ano
 
 Run:   python3 eye3-link.py          (Windows: py eye3-link.py)      Stop: Ctrl+C
 """
-import argparse, hashlib, ipaddress, json, os, re, secrets, socket, ssl, sys, time
+import argparse, base64, gzip, hashlib, ipaddress, json, os, re, secrets, socket, ssl, sys, threading, time
+import xml.etree.ElementTree as ET
 import urllib.error as ue
 import urllib.parse as up
 import urllib.request as ur
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.3"
+VERSION = "1.6"
 ALLOWED_ORIGINS = ["https://j-janko420.github.io"]          # more: EYE3_ORIGINS=https://a,https://b
 LOCAL_ORIGIN = re.compile(r"^http://(localhost|127\.0\.0\.1)(:\d+)?$")
 BAD = re.compile(r"adult|xxx|18\+|porn|erotic|\bsex|playboy|hustler|brazzers|dorcel|penthouse|redlight", re.I)
 UA_PLAYER = "VLC/3.0.20 LibVLC/3.0.20"
 UA_MAG = "Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) MAG200 stbapp ver: 2 rev: 250 Safari/533.3"
-MAX_PLAYLIST = 8 * 1024 * 1024
+MAX_PLAYLIST = 8 * 1024 * 1024          # one HLS playlist
+MAX_LIST = 160 * 1024 * 1024            # a whole channel list (big providers send 40 MB and more)
+MAX_CHANNELS = 100000                   # rows sent to the page from one list
 
 
 class LinkError(Exception):
     """An error whose message is safe and useful to show to the viewer."""
 
 
-STATE = {"token": secrets.token_urlsafe(24), "port": 0, "insecure": False, "proxy": "", "origins": list(ALLOWED_ORIGINS), "sessions": {}}
+STATE = {"token": secrets.token_urlsafe(24), "port": 0, "insecure": False, "proxy": "", "origins": list(ALLOWED_ORIGINS), "sessions": {}, "hdrs": {}}
 
 
 def ssl_context():
@@ -123,7 +126,7 @@ def fetch(url, headers=None, timeout=25, limit=MAX_PLAYLIST):
     """GET a URL; returns (body_bytes, final_url, response_headers)."""
     if not re.match(r"^https?://", url, re.I):
         raise LinkError("Only http:// and https:// addresses are supported.")
-    req = ur.Request(url, headers=headers or {"User-Agent": UA_PLAYER})
+    req = ur.Request(url, headers=headers or {"User-Agent": current_ua() or UA_PLAYER})
     try:
         with open_url(req, timeout) as r:
             return r.read(limit), r.geturl(), dict(r.headers)
@@ -148,8 +151,53 @@ def link_url(path, **params):
     return "http://127.0.0.1:%d%s?%s" % (STATE["port"], path, up.urlencode(params))
 
 
-def stream_url(upstream):
-    return link_url("/stream", u=upstream)
+LOCAL = threading.local()      # the request being served: its custom User-Agent (per playlist/account), if the viewer set one
+
+
+def current_ua():
+    return getattr(LOCAL, "ua", "") or ""
+
+
+def set_ua(raw):
+    LOCAL.ua = re.sub(r"[\x00-\x1f\x7f]", "", str(raw or "")).strip()[:300]
+
+
+HDR_KEYS = {"user-agent": "User-Agent", "referer": "Referer", "referrer": "Referer", "http-referrer": "Referer", "http-referer": "Referer",
+            "origin": "Origin", "http-origin": "Origin", "cookie": "Cookie", "http-user-agent": "User-Agent"}
+
+
+def clean_headers(raw):
+    """Only a few request headers a playlist may ask for (user agent, referrer, origin, cookie); no line breaks, bounded."""
+    out = {}
+    for k, v in (raw or {}).items():
+        name = HDR_KEYS.get(str(k).strip().lower())
+        v = re.sub(r"[\x00-\x1f\x7f]", "", str(v)).strip()
+        if name and v and len(v) <= 400:
+            out[name] = v
+    return out
+
+
+def register_headers(hdrs):
+    """Remember a channel's headers under a short id so stream links (and their HLS segments) can carry them."""
+    if not hdrs:
+        return ""
+    hid = hashlib.sha1(json.dumps(hdrs, sort_keys=True).encode()).hexdigest()[:12]
+    store = STATE["hdrs"]
+    if hid not in store and len(store) >= 4000:
+        store.pop(next(iter(store)))
+    store[hid] = hdrs
+    return hid
+
+
+def base_hid(extra=None):
+    """Header id for a stream: the viewer's custom User-Agent (if any) plus the channel's own headers."""
+    h = {"user-agent": current_ua()} if current_ua() else {}
+    h.update(extra or {})
+    return register_headers(clean_headers(h))
+
+
+def stream_url(upstream, hid=""):
+    return link_url("/stream", u=upstream, h=hid) if hid else link_url("/stream", u=upstream)
 
 
 # ------------------------------------------------------------------------ check from this connection
@@ -212,37 +260,92 @@ def attr(line, name):
     return m.group(1) if m else ""
 
 
-def parse_m3u(text):
-    out, info = [], None
+def parse_m3u(text, base=""):
+    """M3U/M3U8 -> channel rows. Understands #EXTVLCOPT / #EXTHTTP headers, Kodi 'url|User-Agent=..' suffixes,
+    relative links (when base is given) and keeps a .ts fallback for Xtream links that also exist as .m3u8."""
+    out, info, pend = [], None, {}
     for raw in text.replace("\r", "").split("\n"):
         line = raw.strip()
         if not line:
             continue
         if line.startswith("#EXTINF"):
-            info = line
+            info, pend = line, {}
+        elif line.startswith("#EXTVLCOPT:"):
+            k, _, v = line[11:].partition("=")
+            pend[k.strip().lower()] = v
+        elif line.startswith("#EXTHTTP:"):
+            try:
+                d = json.loads(line[9:])
+                if isinstance(d, dict):
+                    pend.update({str(k).lower(): v for k, v in d.items()})
+            except ValueError:
+                pass
         elif line.startswith("#"):
             continue
-        elif info is not None and re.match(r"^(https?)://", line, re.I):
+        elif info is not None:
+            url, _, suffix = line.partition("|")
+            url = url.strip()
+            if base and not re.match(r"^[a-z][a-z0-9+.-]*://", url, re.I):
+                url = up.urljoin(base, url)
+            if not re.match(r"^(https?)://", url, re.I):
+                info = None
+                continue
+            hdr = {"user-agent": current_ua()} if current_ua() else {}
+            hdr.update(pend)
+            if suffix:
+                for part in suffix.split("&"):
+                    k, _, v = part.partition("=")
+                    hdr[k.strip().lower()] = up.unquote(v)
+            hid = register_headers(clean_headers(hdr))
             name = info.rsplit(",", 1)[-1].strip() or "Channel"
             group = attr(info, "group-title").strip() or "Other"
-            # Xtream "...live/user/pass/123.ts" also exists as .m3u8, which browsers can play
-            url = re.sub(r"(/live/[^/]+/[^/]+/\d+)\.ts$", r"\1.m3u8", line)
-            ch = {"n": name, "c": group, "u": stream_url(url), "l": attr(info, "tvg-logo")}
+            ch = {"n": name, "c": group, "l": attr(info, "tvg-logo")}
+            tid = attr(info, "tvg-id").strip()
+            if tid:
+                ch["i"] = tid[:100]
+            as_hls = re.sub(r"(/live/[^/]+/[^/]+/\d+)\.ts$", r"\1.m3u8", url)
+            if as_hls != url:   # Xtream "...live/user/pass/123.ts" also exists as .m3u8, which browsers play natively; the .ts stays as fallback
+                ch["u"], ch["a"] = stream_url(as_hls, hid), stream_url(url, hid)
+            else:
+                ch["u"] = stream_url(url, hid)
+                if re.search(r"\.ts(\?|$)", urlpath(url), re.I):
+                    ch["t"] = 1
             if BAD.search(name + " " + group):
                 ch["x"] = True  # adult: EYE3 Home shows it only after the viewer unlocks the hidden Explicit section
             out.append(ch)
-            info = None
+            info, pend = None, {}
         else:
             info = None
     return out
 
 
+def urlpath(u):
+    try:
+        return up.urlparse(u).path
+    except ValueError:
+        return ""
+
+
 def channels_from_m3u(url):
-    body, _, _ = fetch(url)
-    chans = parse_m3u(body.decode("utf-8", "replace"))
+    body, final, _ = fetch(url, limit=MAX_LIST)
+    if body[:2] == b"\x1f\x8b":            # a .m3u.gz list
+        try:
+            body = gzip.decompress(body)
+        except OSError:
+            raise LinkError("That link looks compressed but could not be unpacked.")
+    chans = parse_m3u(body.decode("utf-8-sig", "replace"), base=final)
     if not chans:
         raise LinkError("That link did not contain any playable channels.")
-    return {"channels": chans, "account": {}}
+    total = len(chans)
+    info = {"total": total}
+    head = body[:2000].decode("utf-8-sig", "replace").split("\n", 1)[0]
+    epg = attr(head, "x-tvg-url") or attr(head, "url-tvg")
+    if epg and re.match(r"^https?://", epg.split(",")[0].strip(), re.I):
+        info["epg"] = epg.split(",")[0].strip()
+    if total > MAX_CHANNELS:
+        chans = chans[:MAX_CHANNELS]
+        info["truncated"] = total - MAX_CHANNELS
+    return {"channels": chans, "account": info}
 
 
 # ------------------------------------------------------------------------------------- Xtream
@@ -270,13 +373,19 @@ def channels_from_xtream(server, user, password):
     for c in fetch_json(api + "&action=get_live_categories") or []:
         cats[str(c.get("category_id"))] = str(c.get("category_name") or "Other")
     chans = []
+    allowed = [str(x).lower() for x in (ui.get("allowed_output_formats") or []) if isinstance(x, str)]
+    hls_ok = not allowed or "m3u8" in allowed or "hls" in allowed
     for s in fetch_json(api + "&action=get_live_streams") or []:
         name = str(s.get("name") or "Channel").strip()
         cat = cats.get(str(s.get("category_id")), "Other")
         if not s.get("stream_id"):
             continue
-        direct = "%s/live/%s/%s/%s.m3u8" % (base, up.quote(user, safe=""), up.quote(password, safe=""), s["stream_id"])
-        ch = {"n": name, "c": cat, "u": stream_url(direct), "l": str(s.get("stream_icon") or "")}
+        prefix = "%s/live/%s/%s/%s" % (base, up.quote(user, safe=""), up.quote(password, safe=""), s["stream_id"])
+        ch = {"n": name, "c": cat, "l": str(s.get("stream_icon") or ""), "e": s["stream_id"]}
+        if hls_ok:
+            ch["u"], ch["a"] = stream_url(prefix + ".m3u8", base_hid()), stream_url(prefix + ".ts", base_hid())   # HLS first, raw TS as fallback
+        else:
+            ch["u"], ch["t"] = stream_url(prefix + ".ts", base_hid()), 1                                          # panel offers only TS
         if BAD.search(name + " " + cat):
             ch["x"] = True
         chans.append(ch)
@@ -375,6 +484,161 @@ def vod_series_info(server, user, password, series_id):
     return {"title": str(meta.get("name") or ""), "plot": str(meta.get("plot") or "")[:600], "seasons": out}
 
 
+def b64text(v):
+    """Xtream panels send programme titles and descriptions as base64; some send plain text."""
+    v = str(v or "")
+    try:
+        out = base64.b64decode(v, validate=True).decode("utf-8")
+        return out if out.isprintable() or "\n" in out else v
+    except Exception:
+        return v
+
+
+def xtream_epg(server, user, password, stream_id, limit=4):
+    """What is on now and next for one live channel (Xtream get_short_epg)."""
+    base, api = xtream_api(server, user, password)
+    if not str(stream_id).isdigit():
+        raise LinkError("That channel has no valid id.")
+    data = vod_json(api + "&action=get_short_epg&stream_id=%s&limit=%d" % (stream_id, limit))
+    rows = data.get("epg_listings") if isinstance(data, dict) else []
+    out = []
+    for r in rows or []:
+        if not isinstance(r, dict):
+            continue
+        try:
+            start, stop = int(r.get("start_timestamp")), int(r.get("stop_timestamp"))
+        except (TypeError, ValueError):
+            continue
+        title = b64text(r.get("title")).strip()
+        if title and stop > start:
+            out.append({"t": title[:160], "d": b64text(r.get("description")).strip()[:300], "s": start, "e": stop})
+    out.sort(key=lambda x: x["s"])
+    return {"items": out}
+
+
+# ------------------------------------------------------------------------------- XMLTV guide
+XMLTV_TTL = 30 * 60
+XMLTV_MAX_BYTES = 400 * 1024 * 1024
+_xmltv_lock = threading.Lock()
+
+
+def xmltv_time(v):
+    """'20261030203000 +0100' -> epoch seconds (UTC)."""
+    m = re.match(r"^\s*(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})?\s*([+-]\d{4})?", v or "")
+    if not m:
+        return None
+    y, mo, d, h, mi, se, tz = m.groups()
+    try:
+        import calendar
+        t = calendar.timegm((int(y), int(mo), int(d), int(h), int(mi), int(se or 0)))
+    except (ValueError, OverflowError):
+        return None
+    if tz:
+        t -= (1 if tz[0] == "+" else -1) * (int(tz[1:3]) * 3600 + int(tz[3:5]) * 60)
+    return t
+
+
+def xmltv_load(url):
+    """Download and read an XMLTV file once (gzip too); keep only programmes from an hour ago to 36 hours ahead."""
+    now = time.time()
+    with _xmltv_lock:
+        hit = STATE.setdefault("epg", {}).get(url)
+        if hit and now - hit["t"] < XMLTV_TTL:
+            return hit
+    if not re.match(r"^https?://", url, re.I):
+        raise LinkError("The guide link must start with http:// or https://")
+    req = ur.Request(url, headers={"User-Agent": current_ua() or UA_PLAYER})
+    try:
+        resp = open_url(req, 40)
+    except ue.HTTPError as e:
+        raise LinkError("The guide server answered HTTP %d." % e.code)
+    except Exception as e:
+        raise LinkError(reach_error(e).replace("the server", "the guide server", 1))
+    progs, names, lo, hi = {}, {}, now - 3600, now + 36 * 3600
+    with resp:
+        head = resp.read(2)
+        stream = _Chain(head, resp)
+        if head == b"\x1f\x8b":
+            stream = gzip.GzipFile(fileobj=stream)
+        capped = _Capped(stream, XMLTV_MAX_BYTES)
+        try:
+            for ev, el in ET.iterparse(capped, events=("end",)):
+                if el.tag == "channel":
+                    cid = el.get("id") or ""
+                    for dn in el.findall("display-name"):
+                        nm = re.sub(r"\W+", " ", (dn.text or "").lower()).strip()
+                        if nm and cid:
+                            names.setdefault(nm, cid)
+                    el.clear()
+                elif el.tag == "programme":
+                    st, en = xmltv_time(el.get("start")), xmltv_time(el.get("stop"))
+                    cid = el.get("channel") or ""
+                    if cid and st is not None and en is not None and en > lo and st < hi:
+                        title = (el.findtext("title") or "").strip()
+                        if title:
+                            row = progs.setdefault(cid, [])
+                            if len(row) < 40:
+                                row.append({"t": title[:160], "d": (el.findtext("desc") or "").strip()[:300], "s": int(st), "e": int(en)})
+                    el.clear()
+        except ET.ParseError:
+            if not progs:
+                raise LinkError("That guide file could not be read (is it XMLTV?).")
+        except _TooBig:
+            pass
+    for rows in progs.values():
+        rows.sort(key=lambda r: r["s"])
+    if not progs:
+        raise LinkError("That guide has no programmes for the next hours.")
+    entry = {"t": now, "progs": progs, "names": names}
+    with _xmltv_lock:
+        store = STATE.setdefault("epg", {})
+        if len(store) >= 4:
+            store.pop(next(iter(store)))
+        store[url] = entry
+    return entry
+
+
+class _TooBig(Exception):
+    pass
+
+
+class _Chain:
+    """Put already-read bytes back in front of a stream."""
+    def __init__(self, head, rest):
+        self.head, self.rest = head, rest
+
+    def read(self, n=-1):
+        if self.head:
+            h, self.head = self.head, b""
+            return h + (self.rest.read(n - len(h)) if n and n > len(h) else b"")
+        return self.rest.read(n)
+
+
+class _Capped:
+    def __init__(self, src, limit):
+        self.src, self.left, self.seen_first = src, limit, False
+
+    def read(self, n=-1):
+        data = self.src.read(n)
+        if not self.seen_first:
+            self.seen_first = True
+            if b"<!ENTITY" in data[:20000]:      # entity tricks ("billion laughs") have no place in a TV guide
+                raise LinkError("That guide file uses features that are not allowed.")
+        self.left -= len(data)
+        if self.left < 0:
+            raise _TooBig()
+        return data
+
+
+def xmltv_now_next(url, channel_id, name="", limit=8):
+    entry = xmltv_load(url)
+    cid = channel_id if channel_id in entry["progs"] else entry["names"].get(re.sub(r"\W+", " ", (name or "").lower()).strip(), "")
+    rows = entry["progs"].get(cid, [])
+    now = time.time()
+    rows = [r for r in rows if r["e"] > now][:limit]
+    return {"items": rows}
+
+
 def vod_play_url(server, user, password, kind, ident, ext):
     base = xtream_base(server)
     if not str(ident).isdigit():
@@ -382,7 +646,7 @@ def vod_play_url(server, user, password, kind, ident, ext):
     ext = ext if VOD_EXT.match(ext or "") else "mp4"
     path = "series" if kind == "series" else "movie"
     direct = "%s/%s/%s/%s/%s.%s" % (base, path, up.quote(user, safe=""), up.quote(password, safe=""), ident, ext)
-    return {"url": stream_url(direct), "ext": ext}
+    return {"url": stream_url(direct, base_hid()), "ext": ext}
 
 
 # ------------------------------------------------------------------------------ MAG / Stalker
@@ -574,7 +838,7 @@ class Handler(BaseHTTPRequestHandler):
             if u.path == "/stream":
                 if not self.token_ok(q):
                     return self.send_error_json(403, "Missing or wrong token.")
-                return self.stream(q.get("u", [""])[0])
+                return self.stream(q.get("u", [""])[0], q.get("h", [""])[0])
             if u.path == "/stalker/play":
                 if not self.token_ok(q):
                     return self.send_error_json(403, "Missing or wrong token.")
@@ -598,6 +862,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def api(self, path, q):
         one = lambda k: (q.get(k, [""])[0]).strip()
+        set_ua(one("ua"))
         if path == "/api/probe":
             return self.send_json(200, probe_stream(one("u")))
         if path == "/api/where":
@@ -608,6 +873,14 @@ class Handler(BaseHTTPRequestHandler):
             if not (one("server") and one("user") and one("pass")):
                 raise LinkError("Enter the server, username and password.")
             return self.send_json(200, channels_from_xtream(one("server"), one("user"), one("pass")))
+        if path == "/api/xmltv":
+            if not one("url"):
+                raise LinkError("Enter the guide (XMLTV) link.")
+            return self.send_json(200, xmltv_now_next(one("url"), one("id"), one("name"), int(one("n") or 8) if one("n").isdigit() else 8))
+        if path == "/api/epg":
+            if not (one("server") and one("user") and one("pass")):
+                raise LinkError("Enter the server, username and password.")
+            return self.send_json(200, xtream_epg(one("server"), one("user"), one("pass"), one("id"), min(int(one("n")), 24) if one("n").isdigit() and int(one("n")) > 0 else 4))
         if path in ("/api/vod", "/api/vod/series", "/api/vod/play"):
             if not (one("server") and one("user") and one("pass")):
                 raise LinkError("Enter the server, username and password.")
@@ -623,12 +896,14 @@ class Handler(BaseHTTPRequestHandler):
             return self.send_json(200, Stalker(one("portal"), one("mac")).channels())
         self.send_error_json(404, "Unknown request.")
 
-    def stream(self, target):
+    def stream(self, target, hid=""):
         if not re.match(r"^https?://", target, re.I):
             raise LinkError("Only http:// and https:// streams are supported.")
         if up.urlparse(target).netloc in ("127.0.0.1:%d" % STATE["port"], "localhost:%d" % STATE["port"]):
             raise LinkError("A stream cannot point back to EYE3 Link.")
         headers = {"User-Agent": UA_PLAYER}
+        hid = hid or ""
+        headers.update(STATE["hdrs"].get(hid, {}) if re.fullmatch(r"[0-9a-f]{12}", hid) else {})
         if self.headers.get("Range"):
             headers["Range"] = self.headers["Range"]
         req = ur.Request(target, headers=headers)
@@ -646,7 +921,7 @@ class Handler(BaseHTTPRequestHandler):
             if is_playlist:
                 body = resp.read(MAX_PLAYLIST)
                 if body.lstrip()[:7] == b"#EXTM3U":
-                    out = rewrite_playlist(body.decode("utf-8", "replace"), final).encode()
+                    out = rewrite_playlist(body.decode("utf-8", "replace"), final, hid if re.fullmatch(r"[0-9a-f]{12}", hid or "") else "").encode()
                     self.send_response(200)
                     self.cors()
                     self.send_header("Content-Type", "application/vnd.apple.mpegurl")
@@ -678,10 +953,10 @@ class Handler(BaseHTTPRequestHandler):
                 self.wfile.write(chunk)
 
 
-def rewrite_playlist(text, base):
-    """Point every segment/variant/key line of an HLS playlist back through EYE3 Link."""
+def rewrite_playlist(text, base, hid=""):
+    """Point every segment/variant/key line of an HLS playlist back through EYE3 Link (keeping the channel's headers)."""
     def absolute(ref):
-        return stream_url(up.urljoin(base, ref))
+        return stream_url(up.urljoin(base, ref), hid)
     out = []
     for line in text.replace("\r", "").split("\n"):
         s = line.strip()

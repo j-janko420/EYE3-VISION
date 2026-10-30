@@ -37,6 +37,30 @@ In Live TV → **Movies & series** press **Free movies**: public-domain films fr
 ### Keep your phone and laptop the same
 In EYE3 Home on one device open **Settings → Sync phone and laptop → Create a new code**, then type that code on the other device (or open the link shown under the code and press Start). From then on, channels you add, import or delete under **My channels**, and your favourites (★), update on both devices within a few seconds while both have EYE3 Home open and online. The first time, the two lists are combined. Your IPTV account logins, passwords and MAC addresses are never synced (add them on each computer), and the updates are encrypted with the code before they pass through a free relay, so keep the code private. **Stop syncing** turns it off on that device.
 
+### Import a playlist from a PDF
+In **Playlist maker → Import an M3U file** you can also pick a **PDF**. EYE3 reads its text on your own device (nothing is uploaded; the PDF reader is downloaded once from a public library host). If the PDF contains M3U lines it is read as an M3U playlist. Otherwise every `http://` or `https://` link becomes a channel, named by the text before the link on the same line or on the line above (a link with no name uses its website name). Scanned pictures, password-protected PDFs and links broken across two lines are not supported: copy the text into a `.txt` file instead.
+
+### TV guide, recently watched and resume
+- **Now and next:** for Xtream accounts, the label on the video shows what is on now and what is next for the channel you play (if your provider supplies a guide). It needs EYE3 Link 1.4 or newer.
+- **Recently watched:** the last 30 channels you played, newest first, under the category **🕘 Recently watched**.
+- **Resume:** movies, episodes and free movies continue where you stopped (a "continue at" note appears in the list). It is stored on that device only.
+
+### Big playlists (40 MB and more)
+Import the file in **Playlist maker → Import an M3U file**. A big file is saved on your device as its own playlist (up to 300,000 channels, shown in Live TV under the file's name, with **Remove** in the Playlist maker). From a link, EYE3 Link reads lists up to 160 MB (also `.m3u.gz`) and sends up to 100,000 channels. A playlist that asks for a special user agent or referrer (`#EXTVLCOPT`, `#EXTHTTP`, or `url|User-Agent=…`) works through EYE3 Link. `http://` channels on this https page also play through EYE3 Link.
+
+### Raw .ts streams, keys and the support report
+- Providers that only send raw `.ts` streams now play (a small player is loaded when needed). If one format fails, EYE3 tries the other.
+- Live TV keys: **P** previous channel, **X** picture shape, **A** audio track, **T** subtitles, **L** favourite, **/** search (accents and word order do not matter). A frozen stream reconnects by itself.
+- Settings → Help → **Copy support report** makes a text you can paste in the chat. It leaves out logins, passwords and MAC addresses. If a file is too big to attach, see `home/send-files.html` (zip it first; split it into parts under 25 MB if still too big).
+
+### Quick search, guide, VLC and more (EYE3 Link 1.6)
+- **Ctrl (or ⌘) + K** opens quick search: type part of a channel name (your own lists come first) or an action. **?** lists every key.
+- **G** shows the programme list of the channel you are watching. Xtream accounts bring their own guide. For other playlists, add a guide (XMLTV) link under IPTV accounts → **More options**, or in Settings → **TV guide link**; a playlist that names its guide in its first line is used automatically.
+- **V** (or **Open in VLC** in Movies & series) saves the stream as a small `.m3u` file. Open it with VLC or mpv for formats a browser cannot play (for example .mkv, H.265).
+- **Custom User-Agent** (IPTV accounts → More options) is sent with the playlist and its streams, for providers that only accept a particular player name.
+- **Paste a playlist** in the Playlist maker: M3U text or a plain list of links.
+- The home screen shows **Continue watching** with your last channels.
+
 ### Direct links
 Open these on the laptop to jump straight to the right form (nothing is filled in or saved from the link):
 - M3U link: `https://j-janko420.github.io/EYE3-VISION/home/?add=m3u`

@@ -1,0 +1,6 @@
+{
+  "name": "eye3-tests",
+  "private": true,
+  "description": "Browser tests for EYE3 Home (run with: sh tests/run.sh)",
+  "devDependencies": { "playwright": "1.49.1" }
+}

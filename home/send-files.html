@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Send a big file</title>
+<style>
+  :root { --bg:#050101; --panel:#12080a; --edge:rgba(255,38,63,.35); --accent:#ff263f; --soft:#ff7a8a; --ink:#fff5f6; --muted:#b9a9ac; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 46rem; margin: 0 auto; padding: 28px 16px 64px; }
+  h1 { font-size: clamp(1.6rem, 5vw, 2.2rem); margin: .2em 0 .1em; letter-spacing:.02em; }
+  h1 span { color: var(--accent); }
+  h2 { margin: 1.8em 0 .4em; font-size: 1.25rem; color: var(--soft); }
+  p, li { color: #eadcdf; }
+  .lead { color: var(--muted); margin-top: 0; }
+  .card { background: var(--panel); border: 1px solid var(--edge); border-radius: 10px; padding: 14px 18px; margin: 12px 0; }
+  .card b { color: var(--ink); }
+  code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background:#1b0d10; border-radius:6px; }
+  code { padding: .1em .4em; }
+  pre { padding: 12px 14px; overflow:auto; white-space:pre-wrap; word-break:break-word; border:1px solid var(--edge); }
+  button, a.btn { font:inherit; background:#240c11; color:var(--ink); border:1px solid var(--accent); border-radius:8px; padding:8px 16px; cursor:pointer; text-decoration:none; display:inline-block; }
+  button:hover, a.btn:hover { background: rgba(255,38,63,.2); }
+  button:focus-visible, a:focus-visible { outline:2px solid var(--soft); outline-offset:2px; }
+  a { color: var(--soft); }
+  .tag { display:inline-block; font-size:.75rem; letter-spacing:.08em; text-transform:uppercase; border:1px solid var(--accent); color:var(--accent); border-radius:99px; padding:1px 10px; margin-right:8px; }
+  .warn { border-color:#ffb020; }
+  .warn b { color:#ffd27a; }
+  ol { padding-left: 1.3em; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Send a <span>big file</span></h1>
+  <p class="lead">Chat attachments are limited to roughly <b>30 MB per file</b>, so a 39 MB file is refused. Use one of these three ways. The first one almost always works.</p>
+
+  <h2><span class="tag">Best</span>1. Zip it first</h2>
+  <div class="card">
+    <p>Playlists and lists are plain text, and text shrinks a lot. A 39 MB <code>.m3u</code> usually becomes <b>3 to 6 MB</b> as a zip.</p>
+    <ol>
+      <li><b>Windows:</b> right-click the file → <b>Send to</b> → <b>Compressed (zipped) folder</b>.</li>
+      <li><b>Mac:</b> right-click the file → <b>Compress</b>.</li>
+      <li><b>iPhone:</b> Files app → press and hold the file → <b>Compress</b>.</li>
+      <li>Attach the new <code>.zip</code> in the chat.</li>
+    </ol>
+  </div>
+
+  <h2>2. Still too big? Split it into parts</h2>
+  <div class="card">
+    <p>Make several parts, each under 25 MB, and attach them <b>all in the same message</b>.</p>
+    <ol>
+      <li>Install the free <a href="https://www.7-zip.org/" target="_blank" rel="noopener noreferrer">7-Zip</a> (Windows).</li>
+      <li>Right-click the file → <b>7-Zip</b> → <b>Add to archive…</b></li>
+      <li>Archive format: <b>zip</b>. In <b>Split to volumes, bytes</b> type <code>20M</code>. Press OK.</li>
+      <li>You get <code>file.zip.001</code>, <code>file.zip.002</code> and so on. Attach every part.</li>
+    </ol>
+    <p>On Mac or Linux, in Terminal: <code>zip -s 20m -r parts.zip yourfile</code> and attach every <code>parts.z01</code>, <code>parts.z02</code> … plus <code>parts.zip</code>.</p>
+  </div>
+
+  <h2>3. Send only the part I need</h2>
+  <div class="card">
+    <p>For a problem with a playlist, the first lines are enough. Open the file in Notepad and copy the first 50 lines into a message. For a list of channels, 20 lines from the middle too.</p>
+  </div>
+
+  <h2>Before you send</h2>
+  <div class="card warn">
+    <p><b>Remove passwords first.</b> Anything you put in a public place can be read by others. In a playlist or settings file, replace usernames, passwords, MAC addresses and token links with <code>XXXX</code>. The chat itself is private, but a public web page or repository is not.</p>
+  </div>
+
+  <h2>What to tell me about a problem</h2>
+  <p>The fastest way is the built-in report: open EYE3 Home → <b>Settings → Help → Copy support report</b> and paste it in the chat. It leaves out logins and passwords. Or copy this and fill it in:</p>
+  <pre id="tpl">What I was doing:
+What I expected:
+What happened (exact red text from the screen):
+Account type (Xtream / MAG portal / M3U link / file):
+Where I am (country) and device (laptop, iPhone, TV):
+EYE3 Link version (shown in IPTV accounts):
+Is a VPN on? (yes / no):
+Anything I already tried:</pre>
+  <p><button type="button" id="copy">Copy this template</button> <span id="msg" aria-live="polite" style="color:var(--muted);margin-left:8px"></span></p>
+
+  <p style="margin-top:2.4em"><a class="btn" href="./">← Back to EYE3 Home</a></p>
+</main>
+<script>
+document.getElementById("copy").addEventListener("click", function () {
+  var t = document.getElementById("tpl").textContent, m = document.getElementById("msg");
+  var done = function () { m.textContent = "Copied."; };
+  var fail = function () { m.textContent = "Select the text above and copy it."; };
+  try { navigator.clipboard.writeText(t).then(done, fail); } catch (e) { fail(); }
+});
+</script>
+</body>
+</html>

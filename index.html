@@ -284,7 +284,7 @@
         .prototype-tag { font-size: 0.5625rem; }
       }
       @media (prefers-reduced-motion: reduce) {
-        *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+        *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation: none !important; }
       }
     
 
@@ -373,8 +373,18 @@
       .cast-pill { position: fixed; bottom: calc(1rem + env(safe-area-inset-bottom)); left: 1rem; z-index: 7; display: flex; align-items: center; gap: .75rem; padding: .3rem .4rem .3rem .9rem; border: 1px solid #4a141b; border-radius: 2rem; background: #2f0b11; color: #ff7a8a; font-size: .6875rem; font-weight: 650; }
 
       /* Welcome screen and personal i3 theme */
-      .splash { position: fixed; inset: 0; z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; padding: 2rem; color: #fff5f6; text-align: center; background: radial-gradient(circle at 28% 18%, #1d3a7a 0, transparent 45%), radial-gradient(circle at 82% 86%, #16306a 0, transparent 40%), #050101; transition: opacity .35s ease; }
+      .splash { position: fixed; inset: 0; z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; padding: 2rem; color: #fff5f6; text-align: center; background: radial-gradient(circle at 28% 18%, #5c0a1a 0, transparent 45%), radial-gradient(circle at 82% 86%, #3a0610 0, transparent 40%), #050101; transition: opacity .35s ease; }
       .splash.leaving { opacity: 0; }
+      /* welcome motion: the logo lights up, the words follow; switched off by "reduce motion" */
+      @keyframes wIgnite { 0% { opacity: 0; transform: scale(.84); filter: drop-shadow(0 0 0 transparent); } 60% { opacity: 1; } 100% { transform: scale(1); filter: drop-shadow(0 0 22px rgba(255, 38, 63, .45)); } }
+      @keyframes wRise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+      @keyframes wPulse { 0%, 100% { filter: drop-shadow(0 0 16px rgba(255, 38, 63, .3)); } 50% { filter: drop-shadow(0 0 30px rgba(255, 38, 63, .6)); } }
+      .splash svg { animation: wIgnite 1.4s ease-out both, wPulse 3.6s ease-in-out 1.4s infinite; }
+      .splash h2 { animation: wRise .9s .3s ease-out both; }
+      .splash p { animation: wRise .9s .55s ease-out both; }
+      .splash p.hint { animation: wRise .9s .8s ease-out both; }
+      .tool-card { transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease; }
+      .tool-card:hover { transform: translateY(-3px); }
       .splash svg { width: min(34vw, 9rem); height: auto; }
       .splash h2 { margin: .4rem 0 0; font-size: clamp(1.6rem, 5vw, 2.6rem); font-weight: 700; letter-spacing: -.02em; }
       .splash p { margin: 0; color: #d9c9cc; font-size: .9375rem; letter-spacing: .08em; }
@@ -387,11 +397,11 @@
       .tool-icon.face { width: 2.75rem; height: 2.75rem; overflow: hidden; padding: 0; border: 2px solid #fff5f6; border-radius: 50%; }
       .avatar.face { overflow: hidden; padding: 0; border-color: #fff5f6; }
       .tool-icon.face img, .avatar.face img { display: block; width: 100%; height: 100%; object-fit: cover; }
-      html[data-theme-i3] body { background: linear-gradient(180deg, rgba(6, 14, 34, .78), rgba(6, 14, 34, .92)), var(--i3-photo, none) center / cover fixed, radial-gradient(circle at 30% 20%, #1d3a7a 0, transparent 45%), #050101; }
-      html[data-theme-i3] .sidebar, html[data-theme-i3] .topbar { border-color: rgba(255,255,255, .12); background: rgba(8, 18, 43, .72); }
+      html[data-theme-i3] body { background: linear-gradient(180deg, rgba(8, 2, 3, .78), rgba(8, 2, 3, .92)), var(--i3-photo, none) center / cover fixed, radial-gradient(circle at 30% 20%, #5c0a1a 0, transparent 45%), #050101; }
+      html[data-theme-i3] .sidebar, html[data-theme-i3] .topbar { border-color: rgba(255,255,255, .12); background: rgba(8, 2, 3, .72); }
       html[data-theme-i3] .panel, html[data-theme-i3] .tool-card, html[data-theme-i3] .hero, html[data-theme-i3] .status-card,
       html[data-theme-i3] .result, html[data-theme-i3] .step, html[data-theme-i3] .cast-card, html[data-theme-i3] .stage-wrap { border-color: rgba(255,255,255, .16); background: rgba(26,7,11, .76); }
-      html[data-theme-i3] .tool-card:hover, html[data-theme-i3] .tool-card.selected { border-color: #fff5f6; background: rgba(28, 48, 96, .84); }
+      html[data-theme-i3] .tool-card:hover, html[data-theme-i3] .tool-card.selected { border-color: #fff5f6; background: rgba(58, 6, 16, .84); }
       html[data-theme-i3] .eyebrow, html[data-theme-i3] .text-link, html[data-theme-i3] .tool-arrow { color: #fff5f6; }
       html[data-theme-i3] .eyebrow::before { background: #fff5f6; }
 
