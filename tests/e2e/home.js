@@ -34,6 +34,18 @@ const toast = (p) => p.evaluate(() => [...document.querySelectorAll('.toast')].m
     await p.close();
   });
 
+  await suite('the colours stay red and black on every page (no blue left over)', async () => {
+    const files = ['index.html', 'home/index.html', 'home/setup.html', 'home/send-files.html', 'remote/index.html', 'portal/c/index.html', 'portal/check/index.html', 'bridge/index.html'];
+    const hsl = (r, g, b) => { r /= 255; g /= 255; b /= 255; const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, d = mx - mn; if (!d) return [0, 0, l]; const s = d / (1 - Math.abs(2 * l - 1)); let h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; h = (h * 60 + 360) % 360; return [h, s, l]; };
+    for (const f of files) {
+      const text = fs.readFileSync(require('path').join(__dirname, '..', '..', f), 'utf8');
+      const bad = [];
+      (text.match(/#[0-9a-fA-F]{6}\b|#[0-9a-fA-F]{3}\b/g) || []).forEach((h) => { let x = h.slice(1); if (x.length === 3) x = x.split('').map((c) => c + c).join(''); const [H, S, L] = hsl(parseInt(x.slice(0, 2), 16), parseInt(x.slice(2, 4), 16), parseInt(x.slice(4, 6), 16)); if (S > 0.25 && H >= 190 && H <= 270 && L > 0.05 && L < 0.95) bad.push(h); });
+      (text.match(/rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+/g) || []).forEach((m) => { const n = m.match(/\d+/g).map(Number); const [H, S, L] = hsl(n[0], n[1], n[2]); if (S > 0.25 && H >= 190 && H <= 270 && L > 0.05 && L < 0.95) bad.push(m); });
+      check(f + ' has no blue colours', bad.length === 0, bad);
+    }
+  });
+
   await suite('Live TV: search, previous channel, picture and track keys', async () => {
     const p = await open(browser, { 'eye3.home.mychannels': [ch('Café Évasion', 'https://x.example/cafe.m3u8'), ch('News - CNN Español', 'https://x.example/cnn.m3u8'), ch('Sport Alpha', 'https://x.example/sa.m3u8')] });
     await openTv(p);
