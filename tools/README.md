@@ -37,6 +37,9 @@ In Live TV → **Movies & series** press **Free movies**: public-domain films fr
 ### Keep your phone and laptop the same
 In EYE3 Home on one device open **Settings → Sync phone and laptop → Create a new code**, then type that code on the other device (or open the link shown under the code and press Start). From then on, channels you add, import or delete under **My channels**, and your favourites (★), update on both devices within a few seconds while both have EYE3 Home open and online. The first time, the two lists are combined. Your IPTV account logins, passwords and MAC addresses are never synced (add them on each computer), and the updates are encrypted with the code before they pass through a free relay, so keep the code private. **Stop syncing** turns it off on that device.
 
+### Import a playlist from a PDF
+In **Playlist maker → Import an M3U file** you can also pick a **PDF**. EYE3 reads its text on your own device (nothing is uploaded; the PDF reader is downloaded once from a public library host). If the PDF contains M3U lines it is read as an M3U playlist. Otherwise every `http://` or `https://` link becomes a channel, named by the text before the link on the same line or on the line above (a link with no name uses its website name). Scanned pictures, password-protected PDFs and links broken across two lines are not supported: copy the text into a `.txt` file instead.
+
 ### Direct links
 Open these on the laptop to jump straight to the right form (nothing is filled in or saved from the link):
 - M3U link: `https://j-janko420.github.io/EYE3-VISION/home/?add=m3u`
