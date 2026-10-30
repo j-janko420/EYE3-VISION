@@ -76,7 +76,7 @@ const toast = (p) => p.evaluate(() => [...document.querySelectorAll('.toast')].m
     await openTv(p); await pickCat(p, 'Mock TV');
     await p.click('#chlist .ch >> text=Xtream One');
     await p.waitForFunction(() => (window.__tsCalls || []).length > 0, null, { timeout: 25000 }).catch(() => {});   // real hls.js retries before giving up
-    check('HLS fails, the TS player is tried with the Link address', (await p.evaluate(() => window.__tsCalls || [])).some((u) => /127\.0\.0\.1:8765\/stream\?/.test(u) && /11\.ts/.test(decodeURIComponent(u))), await p.evaluate(() => window.__tsCalls));
+    check('HLS fails, the TS player is tried with the Link address', (await p.evaluate(() => window.__tsCalls || [])).some((u) => /127\.0\.0\.1:8765\/stream\?/.test(u) && /11\.ts/.test(decodeURIComponent(u))), await p.evaluate(() => ({ calls: window.__tsCalls, label: document.getElementById('chlabel').textContent, hls: !!window.Hls, mpegts: !!window.mpegts, vsrc: document.getElementById('video').src.slice(0, 90), err: document.getElementById('video').error && document.getElementById('video').error.code })));
     await p.click('#chlist .ch >> text=Xtream Two'); await p.waitForTimeout(600);
     check('recently watched appears and lists newest first', JSON.parse(await p.evaluate(() => localStorage.getItem('eye3.home.recent')))[0] === 'Mock TV|Xtream Two');
     check('the category "Recently watched" exists at once', (await p.evaluate(() => [...document.querySelectorAll('#tv-cat option')].map((o) => o.textContent))).some((t) => /Recently watched/.test(t)));
