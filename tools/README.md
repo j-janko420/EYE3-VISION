@@ -45,6 +45,14 @@ In **Playlist maker → Import an M3U file** you can also pick a **PDF**. EYE3 r
 - **Recently watched:** the last 30 channels you played, newest first, under the category **🕘 Recently watched**.
 - **Resume:** movies, episodes and free movies continue where you stopped (a "continue at" note appears in the list). It is stored on that device only.
 
+### Big playlists (40 MB and more)
+Import the file in **Playlist maker → Import an M3U file**. A big file is saved on your device as its own playlist (up to 300,000 channels, shown in Live TV under the file's name, with **Remove** in the Playlist maker). From a link, EYE3 Link reads lists up to 160 MB (also `.m3u.gz`) and sends up to 100,000 channels. A playlist that asks for a special user agent or referrer (`#EXTVLCOPT`, `#EXTHTTP`, or `url|User-Agent=…`) works through EYE3 Link. `http://` channels on this https page also play through EYE3 Link.
+
+### Raw .ts streams, keys and the support report
+- Providers that only send raw `.ts` streams now play (a small player is loaded when needed). If one format fails, EYE3 tries the other.
+- Live TV keys: **P** previous channel, **X** picture shape, **A** audio track, **T** subtitles, **L** favourite, **/** search (accents and word order do not matter). A frozen stream reconnects by itself.
+- Settings → Help → **Copy support report** makes a text you can paste in the chat. It leaves out logins, passwords and MAC addresses. If a file is too big to attach, see `home/send-files.html` (zip it first; split it into parts under 25 MB if still too big).
+
 ### Direct links
 Open these on the laptop to jump straight to the right form (nothing is filled in or saved from the link):
 - M3U link: `https://j-janko420.github.io/EYE3-VISION/home/?add=m3u`
