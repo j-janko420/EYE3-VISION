@@ -38,7 +38,7 @@ class Mock(BaseHTTPRequestHandler):
             return self.reply('#EXTM3U\n#EXTINF:-1 tvg-logo="http://x/l.png" group-title="News",Good News\n%s/live/u/p/7.ts\n'
                               '#EXTINF:-1 group-title="Adult",Bad One\n%s/x.m3u8\n#EXTINF:-1 group-title="Sports",Sport 1\n%s/hls/index.m3u8\n' % (host, host, host), "audio/x-mpegurl")
         if u.path == "/player_api.php":
-            if q.get("username") != "u" or q.get("password") != "p":
+            if q.get("username") not in ("u", "tsonly") or q.get("password") != "p":
                 return self.reply({"user_info": {"auth": 0}})
             act = q.get("action")
             if act == "get_live_categories":
@@ -71,13 +71,35 @@ class Mock(BaseHTTPRequestHandler):
                                    "episodes": {"2": [{"id": "502", "episode_num": 1, "title": "S2E1", "container_extension": "mp4", "season": 2, "info": {"duration": "00:40:00"}}],
                                                 "1": [{"id": "502x", "episode_num": 3, "title": "bad id"}, {"id": "412", "episode_num": 2, "title": "S1E2", "container_extension": "mkv", "season": 1},
                                                       {"id": "411", "episode_num": 1, "title": "S1E1", "container_extension": "mp4", "season": 1}]}})
-            return self.reply({"user_info": {"auth": 1, "status": "Expired" if q.get("username") == "old" else "Active", "exp_date": "1893456000", "max_connections": "2"}})
+            ui = {"auth": 1, "status": "Expired" if q.get("username") == "old" else "Active", "exp_date": "1893456000", "max_connections": "2"}
+            if q.get("username") == "tsonly":
+                ui["allowed_output_formats"] = ["ts"]
+            return self.reply({"user_info": ui})
         if u.path in ("/movie/u/p/21.mp4", "/series/u/p/411.mp4"):
             rng = self.headers.get("Range")
             Mock.seen["range"] = rng
             if rng:
                 return self.reply(b"2345", "video/mp4", 206)
             return self.reply(b"0123456789", "video/mp4")
+        if u.path in ("/hdr/stream.ts", "/hdr/index.m3u8", "/hdr/seg1.ts"):
+            Mock.seen[u.path] = {"ua": self.headers.get("User-Agent"), "ref": self.headers.get("Referer"), "cookie": self.headers.get("Cookie")}
+            if u.path.endswith(".m3u8"):
+                return self.reply("#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:4\n#EXTINF:4,\nseg1.ts\n", "application/vnd.apple.mpegurl")
+            return self.reply(SEGMENT, "video/mp2t")
+        if u.path == "/big.m3u":
+            n = int(q.get("n", "1000")); host2 = host
+            body = "#EXTM3U\n" + "".join('#EXTINF:-1 group-title="G%d",Channel %d\n%s/live/u/p/%d.ts\n' % (i % 50, i, host2, i) for i in range(n))
+            return self.reply(body, "audio/x-mpegurl")
+        if u.path == "/list.m3u.gz":
+            import gzip as _gz
+            return self.reply(_gz.compress("\ufeff#EXTM3U\n#EXTINF:-1,Zipped One\nhttp://example.test/z/1.m3u8\n".encode()), "application/gzip")
+        if u.path == "/rel/list.m3u":
+            return self.reply("#EXTM3U\n#EXTINF:-1,Relative One\n../hdr/index.m3u8\n#EXTINF:-1,Absolute\nhttp://example.test/a.m3u8\n", "audio/x-mpegurl")
+        if u.path == "/hdr/list.m3u":
+            return self.reply("#EXTM3U\n"
+                              "#EXTINF:-1 group-title=\"H\",Needs Headers\n#EXTVLCOPT:http-user-agent=MyAgent/9\n#EXTVLCOPT:http-referrer=https://ref.example/\n%s/hdr/index.m3u8\n"
+                              "#EXTINF:-1,Kodi Style\n%s/hdr/stream.ts|User-Agent=KodiUA&Referer=https%%3A%%2F%%2Fk.example%%2F&X-Evil=1\n"
+                              "#EXTINF:-1,Injection\n%s/hdr/stream.ts|User-Agent=Bad%%0D%%0AX-Evil%%3A%%20y\n" % (host, host, host), "audio/x-mpegurl")
         if u.path == "/where":
             return self.reply("AE\n", "text/plain")
         if u.path == "/forbidden/index.m3u8":
@@ -218,6 +240,59 @@ class LinkTests(unittest.TestCase):
         self.assertNotEqual(code, 200)
         code, _, _ = get(self.port, "/api/vod?" + up.urlencode({"server": self.up_url, "user": "u", "pass": "p", "kind": "movie"}), {"Origin": "https://evil.example"})
         self.assertEqual(code, 403)
+
+    # --- M3U: big lists, gzip, relative links, headers, TS fallbacks
+    def m3u(self, path, **kw):
+        return self.api("/api/m3u", url=self.up_url + path)
+
+    def test_big_list_is_parsed_and_capped(self):
+        import time as _t
+        t0 = _t.time()
+        code, _, body = self.m3u("/big.m3u?n=30000")
+        self.assertEqual(code, 200)
+        d = json.loads(body)
+        self.assertEqual(d["account"]["total"], 30000)
+        self.assertEqual(len(d["channels"]), 30000)
+        self.assertLess(_t.time() - t0, 30)
+        old = link.MAX_CHANNELS
+        link.MAX_CHANNELS = 100
+        try:
+            d = json.loads(self.m3u("/big.m3u?n=250")[2])
+        finally:
+            link.MAX_CHANNELS = old
+        self.assertEqual((len(d["channels"]), d["account"]["total"], d["account"]["truncated"]), (100, 250, 150))
+
+    def test_gzip_list_and_relative_links(self):
+        d = json.loads(self.m3u("/list.m3u.gz")[2])
+        self.assertEqual([c["n"] for c in d["channels"]], ["Zipped One"])      # BOM and gzip handled
+        d = json.loads(self.m3u("/rel/list.m3u")[2])
+        urls = [up.unquote(up.parse_qs(up.urlparse(c["u"]).query)["u"][0]) for c in d["channels"]]
+        self.assertEqual(urls, [self.up_url + "/hdr/index.m3u8", "http://example.test/a.m3u8"])   # ../hdr resolved against the list address
+
+    def test_playlist_headers_reach_the_stream_and_its_segments(self):
+        d = json.loads(self.m3u("/hdr/list.m3u")[2])
+        chans = {c["n"]: c for c in d["channels"]}
+        path = lambda c: c["u"].split("127.0.0.1:%d" % self.port)[1]
+        code, _, pl = get(self.port, path(chans["Needs Headers"]))
+        self.assertEqual(code, 200)
+        self.assertEqual(Mock.seen["/hdr/index.m3u8"], {"ua": "MyAgent/9", "ref": "https://ref.example/", "cookie": None})
+        seg = [l for l in pl.decode().split("\n") if l and not l.startswith("#")][0]
+        get(self.port, seg.split("127.0.0.1:%d" % self.port)[1])
+        self.assertEqual(Mock.seen["/hdr/seg1.ts"]["ua"], "MyAgent/9")           # segments keep the channel's headers
+        get(self.port, path(chans["Kodi Style"]))
+        self.assertEqual(Mock.seen["/hdr/stream.ts"], {"ua": "KodiUA", "ref": "https://k.example/", "cookie": None})
+        self.assertEqual(chans["Kodi Style"].get("t"), 1)                         # raw .ts is flagged for the TS player
+        get(self.port, path(chans["Injection"]))
+        self.assertEqual(Mock.seen["/hdr/stream.ts"]["ua"], "BadX-Evil: y")        # line breaks stripped: no header injection
+
+    def test_xtream_output_follows_allowed_formats(self):
+        d = json.loads(self.api("/api/xtream", server=self.up_url, user="u", **{"pass": "p"})[2])["channels"][0]
+        self.assertIn(".m3u8", up.unquote(d["u"]))
+        self.assertIn(".ts", up.unquote(d["a"]))                                  # HLS first, TS as fallback
+        d = json.loads(self.api("/api/xtream", server=self.up_url, user="tsonly", **{"pass": "p"})[2])["channels"][0]
+        self.assertTrue(up.unquote(d["u"]).split("?")[0].endswith(".ts") or ".ts&" in up.unquote(d["u"]) or ".ts" in up.unquote(d["u"]))
+        self.assertEqual(d.get("t"), 1)
+        self.assertNotIn("a", d)
 
     # --- TV guide (EPG): now and next
     def test_epg_decodes_titles_sorts_and_skips_bad_rows(self):

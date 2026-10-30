@@ -295,7 +295,7 @@
     <button class="btn" id="tv-check" type="button" title="Test these channels from this computer's own connection (needs EYE3 Link)">Check from my connection</button>
     <label class="chip" style="cursor:pointer"><input type="checkbox" id="tv-hidefailed" checked> hide failed</label>
     <span class="chip" id="tv-count">0 channels</span>
-    <span class="hintkeys">↑↓ channel · ←→ category · 0-9 number · <b>L</b> favourite · <b>/</b> search</span>
+    <span class="hintkeys">↑↓ channel · ←→ category · 0-9 number · <b>P</b> previous · <b>L</b> favourite · <b>X</b> shape · <b>A</b> audio · <b>T</b> subtitles · <b>/</b> search</span>
   </div>
   <div class="tv">
     <div class="chlist" id="chlist"></div>
@@ -360,6 +360,7 @@
           </select>
         </label>
         <button class="btn on" id="mk-export" type="button">Download M3U</button>
+        <div class="acct-col" style="margin-top:8px"><b>Big playlists</b><div id="mk-libs"></div></div>
         <p class="acct-note" id="mk-msg">Nothing leaves this computer. Open the downloaded file in VLC or TiviMate, or upload it where your IPTV app lets you add a playlist file.</p>
       </div>
     </div>
@@ -740,9 +741,10 @@
     myAsChannels().forEach(add);
     // a viewer's own accounts always show everything in them, even if another list has the same stream
     accounts.forEach(function (a) { (acctChannels[a.id] || []).forEach(function (c) { out.push(c); }); });
+    libChannels.forEach(function (c) { out.push(c); });
     allChannels = out;
   }
-  function isOwnCat(k) { return k === "My playlist" || k === "Added list" || k === "My channels" || accounts.some(function (a) { return a.name === k; }); }
+  function isOwnCat(k) { return k === "My playlist" || k === "Added list" || k === "My channels" || accounts.some(function (a) { return a.name === k; }) || libMeta.some(function (l) { return l.name === k; }); }
   function categoryList() {
     var counts = {}, order = [];
     allChannels.forEach(function (c) { if (c.adult) return; if (!counts[c.cat]) { counts[c.cat] = 0; order.push(c.cat); } counts[c.cat]++; });
@@ -784,8 +786,12 @@
     if (!counts[tvFilter.group]) tvFilter.group = "";
     sel.value = tvFilter.group; sel.hidden = false;
   }
+  // search: letters without accents, upper or lower case, words in any order ("cnn news" finds "News - CNN")
+  function fold(t) { var x = String(t).toLowerCase(); try { x = x.normalize("NFD").replace(/[\u0300-\u036f]/g, ""); } catch (e) {} return x; }
+  var qWords = [];
+  function matchWords(c) { var f = c._f || (c._f = fold(c.name)); for (var i = 0; i < qWords.length; i++) if (f.indexOf(qWords[i]) < 0) return false; return true; }
   function applyFilter(keepUrl) {
-    var q = tvFilter.q.toLowerCase();
+    var q = tvFilter.q; qWords = fold(q).split(/\s+/).filter(Boolean);
     var hideFailed = $("tv-hidefailed").checked, hiddenByCheck = 0;
     var list = allChannels.filter(function (c) {
       if (tvFilter.cat === EXPLICIT) { if (!(explicitUnlocked && c.adult)) return false; }
@@ -793,7 +799,7 @@
       else if (tvFilter.cat === FAVS ? !isFav(c.url) : tvFilter.cat === RECENT ? recent.indexOf(rkey(c)) < 0 : (tvFilter.cat !== "All" && c.cat !== tvFilter.cat)) return false;
       if (tvFilter.country && c.country !== tvFilter.country) return false;
       if (tvFilter.group && c.grp !== tvFilter.group) return false;
-      if (q && c.name.toLowerCase().indexOf(q) === -1) return false;
+      if (qWords.length && !matchWords(c)) return false;
       if (hideFailed && failedRecently(c.url)) { hiddenByCheck++; return false; }
       return true;
     });
@@ -938,29 +944,137 @@
       epgCache[key] = { t: Date.now(), items: d.items || [] }; show(epgCache[key].items);
     })["catch"](function () { /* no guide for this channel: the channel name alone is fine */ });
   }
+  // ---- playback: HLS (hls.js / native), raw MPEG-TS (mpegts.js), a fallback format, http streams through EYE3 Link, stall recovery ----
+  var tsPlayer = null, mpegtsLoad = null, watchTimer = null, reopenCount = 0;
+  var MPEGTS_SRC = "https://cdn.jsdelivr.net/npm/mpegts.js@1.7.3/dist/mpegts.js";
+  function loadMpegts() {
+    if (window.mpegts) return Promise.resolve(window.mpegts);
+    if (mpegtsLoad) return mpegtsLoad;
+    mpegtsLoad = new Promise(function (resolve, reject) {
+      var sc = document.createElement("script"); sc.src = MPEGTS_SRC;
+      sc.onload = function () { window.mpegts ? resolve(window.mpegts) : reject(new Error("The TS player did not start.")); };
+      sc.onerror = function () { mpegtsLoad = null; reject(new Error("Could not load the TS player (offline, or a blocker?).")); };
+      document.head.appendChild(sc);
+    });
+    return mpegtsLoad;
+  }
+  // an http:// stream cannot play on an https page; EYE3 Link (if it runs) fetches it instead
+  function playable(url) {
+    if (location.protocol !== "https:" || !/^http:\/\//i.test(url) || url.indexOf(LINK_BASE) === 0) return Promise.resolve(url);
+    return linkHello().then(function (h) { return LINK_BASE + "/stream?" + new URLSearchParams({ u: url, t: h.token }).toString(); },
+      function () { throw new Error("This stream is http:// and this page is https://, so it needs EYE3 Link. Start EYE3 Link, or use the playlist's https:// streams."); });
+  }
+  // a raw MPEG-TS link (…/123.ts) is played with the TS player; also when it is wrapped by EYE3 Link
+  function looksTs(url) {
+    var u = String(url || "");
+    if (u.indexOf(LINK_BASE) === 0) { var m = /[?&]u=([^&]+)/.exec(u); if (m) { try { u = decodeURIComponent(m[1]); } catch (e) {} } }
+    return /\.ts$/i.test(u.split(/[?#]/)[0]);
+  }
+  function stopWatch() { clearInterval(watchTimer); watchTimer = null; }
+  // stall watchdog: if the picture stops for ~16 s, reopen the stream (up to 3 times)
+  function startWatch(token, reopen) {
+    stopWatch();
+    var video = $("video"), last = -1, still = 0;
+    watchTimer = setInterval(function () {
+      if (token !== playToken) return stopWatch();
+      if (video.paused || video.ended) { still = 0; return; }
+      if (Math.abs(video.currentTime - last) > 0.05) { last = video.currentTime; still = 0; return; }
+      if (++still >= 4) {
+        still = 0;
+        if (++reopenCount > 3) { stopWatch(); showLabel("The stream keeps stopping. Try another channel, or check your connection.", true); return; }
+        reopen(reopenCount);
+      }
+    }, 4000);
+  }
+  // ---- picture shape, audio track, subtitles (keys X, A, T while watching a channel) ----
+  var ASPECTS = [["contain", "Picture: fit"], ["cover", "Picture: fill the screen (crops)"], ["fill", "Picture: stretch"]], aspectAt = 0;
+  function cycleAspect() { aspectAt = (aspectAt + 1) % ASPECTS.length; $("video").style.objectFit = ASPECTS[aspectAt][0]; toast(ASPECTS[aspectAt][1]); }
+  function trackName(t, i) { return (t && (t.name || t.label || t.lang || t.language)) || "Track " + (i + 1); }
+  function cycleAudio() {
+    var v = $("video");
+    if (hls && hls.audioTracks && hls.audioTracks.length > 1) { hls.audioTrack = (hls.audioTrack + 1) % hls.audioTracks.length; return toast("Audio: " + trackName(hls.audioTracks[hls.audioTrack], hls.audioTrack)); }
+    if (v.audioTracks && v.audioTracks.length > 1) {
+      var cur = 0; for (var i = 0; i < v.audioTracks.length; i++) if (v.audioTracks[i].enabled) cur = i;
+      var nx = (cur + 1) % v.audioTracks.length; for (var k = 0; k < v.audioTracks.length; k++) v.audioTracks[k].enabled = k === nx;
+      return toast("Audio: " + trackName(v.audioTracks[nx], nx));
+    }
+    toast("This channel has only one audio track");
+  }
+  function cycleSubs() {
+    var v = $("video");
+    if (hls && hls.subtitleTracks && hls.subtitleTracks.length) {
+      var n = hls.subtitleTracks.length, nx = hls.subtitleTrack + 1 >= n ? -1 : hls.subtitleTrack + 1;
+      hls.subtitleTrack = nx; return toast(nx < 0 ? "Subtitles: off" : "Subtitles: " + trackName(hls.subtitleTracks[nx], nx));
+    }
+    var tt = v.textTracks, list = []; for (var i = 0; tt && i < tt.length; i++) if (tt[i].kind === "subtitles" || tt[i].kind === "captions") list.push(tt[i]);
+    if (!list.length) return toast("No subtitles in this channel");
+    var on = -1; list.forEach(function (t, j) { if (t.mode === "showing") on = j; });
+    var nx2 = on + 1 >= list.length ? -1 : on + 1;
+    list.forEach(function (t, j) { t.mode = j === nx2 ? "showing" : "disabled"; });
+    toast(nx2 < 0 ? "Subtitles: off" : "Subtitles: " + trackName(list[nx2], nx2));
+  }
   function playChannel(i) {
     var c = channels[i]; if (!c || !c.url) return;
     $("idle").style.display = "none";
     set(LAST_KEY, c.url);
-    var video = $("video"), title = (i + 1) + " · " + c.name + (c.q ? " · " + c.q + "p" : "") + (c.country ? " · " + c.country : "");
-    stopHls();
+    if (prevCh && prevCh.url !== c.url) prevChannel = prevCh;
+    prevCh = c;
+    var title = (i + 1) + " · " + c.name + (c.q ? " · " + c.q + "p" : "") + (c.country ? " · " + c.country : "");
+    stopHls(); reopenCount = 0;
     var token = ++playToken;
     showLabel(title, false); noteRecent(c); epgFor(c, title, token);
-    if (video.canPlayType("application/vnd.apple.mpegurl")) {
-      video.src = c.url;
-    } else if (window.Hls && window.Hls.isSupported()) {
-      hls = new window.Hls({ enableWorker: true });
-      hls.on(window.Hls.Events.ERROR, function (ev, data) { if (data && data.fatal) showLabel(title + " — can't play this stream." + (c.url.indexOf(LINK_BASE) === 0 ? " Is EYE3 Link still running?" : " Try another."), true); });
-      hls.loadSource(c.url); hls.attachMedia(video);
-    } else {
-      video.src = c.url;
-    }
-    video.onerror = function () { showLabel(title + " — can't play this stream." + (c.url.indexOf(LINK_BASE) === 0 ? " Is EYE3 Link still running?" : " Try another."), true); };
-    var p = video.play(); if (p && p["catch"]) p["catch"](function () {});
+    openStream(c, title, token, c.url, !!c.ts || looksTs(c.url), false);
   }
-  function stopHls() { if (hls) { try { hls.destroy(); } catch (e) {} hls = null; } }
+  var prevCh = null, prevChannel = null;
+  function openStream(c, title, token, url, isTs, isAlt) {
+    var video = $("video"), hint = c.url.indexOf(LINK_BASE) === 0 ? " Is EYE3 Link still running?" : " Try another.";
+    playable(url).then(function (real) {
+      if (token !== playToken) return;
+      stopHls();
+      var failed = function (why) {
+        if (token !== playToken) return;
+        if (!isAlt && c.alt) { showLabel(title + " — trying another stream format…", false); return openStream(c, title, token, c.alt, looksTs(c.alt) || !isTs, true); }
+        showLabel(title + " — can't play this stream." + (why ? " " + why : hint), true);
+      };
+      var reopen = function (n) { if (token !== playToken) return; showLabel(title + " — reconnecting (" + n + ")…", false); stopHls(); openStream(c, title, token, url, isTs, isAlt); };
+      if (isTs) {
+        loadMpegts().then(function (m) {
+          if (token !== playToken) return;
+          if (!m.isSupported()) return failed("This browser cannot play raw TS streams. Try Chrome or Edge.");
+          tsPlayer = m.createPlayer({ type: "mpegts", isLive: true, url: real }, { enableWorker: true, liveBufferLatencyChasing: true, lazyLoad: false });
+          tsPlayer.on(m.Events.ERROR, function () { failed(); });
+          tsPlayer.attachMediaElement(video); tsPlayer.load();
+          var p = tsPlayer.play(); if (p && p["catch"]) p["catch"](function () {});
+          video.onerror = function () { failed(); };
+          startWatch(token, reopen);
+        })["catch"](function (err) { failed(err && err.message); });
+        return;
+      }
+      if (video.canPlayType("application/vnd.apple.mpegurl")) {
+        video.src = real;
+      } else if (window.Hls && window.Hls.isSupported()) {
+        hls = new window.Hls({ enableWorker: true });
+        hls.on(window.Hls.Events.ERROR, function (ev, data) {
+          if (!data || !data.fatal) return;
+          if (data.type === window.Hls.ErrorTypes.MEDIA_ERROR && !hls._recovered) { hls._recovered = true; try { hls.recoverMediaError(); return; } catch (e) {} }
+          failed();
+        });
+        hls.loadSource(real); hls.attachMedia(video);
+      } else {
+        video.src = real;
+      }
+      video.onerror = function () { failed(); };
+      var p2 = video.play(); if (p2 && p2["catch"]) p2["catch"](function () {});
+      startWatch(token, reopen);
+    }, function (err) { if (token === playToken) showLabel(title + " — " + err.message, true); });
+  }
+  function stopHls() {
+    stopWatch();
+    if (hls) { try { hls.destroy(); } catch (e) {} hls = null; }
+    if (tsPlayer) { try { tsPlayer.unload(); tsPlayer.detachMediaElement(); tsPlayer.destroy(); } catch (e) {} tsPlayer = null; }
+  }
   function stopPlayback() {
-    stopHls();
+    playToken++; stopHls();
     var video = $("video");
     try { video.pause(); } catch (e) {}
     video.removeAttribute("src"); try { video.load(); } catch (e) {}
@@ -1045,9 +1159,10 @@
     paintAccounts();
     var req = acctRequest(a);
     return linkGet(req[0], req[1]).then(function (d) {
-      acctChannels[a.id] = (d.channels || []).map(function (c) { return { name: c.n, cat: a.name, grp: c.c || "", country: "", url: c.u, q: 0, sub: "", adult: !!c.x, eid: c.e || 0, acct: a.id }; });
+      acctChannels[a.id] = (d.channels || []).map(function (c) { return { name: c.n, cat: a.name, grp: c.c || "", country: "", url: c.u, q: 0, sub: "", adult: !!c.x, eid: c.e || 0, acct: a.id, alt: c.a || "", ts: !!c.t }; });
       var info = d.account || {};
       var bits = [acctChannels[a.id].filter(function (c) { return !c.adult; }).length + " channels"];
+      if (info.total && info.truncated) bits[0] = acctChannels[a.id].filter(function (c) { return !c.adult; }).length + " of " + info.total + " channels (the list is larger than the limit)";
       if (info.status) bits.push(info.status);
       if (info.expires) bits.push("until " + info.expires);
       acctState[a.id] = { ok: true, text: bits.join(" · ") };
@@ -1272,6 +1387,73 @@
       return { name: c.n, cat: "My channels", grp: c.g || "", country: "", url: c.u, q: 0, sub: "", logo: c.l || "", tvgid: c.i || "", adult: ADULT_RX.test((c.g || "") + " " + c.n) };
     });
   }
+  // ---- Big playlists: any size (a 40 MB list with 150,000 channels), kept in the browser's database on this device ----
+  var LIB_MAX = 300000, libMeta = [], libChannels = [], libReady = false;
+  function libDb() {
+    return new Promise(function (resolve, reject) {
+      if (!window.indexedDB) return reject(new Error("This browser cannot store big playlists (private mode?)."));
+      var rq = indexedDB.open("eye3-library", 1);
+      rq.onupgradeneeded = function () { var d = rq.result; d.createObjectStore("lists", { keyPath: "id" }); d.createObjectStore("data", { keyPath: "id" }); };
+      rq.onsuccess = function () { resolve(rq.result); };
+      rq.onerror = function () { reject(new Error("Could not open the playlist store.")); };
+    });
+  }
+  function libTx(db, stores, mode, fn) {
+    return new Promise(function (resolve, reject) {
+      var tx = db.transaction(stores, mode), out = fn(tx);
+      tx.oncomplete = function () { resolve(out && out.result !== undefined ? out.result : out); };
+      tx.onerror = tx.onabort = function () { reject(new Error("Could not save the playlist (not enough space?).")); };
+    });
+  }
+  function libLoad() {
+    return libDb().then(function (db) {
+      return libTx(db, ["lists", "data"], "readonly", function (tx) {
+        var metaReq = tx.objectStore("lists").getAll(), dataReq = tx.objectStore("data").getAll();
+        return { m: metaReq, d: dataReq };
+      }).then(function (r) { return { m: r.m.result || [], d: r.d.result || [] }; });
+    }).then(function (r) {
+      libMeta = r.m.sort(function (a, b) { return a.added - b.added; });
+      libChannels = [];
+      var by = {}; r.d.forEach(function (x) { by[x.id] = x.rows; });
+      libMeta.forEach(function (l) {
+        (by[l.id] || []).forEach(function (c) {
+          libChannels.push({ name: c.n, cat: l.name, grp: c.g || "", country: "", url: c.u, q: 0, sub: "", adult: !!c.a, lib: 1 });
+        });
+      });
+      libReady = true;
+    })["catch"](function () { libReady = true; });
+  }
+  function libSave(name, items) {
+    var rows = [], seen = {};
+    for (var i = 0; i < items.length && rows.length < LIB_MAX; i++) {
+      var c = items[i]; if (!c.url || seen[c.url] || !/^https?:\/\//i.test(c.url)) continue;
+      seen[c.url] = 1; rows.push({ n: String(c.name).slice(0, 120), u: c.url, g: String(c.grp || "").slice(0, 80), a: ADULT_RX.test((c.grp || "") + " " + c.name) ? 1 : 0 });
+    }
+    var id = "l" + Date.now().toString(36), meta = { id: id, name: String(name).slice(0, 60) || "My big playlist", count: rows.length, added: Date.now() };
+    return libDb().then(function (db) {
+      return libTx(db, ["lists", "data"], "readwrite", function (tx) { tx.objectStore("lists").put(meta); tx.objectStore("data").put({ id: id, rows: rows }); });
+    }).then(function () { return libLoad(); }).then(function () { return { meta: meta, capped: items.length > rows.length && rows.length >= LIB_MAX }; });
+  }
+  function libRemove(id) {
+    return libDb().then(function (db) {
+      return libTx(db, ["lists", "data"], "readwrite", function (tx) { tx.objectStore("lists").delete(id); tx.objectStore("data").delete(id); });
+    }).then(libLoad);
+  }
+  function paintLibs() {
+    var box = $("mk-libs"); if (!box) return;
+    while (box.firstChild) box.removeChild(box.firstChild);
+    libMeta.forEach(function (l) {
+      var visible = libChannels.filter(function (c) { return c.cat === l.name && !c.adult; }).length;
+      var row = make("div", "acct-row"), who = make("div", "who");
+      who.appendChild(nt(make("b", "", l.name)));
+      who.appendChild(make("small", "", (explicitUnlocked ? l.count : visible) + " channels · saved on this device"));
+      var rm = make("button", "btn", "Remove"); rm.type = "button";
+      rm.addEventListener("click", function () { libRemove(l.id).then(function () { paintLibs(); refreshLists(); mkMsg("Removed “" + l.name + "”.", "good"); }, function (e) { mkMsg(e.message, "bad"); }); });
+      row.appendChild(who); row.appendChild(rm); box.appendChild(row);
+    });
+    if (!libMeta.length) box.appendChild(make("div", "acct-note", "No big playlists yet. A file with more than a few thousand channels is saved here automatically when you import it."));
+  }
+  libLoad().then(function () { paintLibs(); if ($("ov-tv").classList.contains("open")) refreshLists(); });
   function mkMsg(t, kind) { var m = $("mk-msg"); m.textContent = t; m.className = "acct-note" + (kind ? " " + kind : ""); }
   function paintMaker() {
     var list = $("mk-list"), shown = 0;
@@ -1286,6 +1468,7 @@
       row.appendChild(who); row.appendChild(rm); list.appendChild(row);
     });
     if (!shown) list.appendChild(make("div", "ch action", "No channels of your own yet. Add one, or import an M3U file."));
+    paintLibs();
   }
   // ---- Movies & series on demand: Xtream accounts only, read and streamed through EYE3 Link ----
   var vod = { kind: "movie", acct: "", cat: "All", q: "", titles: [], idx: 0, mode: "titles", series: null, seriesName: "", seasons: [], busy: "", note: "" };
@@ -1322,6 +1505,7 @@
   }
   function vodLabel(text, isErr) { var l = $("vod-label"); l.textContent = text; l.className = "label" + (isErr ? " err" : ""); l.style.display = "block"; }
   function vodStop() {
+    clearTimeout(vod.nextTimer);
     var v = $("vod-video");
     try { v.pause(); } catch (e) {}
     v.removeAttribute("src"); try { v.load(); } catch (e) {}
@@ -1426,11 +1610,13 @@
     vod.busy = "Loading episodes…"; vodRender();
     linkGet("/api/vod/series", vodCreds(a, { id: it.id })).then(function (d) {
       vod.busy = ""; vod.mode = "episodes"; vod.seasons = d.seasons || []; vod.seriesName = it.n;
+      vod.flat = []; vod.seasons.forEach(function (se) { se.episodes.forEach(function (ep) { vod.flat.push({ ep: ep, label: vod.seriesName + " · S" + se.season + (ep.num ? "E" + ep.num : "") + " · " + ep.n }); }); });
       vodRender(); var first = $("vod-list").querySelector(".ch:not(.action)"); if (first) first.focus();
     })["catch"](function (err) { vod.busy = ""; vod.note = err.message; vodRender(); });
   }
   function vodBack() { vod.mode = "titles"; vodRender(); }
   function vodPlay(ep, title) {
+    clearTimeout(vod.nextTimer);
     var a = vodAcct(); if (!a) return;
     $("vod-idle").style.display = "none"; vodLabel(title + " — starting…", false);
     linkGet("/api/vod/play", vodCreds(a, { kind: vod.kind, id: ep.id, ext: ep.e || "mp4" })).then(function (d) {
@@ -1439,6 +1625,21 @@
         vodLabel(title + " — can't play this file here." + (/^(mkv|avi|ts|flv|wmv)$/.test(d.ext) ? " A ." + d.ext + " file often needs VLC." : " Is EYE3 Link still running?"), true);
       };
       resumeAttach(v, a.id + "|" + vod.kind + "|" + ep.id, title);
+      clearTimeout(vod.nextTimer);
+      if (vod.kind === "series" && vod.flat) {
+        var endedBase = v.onended;
+        v.onended = function () {
+          if (endedBase) endedBase();
+          var at = -1; for (var j = 0; j < vod.flat.length; j++) if (vod.flat[j].ep.id === ep.id) { at = j; break; }
+          var nx = at > -1 ? vod.flat[at + 1] : null; if (!nx) return;
+          var left = 6, tick = function () {
+            if (!$("ov-vod").classList.contains("open")) return;
+            if (left <= 0) return vodPlay(nx.ep, nx.label);
+            vodLabel("Next: " + nx.label + " in " + left + " s — press Esc to stop", false); left--; vod.nextTimer = setTimeout(tick, 1000);
+          };
+          tick();
+        };
+      }
       v.src = d.url;
       var p = v.play(); if (p && p["catch"]) p["catch"](function () {});
     })["catch"](function (err) { vodLabel(title + " — " + err.message, true); });
@@ -1678,6 +1879,14 @@
     r.onload = function () {
       var text = String(r.result || ""), items = parseM3U(text);
       if (!items.length && !/#EXTM3U/i.test(text)) { input.value = ""; return mkMsg("That file does not look like an M3U playlist (it should start with #EXTM3U).", "bad"); }
+      if (f.size > 3 * 1024 * 1024 || items.length > MY_MAX - myChannels.length) {   // too big for "My channels": keep it as a big playlist
+        mkMsg("Saving " + items.length + " channels from this big file…", "");
+        return libSave((f.name || "Big playlist").replace(/\.[^.]+$/, ""), items).then(function (r2) {
+          input.value = ""; paintLibs(); refreshLists();
+          var vis = items.filter(function (c) { return !c.adult || explicitUnlocked; }).length;
+          mkMsg(vis ? "Saved “" + r2.meta.name + "” as a big playlist (" + vis + " channels" + (r2.capped ? ", the first " + LIB_MAX + " kept" : "") + "). Find it in Live TV under its own name." : "No new playable channels in that file.", vis ? "good" : "bad");
+        }, function (e) { input.value = ""; mkMsg(e.message, "bad"); });
+      }
       importItems(items, input);
     };
     r.readAsText(f);
@@ -2091,6 +2300,14 @@
         if (c) { var on = toggleFav(c.url); toast(on ? "Added to favourites" : "Removed from favourites"); var keep = c.url; fillSelects(); applyFilter(keep); scrollCh(); }
       }
       else if (e.key === "/") { e.preventDefault(); try { $("tv-search").focus(); } catch (er) {} }
+      else if (e.key === "x" || e.key === "X") { e.preventDefault(); cycleAspect(); }
+      else if (e.key === "a" || e.key === "A") { e.preventDefault(); cycleAudio(); }
+      else if (e.key === "t" || e.key === "T") { e.preventDefault(); cycleSubs(); }
+      else if (e.key === "p" || e.key === "P") {
+        e.preventDefault();
+        var pi = -1; if (prevChannel) for (var q = 0; q < channels.length; q++) if (channels[q].url === prevChannel.url) { pi = q; break; }
+        if (pi > -1) { chIndex = pi; paintChannels(); scrollCh(); playChannel(pi); } else toast(prevChannel ? "The previous channel is in another category" : "No previous channel yet");
+      }
       return;
     }
     if ($("ov-vod").classList.contains("open")) {

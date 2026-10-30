@@ -20,26 +20,28 @@ If your computer cannot find a provider's address ("getaddrinfo failed") but ano
 
 Run:   python3 eye3-link.py          (Windows: py eye3-link.py)      Stop: Ctrl+C
 """
-import argparse, base64, hashlib, ipaddress, json, os, re, secrets, socket, ssl, sys, time
+import argparse, base64, gzip, hashlib, ipaddress, json, os, re, secrets, socket, ssl, sys, time
 import urllib.error as ue
 import urllib.parse as up
 import urllib.request as ur
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.4"
+VERSION = "1.5"
 ALLOWED_ORIGINS = ["https://j-janko420.github.io"]          # more: EYE3_ORIGINS=https://a,https://b
 LOCAL_ORIGIN = re.compile(r"^http://(localhost|127\.0\.0\.1)(:\d+)?$")
 BAD = re.compile(r"adult|xxx|18\+|porn|erotic|\bsex|playboy|hustler|brazzers|dorcel|penthouse|redlight", re.I)
 UA_PLAYER = "VLC/3.0.20 LibVLC/3.0.20"
 UA_MAG = "Mozilla/5.0 (QtEmbedded; U; Linux; C) AppleWebKit/533.3 (KHTML, like Gecko) MAG200 stbapp ver: 2 rev: 250 Safari/533.3"
-MAX_PLAYLIST = 8 * 1024 * 1024
+MAX_PLAYLIST = 8 * 1024 * 1024          # one HLS playlist
+MAX_LIST = 160 * 1024 * 1024            # a whole channel list (big providers send 40 MB and more)
+MAX_CHANNELS = 100000                   # rows sent to the page from one list
 
 
 class LinkError(Exception):
     """An error whose message is safe and useful to show to the viewer."""
 
 
-STATE = {"token": secrets.token_urlsafe(24), "port": 0, "insecure": False, "proxy": "", "origins": list(ALLOWED_ORIGINS), "sessions": {}}
+STATE = {"token": secrets.token_urlsafe(24), "port": 0, "insecure": False, "proxy": "", "origins": list(ALLOWED_ORIGINS), "sessions": {}, "hdrs": {}}
 
 
 def ssl_context():
@@ -148,8 +150,35 @@ def link_url(path, **params):
     return "http://127.0.0.1:%d%s?%s" % (STATE["port"], path, up.urlencode(params))
 
 
-def stream_url(upstream):
-    return link_url("/stream", u=upstream)
+HDR_KEYS = {"user-agent": "User-Agent", "referer": "Referer", "referrer": "Referer", "http-referrer": "Referer", "http-referer": "Referer",
+            "origin": "Origin", "http-origin": "Origin", "cookie": "Cookie", "http-user-agent": "User-Agent"}
+
+
+def clean_headers(raw):
+    """Only a few request headers a playlist may ask for (user agent, referrer, origin, cookie); no line breaks, bounded."""
+    out = {}
+    for k, v in (raw or {}).items():
+        name = HDR_KEYS.get(str(k).strip().lower())
+        v = re.sub(r"[\x00-\x1f\x7f]", "", str(v)).strip()
+        if name and v and len(v) <= 400:
+            out[name] = v
+    return out
+
+
+def register_headers(hdrs):
+    """Remember a channel's headers under a short id so stream links (and their HLS segments) can carry them."""
+    if not hdrs:
+        return ""
+    hid = hashlib.sha1(json.dumps(hdrs, sort_keys=True).encode()).hexdigest()[:12]
+    store = STATE["hdrs"]
+    if hid not in store and len(store) >= 4000:
+        store.pop(next(iter(store)))
+    store[hid] = hdrs
+    return hid
+
+
+def stream_url(upstream, hid=""):
+    return link_url("/stream", u=upstream, h=hid) if hid else link_url("/stream", u=upstream)
 
 
 # ------------------------------------------------------------------------ check from this connection
@@ -212,37 +241,84 @@ def attr(line, name):
     return m.group(1) if m else ""
 
 
-def parse_m3u(text):
-    out, info = [], None
+def parse_m3u(text, base=""):
+    """M3U/M3U8 -> channel rows. Understands #EXTVLCOPT / #EXTHTTP headers, Kodi 'url|User-Agent=..' suffixes,
+    relative links (when base is given) and keeps a .ts fallback for Xtream links that also exist as .m3u8."""
+    out, info, pend = [], None, {}
     for raw in text.replace("\r", "").split("\n"):
         line = raw.strip()
         if not line:
             continue
         if line.startswith("#EXTINF"):
-            info = line
+            info, pend = line, {}
+        elif line.startswith("#EXTVLCOPT:"):
+            k, _, v = line[11:].partition("=")
+            pend[k.strip().lower()] = v
+        elif line.startswith("#EXTHTTP:"):
+            try:
+                d = json.loads(line[9:])
+                if isinstance(d, dict):
+                    pend.update({str(k).lower(): v for k, v in d.items()})
+            except ValueError:
+                pass
         elif line.startswith("#"):
             continue
-        elif info is not None and re.match(r"^(https?)://", line, re.I):
+        elif info is not None:
+            url, _, suffix = line.partition("|")
+            url = url.strip()
+            if base and not re.match(r"^[a-z][a-z0-9+.-]*://", url, re.I):
+                url = up.urljoin(base, url)
+            if not re.match(r"^(https?)://", url, re.I):
+                info = None
+                continue
+            hdr = dict(pend)
+            if suffix:
+                for part in suffix.split("&"):
+                    k, _, v = part.partition("=")
+                    hdr[k.strip().lower()] = up.unquote(v)
+            hid = register_headers(clean_headers(hdr))
             name = info.rsplit(",", 1)[-1].strip() or "Channel"
             group = attr(info, "group-title").strip() or "Other"
-            # Xtream "...live/user/pass/123.ts" also exists as .m3u8, which browsers can play
-            url = re.sub(r"(/live/[^/]+/[^/]+/\d+)\.ts$", r"\1.m3u8", line)
-            ch = {"n": name, "c": group, "u": stream_url(url), "l": attr(info, "tvg-logo")}
+            ch = {"n": name, "c": group, "l": attr(info, "tvg-logo")}
+            as_hls = re.sub(r"(/live/[^/]+/[^/]+/\d+)\.ts$", r"\1.m3u8", url)
+            if as_hls != url:   # Xtream "...live/user/pass/123.ts" also exists as .m3u8, which browsers play natively; the .ts stays as fallback
+                ch["u"], ch["a"] = stream_url(as_hls, hid), stream_url(url, hid)
+            else:
+                ch["u"] = stream_url(url, hid)
+                if re.search(r"\.ts(\?|$)", urlpath(url), re.I):
+                    ch["t"] = 1
             if BAD.search(name + " " + group):
                 ch["x"] = True  # adult: EYE3 Home shows it only after the viewer unlocks the hidden Explicit section
             out.append(ch)
-            info = None
+            info, pend = None, {}
         else:
             info = None
     return out
 
 
+def urlpath(u):
+    try:
+        return up.urlparse(u).path
+    except ValueError:
+        return ""
+
+
 def channels_from_m3u(url):
-    body, _, _ = fetch(url)
-    chans = parse_m3u(body.decode("utf-8", "replace"))
+    body, final, _ = fetch(url, limit=MAX_LIST)
+    if body[:2] == b"\x1f\x8b":            # a .m3u.gz list
+        try:
+            body = gzip.decompress(body)
+        except OSError:
+            raise LinkError("That link looks compressed but could not be unpacked.")
+    chans = parse_m3u(body.decode("utf-8-sig", "replace"), base=final)
     if not chans:
         raise LinkError("That link did not contain any playable channels.")
-    return {"channels": chans, "account": {}}
+    total = len(chans)
+    info = {"total": total}
+    if total > MAX_CHANNELS:
+        chans = chans[:MAX_CHANNELS]
+        info["truncated"] = total - MAX_CHANNELS
+    return {"channels": chans, "account": info}
 
 
 # ------------------------------------------------------------------------------------- Xtream
@@ -270,13 +346,19 @@ def channels_from_xtream(server, user, password):
     for c in fetch_json(api + "&action=get_live_categories") or []:
         cats[str(c.get("category_id"))] = str(c.get("category_name") or "Other")
     chans = []
+    allowed = [str(x).lower() for x in (ui.get("allowed_output_formats") or []) if isinstance(x, str)]
+    hls_ok = not allowed or "m3u8" in allowed or "hls" in allowed
     for s in fetch_json(api + "&action=get_live_streams") or []:
         name = str(s.get("name") or "Channel").strip()
         cat = cats.get(str(s.get("category_id")), "Other")
         if not s.get("stream_id"):
             continue
-        direct = "%s/live/%s/%s/%s.m3u8" % (base, up.quote(user, safe=""), up.quote(password, safe=""), s["stream_id"])
-        ch = {"n": name, "c": cat, "u": stream_url(direct), "l": str(s.get("stream_icon") or ""), "e": s["stream_id"]}
+        prefix = "%s/live/%s/%s/%s" % (base, up.quote(user, safe=""), up.quote(password, safe=""), s["stream_id"])
+        ch = {"n": name, "c": cat, "l": str(s.get("stream_icon") or ""), "e": s["stream_id"]}
+        if hls_ok:
+            ch["u"], ch["a"] = stream_url(prefix + ".m3u8"), stream_url(prefix + ".ts")   # HLS first, raw TS as fallback
+        else:
+            ch["u"], ch["t"] = stream_url(prefix + ".ts"), 1                              # panel offers only TS
         if BAD.search(name + " " + cat):
             ch["x"] = True
         chans.append(ch)
@@ -606,7 +688,7 @@ class Handler(BaseHTTPRequestHandler):
             if u.path == "/stream":
                 if not self.token_ok(q):
                     return self.send_error_json(403, "Missing or wrong token.")
-                return self.stream(q.get("u", [""])[0])
+                return self.stream(q.get("u", [""])[0], q.get("h", [""])[0])
             if u.path == "/stalker/play":
                 if not self.token_ok(q):
                     return self.send_error_json(403, "Missing or wrong token.")
@@ -659,12 +741,14 @@ class Handler(BaseHTTPRequestHandler):
             return self.send_json(200, Stalker(one("portal"), one("mac")).channels())
         self.send_error_json(404, "Unknown request.")
 
-    def stream(self, target):
+    def stream(self, target, hid=""):
         if not re.match(r"^https?://", target, re.I):
             raise LinkError("Only http:// and https:// streams are supported.")
         if up.urlparse(target).netloc in ("127.0.0.1:%d" % STATE["port"], "localhost:%d" % STATE["port"]):
             raise LinkError("A stream cannot point back to EYE3 Link.")
         headers = {"User-Agent": UA_PLAYER}
+        hid = hid or ""
+        headers.update(STATE["hdrs"].get(hid, {}) if re.fullmatch(r"[0-9a-f]{12}", hid) else {})
         if self.headers.get("Range"):
             headers["Range"] = self.headers["Range"]
         req = ur.Request(target, headers=headers)
@@ -682,7 +766,7 @@ class Handler(BaseHTTPRequestHandler):
             if is_playlist:
                 body = resp.read(MAX_PLAYLIST)
                 if body.lstrip()[:7] == b"#EXTM3U":
-                    out = rewrite_playlist(body.decode("utf-8", "replace"), final).encode()
+                    out = rewrite_playlist(body.decode("utf-8", "replace"), final, hid if re.fullmatch(r"[0-9a-f]{12}", hid or "") else "").encode()
                     self.send_response(200)
                     self.cors()
                     self.send_header("Content-Type", "application/vnd.apple.mpegurl")
@@ -714,10 +798,10 @@ class Handler(BaseHTTPRequestHandler):
                 self.wfile.write(chunk)
 
 
-def rewrite_playlist(text, base):
-    """Point every segment/variant/key line of an HLS playlist back through EYE3 Link."""
+def rewrite_playlist(text, base, hid=""):
+    """Point every segment/variant/key line of an HLS playlist back through EYE3 Link (keeping the channel's headers)."""
     def absolute(ref):
-        return stream_url(up.urljoin(base, ref))
+        return stream_url(up.urljoin(base, ref), hid)
     out = []
     for line in text.replace("\r", "").split("\n"):
         s = line.strip()
