@@ -880,7 +880,7 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/epg":
             if not (one("server") and one("user") and one("pass")):
                 raise LinkError("Enter the server, username and password.")
-            return self.send_json(200, xtream_epg(one("server"), one("user"), one("pass"), one("id")))
+            return self.send_json(200, xtream_epg(one("server"), one("user"), one("pass"), one("id"), min(int(one("n")), 24) if one("n").isdigit() and int(one("n")) > 0 else 4))
         if path in ("/api/vod", "/api/vod/series", "/api/vod/play"):
             if not (one("server") and one("user") and one("pass")):
                 raise LinkError("Enter the server, username and password.")

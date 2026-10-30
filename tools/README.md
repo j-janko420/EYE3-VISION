@@ -53,6 +53,14 @@ Import the file in **Playlist maker → Import an M3U file**. A big file is save
 - Live TV keys: **P** previous channel, **X** picture shape, **A** audio track, **T** subtitles, **L** favourite, **/** search (accents and word order do not matter). A frozen stream reconnects by itself.
 - Settings → Help → **Copy support report** makes a text you can paste in the chat. It leaves out logins, passwords and MAC addresses. If a file is too big to attach, see `home/send-files.html` (zip it first; split it into parts under 25 MB if still too big).
 
+### Quick search, guide, VLC and more (EYE3 Link 1.6)
+- **Ctrl (or ⌘) + K** opens quick search: type part of a channel name (your own lists come first) or an action. **?** lists every key.
+- **G** shows the programme list of the channel you are watching. Xtream accounts bring their own guide. For other playlists, add a guide (XMLTV) link under IPTV accounts → **More options**, or in Settings → **TV guide link**; a playlist that names its guide in its first line is used automatically.
+- **V** (or **Open in VLC** in Movies & series) saves the stream as a small `.m3u` file. Open it with VLC or mpv for formats a browser cannot play (for example .mkv, H.265).
+- **Custom User-Agent** (IPTV accounts → More options) is sent with the playlist and its streams, for providers that only accept a particular player name.
+- **Paste a playlist** in the Playlist maker: M3U text or a plain list of links.
+- The home screen shows **Continue watching** with your last channels.
+
 ### Direct links
 Open these on the laptop to jump straight to the right form (nothing is filled in or saved from the link):
 - M3U link: `https://j-janko420.github.io/EYE3-VISION/home/?add=m3u`
