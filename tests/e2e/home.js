@@ -314,6 +314,14 @@ const toast = (p) => p.evaluate(() => [...document.querySelectorAll('.toast')].m
     check('no page errors', p.errs.length === 0, p.errs);
   });
 
+  await suite('setup page: Android projector route and the install kit are described', async () => {
+    const p = await open(browser, {}, { url: HOME.replace('/home/?splash=0', '/home/setup.html') });
+    const text = await p.evaluate(() => document.body.textContent);
+    check('the Android projector card is there with the browser route', /Android projector, TV box or stick/.test(text) && /TV Bro/.test(text) && /Install app/.test(text));
+    check('the one-time install kit card is there', /One-time install kit/.test(text) && /install\.bat/.test(text));
+    check('the page does not scroll sideways on a phone', await p.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
+  });
+
   await browser.close();
   done();
 })().catch((e) => { console.error(e); process.exit(1); });
