@@ -1,8 +1,11 @@
 # EYE3 Box installer for Windows. Double-click install.bat, or run:
-#   powershell -ExecutionPolicy Bypass -File install.ps1 [-DryRun] [-Uninstall] [-Dir C:\folder]
+#   powershell -ExecutionPolicy Bypass -File install.ps1 [-DryRun] [-Uninstall] [-Kiosk] [-Dir C:\folder]
+# By default only EYE3 Link is installed (it starts at every sign-in) plus an "EYE3 Home" link on the Desktop that opens
+# in your normal browser, so your saved lists, accounts and settings are untouched. -Kiosk is for the box behind a TV:
+# it also opens EYE3 Home fullscreen at every sign-in.
 # Needs no internet when this folder already holds eye3-link-windows.exe (or eye3-link.py with Python installed).
 # Otherwise it downloads the program from the EYE3 release page and checks its SHA-256 first.
-param([switch]$DryRun, [switch]$Uninstall, [string]$Dir = "")
+param([switch]$DryRun, [switch]$Uninstall, [switch]$Kiosk, [string]$Dir = "")
 $ErrorActionPreference = "Stop"
 $Here = Split-Path -Parent $MyInvocation.MyCommand.Path
 if (-not $Dir) { $Dir = Join-Path $env:LOCALAPPDATA "EYE3" }
@@ -11,12 +14,14 @@ $Asset = "eye3-link-windows.exe"
 $Startup = [Environment]::GetFolderPath("Startup")
 $LinkLnk = Join-Path $Startup "EYE3 Link.lnk"
 $HomeLnk = Join-Path $Startup "EYE3 Home.lnk"
+$Desktop = [Environment]::GetFolderPath("Desktop")
+$DeskUrl = Join-Path $Desktop "EYE3 Home.url"
 function Say($t) { Write-Host $t }
 function Act($what, [scriptblock]$do) { if ($DryRun) { Say "[dry-run] $what" } else { & $do } }
 
 if ($Uninstall) {
   Say "Removing the EYE3 start-up entries (the folder $Dir and your playlists stay)."
-  Act "remove $LinkLnk and $HomeLnk" { Remove-Item -Force -ErrorAction SilentlyContinue $LinkLnk, $HomeLnk }
+  Act "remove $LinkLnk and $HomeLnk" { Remove-Item -Force -ErrorAction SilentlyContinue $LinkLnk, $HomeLnk, $DeskUrl }
   exit 0
 }
 
@@ -79,16 +84,19 @@ function MakeShortcut($path, $target) {
 if ($env:EYE3_NO_SERVICE -eq "1") {
   Say "Skipping the start-up entries (EYE3_NO_SERVICE=1)."
 } else {
-  Say "Start-up: EYE3 Link at every sign-in (restarts by itself), then EYE3 Home fullscreen"
-  Act "create $LinkLnk and $HomeLnk" {
+  Say "Start-up: EYE3 Link at every sign-in (restarts by itself)"
+  Act "create $LinkLnk and the Desktop link $DeskUrl" {
     MakeShortcut $LinkLnk (Join-Path $Dir "eye3-start.bat")
-    MakeShortcut $HomeLnk (Join-Path $Dir "eye3-browser.bat")
+    Set-Content -Path $DeskUrl -Value "[InternetShortcut]`r`nURL=https://j-janko420.github.io/EYE3-VISION/home/?splash=0&box=1"
   }
-  Act "start EYE3 Link and EYE3 Home now" {
-    Start-Process -WindowStyle Minimized (Join-Path $Dir "eye3-start.bat")
-    Start-Process -WindowStyle Minimized (Join-Path $Dir "eye3-browser.bat")
+  if ($Kiosk) {
+    Say "Kiosk: EYE3 Home fullscreen at every sign-in"
+    Act "create $HomeLnk" { MakeShortcut $HomeLnk (Join-Path $Dir "eye3-browser.bat") }
   }
+  Act "start EYE3 Link now" { Start-Process -WindowStyle Minimized (Join-Path $Dir "eye3-start.bat") }
+  if ($Kiosk) { Act "open EYE3 Home fullscreen now" { Start-Process -WindowStyle Minimized (Join-Path $Dir "eye3-browser.bat") } }
+  else { Say "Open EYE3 Home from the 'EYE3 Home' link on your Desktop (it opens in your normal browser)." }
 }
 Say ""
-Say "Done. EYE3 Link runs by itself at every sign-in and updates itself."
+Say "Done. EYE3 Link runs by itself at every sign-in and updates itself. To undo: install.bat -Uninstall"
 Say "Your own playlists go into: $(Join-Path $Dir 'playlists')"

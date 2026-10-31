@@ -10,7 +10,7 @@ if exist "%LocalAppData%\Google\Chrome\Application\chrome.exe" set "BR=%LocalApp
 if not defined BR if exist "%ProgramFiles(x86)%\Microsoft\Edge\Application\msedge.exe" set "BR=%ProgramFiles(x86)%\Microsoft\Edge\Application\msedge.exe"
 if not defined BR if exist "%ProgramFiles%\Microsoft\Edge\Application\msedge.exe" set "BR=%ProgramFiles%\Microsoft\Edge\Application\msedge.exe"
 if defined BR (
-  start "" "%BR%" --kiosk --noerrdialogs --disable-infobars --autoplay-policy=no-user-gesture-required --no-first-run "--user-data-dir=%~dp0browser-profile" "%URL%"
+  start "" "%BR%" --kiosk --noerrdialogs --disable-infobars --autoplay-policy=no-user-gesture-required --no-first-run "%URL%"
 ) else (
   start "" "%URL%"
 )

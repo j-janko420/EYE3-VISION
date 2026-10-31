@@ -43,7 +43,7 @@
       <li>Download the kit for your system from the <a class="back" href="https://github.com/j-janko420/EYE3-VISION/releases/tag/eye3-link-latest" target="_blank" rel="noopener noreferrer">release page</a>: <code>EYE3-Box-Windows.zip</code>, <code>EYE3-Box-Linux.zip</code> or <code>EYE3-Box-Mac.zip</code>. Unzip it onto a USB stick (or anywhere).</li>
       <li>Put <b>your own</b> playlists (<code>.m3u</code>, <code>.m3u8</code>, <code>.txt</code>) into the <code>playlists</code> folder first, if you like. They show up in Live TV by themselves; adult groups only inside the hidden Explicit section.</li>
       <li><b>Windows:</b> double-click <code>install.bat</code>. <b>Linux, Raspberry Pi, Mac:</b> open a terminal in the folder and run <code>sh install.sh</code>.</li>
-      <li>Reboot or sign in again: EYE3 Link and EYE3 Home open fullscreen. The <b>Agent</b> chip on the top bar shows what the agent did.</li>
+      <li>EYE3 Link now starts at every sign-in. Open EYE3 Home from the <b>EYE3 Home</b> link on the Desktop; it opens in your normal browser, so your saved lists and settings stay. The <b>Agent</b> chip on the top bar shows what the agent did. For the box behind a TV, install with <code>-Kiosk</code> (Windows: <code>install.bat -Kiosk</code>, others: <code>sh install.sh --kiosk</code>) and EYE3 Home also opens fullscreen at every start.</li>
     </ol>
     <p class="muted">Try it first without changing anything: <code>sh install.sh --dry-run</code> (Windows: <code>install.bat -DryRun</code>). The program is checked against its published SHA-256 before it is used, and it is not code-signed, so your system may warn. EYE3 does not include a VPN or any channels.</p>
   </div>
