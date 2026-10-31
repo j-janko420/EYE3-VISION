@@ -30,3 +30,49 @@ jobs:
         env:
           EYE3_ONLINE: '1'   # also tests the real PDF reader from its CDN
         run: sh tests/run.sh
+
+  # The Windows installer cannot run on Linux, so check it where it will really run: a dry run changes nothing,
+  # a real install into a temp folder (no start-up entries) copies the kit, and the launcher scripts exist.
+  box-windows:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Dry run
+        shell: powershell
+        run: |
+          $d = Join-Path $env:RUNNER_TEMP "eye3-dry"
+          powershell -NoProfile -ExecutionPolicy Bypass -File box/install.ps1 -DryRun -Dir $d
+          if (Test-Path $d) { throw "the dry run created $d" }
+      - name: Install into a temp folder
+        shell: powershell
+        env:
+          EYE3_NO_SERVICE: '1'
+        run: |
+          $kit = Join-Path $env:RUNNER_TEMP "kit"
+          New-Item -ItemType Directory -Force -Path (Join-Path $kit "playlists") | Out-Null
+          Copy-Item box\install.ps1, box\eye3-start.bat, box\eye3-browser.bat, box\eye3-link.conf.example $kit
+          Copy-Item box\playlists\README.txt (Join-Path $kit "playlists")
+          Set-Content (Join-Path $kit "eye3-link-windows.exe") "stand-in"
+          Set-Content (Join-Path $kit "playlists\mine.m3u") "#EXTM3U"
+          $d = Join-Path $env:RUNNER_TEMP "eye3-real"
+          powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $kit "install.ps1") -Dir $d
+          foreach ($f in "eye3-link.exe", "eye3-start.bat", "eye3-browser.bat", "eye3-link.conf", "playlists\mine.m3u") {
+            if (-not (Test-Path (Join-Path $d $f))) { throw "missing $f" }
+          }
+          if ((Get-Content (Join-Path $d "eye3-link.conf") -Raw) -notmatch '"auto_update": true') { throw "settings not written" }
+      - name: Launcher restarts after exit code 75
+        shell: cmd
+        run: |
+          set "D=%RUNNER_TEMP%\eye3-launch"
+          mkdir "%D%"
+          copy box\eye3-start.bat "%D%\" >nul
+          rem a stand-in eye3-link.exe is not possible, so use the Python fallback path of the launcher
+          > "%D%\eye3-link.py" echo import os,sys
+          >> "%D%\eye3-link.py" echo p=os.path.join(os.path.dirname(os.path.abspath(__file__)),"n.txt")
+          >> "%D%\eye3-link.py" echo n=int(open(p).read()) if os.path.exists(p) else 0
+          >> "%D%\eye3-link.py" echo open(p,"w").write(str(n+1))
+          >> "%D%\eye3-link.py" echo sys.exit(75 if n==0 else 0)
+          call "%D%\eye3-start.bat"
+          type "%D%\n.txt"
+          python -c "import sys; sys.exit(0 if open(r'%D%\n.txt').read().strip() == '2' else 1)"

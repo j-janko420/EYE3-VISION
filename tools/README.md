@@ -94,6 +94,17 @@ The weekly list is tested from a server in another country, so some channels tha
 ## Explicit (18+) section
 Hidden on purpose: double-click the eye logo at the top left of EYE3 Home (or press Shift+X). Confirm you are 18 or older, optionally set a PIN, and an "Explicit (18+)" category appears in Live TV. It shows adult groups from **your own** accounts and playlists only; EYE3 provides no adult channels. It locks again when you reload the page, when the screensaver starts, or when the sleep timer ends. A PIN only stops casual use.
 
+## The agent (EYE3 Link 1.7): updates, fixes and a playlists folder
+
+EYE3 Link can look after itself. All switches are off by default when you start it by hand and on in the box install (`box/README.txt`).
+
+* `--auto-fix`: when your computer cannot find a provider's address, Link asks a secure DNS service (Cloudflare) and carries on. It is not a VPN.
+* `--auto-update` (ready-to-run program only): Link looks for a newer version, downloads it, checks its SHA-256 against the published `SHA256SUMS.txt`, and swaps it in at the next start, when nothing has been playing for 3 minutes.
+* `--playlists FOLDER` (default: a `playlists` folder next to the program): your own `.m3u`, `.m3u8` or `.txt` files. Each file is its own list in Live TV. Adult groups only appear in the hidden Explicit section.
+* `--config FILE` (default: `eye3-link.conf` next to the program): the same settings as JSON, e.g. `{"auto_fix": true, "auto_update": true}`. The switches in EYE3 Home (Settings, EYE3 agent) are saved there.
+
+EYE3 Home shows an **Agent** chip when Link runs; it reconnects by itself when Link restarts. The one-time install for the computer behind your TV (USB stick or download) is in `box/README.txt`.
+
 ## Problems
 - "EYE3 Link is not running": start it (above), then press **Check again**.
 - "The server rejected this username or password": check them with your provider.

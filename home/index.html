@@ -356,7 +356,7 @@
 
   <div class="foot">
     <div class="hintkeys"><b>Arrows</b> move · <b>Enter</b> open · <b>Back/Esc</b> return · <b>F</b> fullscreen · <b>S</b> screensaver · <b>Z</b> sleep timer</div>
-    <div class="right"><span class="chip" id="sleepchip" hidden></span><span class="chip" id="rcchip" hidden>📱 Phone remote on</span><div class="net"><span class="dot" id="netdot"></span><span id="netlabel">Online</span></div></div>
+    <div class="right"><span class="chip" id="agentchip" role="button" tabindex="0" hidden></span><span class="chip" id="sleepchip" hidden></span><span class="chip" id="rcchip" hidden>📱 Phone remote on</span><div class="net"><span class="dot" id="netdot"></span><span id="netlabel">Online</span></div></div>
   </div>
 </main>
 
@@ -845,6 +845,7 @@
     return i === -1;
   }
 
+  var localChannels = [], localFiles = [];   // from the playlists folder that EYE3 Link reads (the viewer's own files)
   function buildAll() {
     var seen = {}, out = [];
     var add = function (c) { if (c && c.url && !seen[c.url]) { seen[c.url] = 1; out.push(c); } };
@@ -855,9 +856,10 @@
     // a viewer's own accounts always show everything in them, even if another list has the same stream
     accounts.forEach(function (a) { (acctChannels[a.id] || []).forEach(function (c) { out.push(c); }); });
     libChannels.forEach(function (c) { out.push(c); });
+    localChannels.forEach(function (c) { out.push(c); });
     allChannels = out;
   }
-  function isOwnCat(k) { return k === "My playlist" || k === "Added list" || k === "My channels" || accounts.some(function (a) { return a.name === k; }) || libMeta.some(function (l) { return l.name === k; }); }
+  function isOwnCat(k) { return k === "My playlist" || k === "Added list" || k === "My channels" || accounts.some(function (a) { return a.name === k; }) || localFiles.some(function (f) { return f.name === k; }) || libMeta.some(function (l) { return l.name === k; }); }
   function categoryList() {
     var counts = {}, order = [];
     allChannels.forEach(function (c) { if (c.adult) return; if (!counts[c.cat]) { counts[c.cat] = 0; order.push(c.cat); } counts[c.cat]++; });
@@ -1399,6 +1401,112 @@
     });
   });
 
+  // ---- EYE3 agent (EYE3 Link 1.7+): keeps Link healthy, updates it, reads the playlists folder on the stick ----
+  var LINKUSED_KEY = "eye3.home.link", agent = null, agentTimer = 0, agentBusy = false, lastToken = "", localSig = "";
+  function visibleLocal(f) { return localChannels.filter(function (c) { return c.cat === f.name && (explicitUnlocked || !c.adult); }).length; }
+  function loadLocal() {
+    return linkGet("/api/local", {}).then(function (d) {
+      localFiles = (d.files || []).map(function (f) { return { name: String(f.name), file: String(f.file), count: f.count | 0 }; });
+      localChannels = (d.channels || []).map(function (c) { return { name: c.n, cat: String(c.f || "Playlists folder"), grp: c.c || "", country: "", url: c.u, q: 0, sub: "", adult: !!c.x, local: 1, tvg: c.i || "" }; });
+      if ($("ov-tv").classList.contains("open")) refreshLists();
+      return true;
+    })["catch"](function () { return false; });
+  }
+  function onLinkBack(restarted) {
+    // a restarted Link has a new private token, so every stream address it handed out earlier is stale
+    if (restarted) { acctChannels = {}; acctState = {}; }
+    autoLoadAccounts(); loadLocal();
+    if (restarted) toast("EYE3 Link restarted. Lists refreshed.");
+  }
+  function paintAgentChip() {
+    var chip = $("agentchip");
+    if (!agent || !linkUp || !linkUp.ok) { chip.hidden = true; return; }
+    var on = agent.auto_fix || agent.auto_update, n = agent.update && agent.update.available;
+    chip.hidden = false;
+    chip.textContent = n ? "⬆ Update ready" : on ? "◉ Agent on" : "◉ Link on";
+    chip.title = "EYE3 Link " + agent.version + (n ? " · version " + agent.update.latest + " is available" : "");
+  }
+  var agentAgain = false;
+  function agentPoll() {
+    if (document.hidden) return Promise.resolve();
+    if (agentBusy) { agentAgain = true; return Promise.resolve(); }   // one more round right after this one
+    agentBusy = true;
+    var wasDown = linkUp === false;
+    return linkHello().then(function (h) {
+      set(LINKUSED_KEY, "1");
+      var first = !lastToken, restarted = !first && lastToken !== h.token; lastToken = h.token;
+      if (wasDown || restarted) onLinkBack(restarted); else if (first) loadLocal();
+      return linkGet("/api/health", {}).then(function (d) {
+        agent = d;
+        var sig = JSON.stringify(d.playlists || []);
+        if (localSig && sig !== localSig) loadLocal();   // a file was added, removed or changed in the playlists folder
+        localSig = sig;
+      });
+    })["catch"](function () { agent = null; })["finally"](function () { agentBusy = false; paintAgentChip(); if (agentAgain) { agentAgain = false; agentPoll(); } });
+  }
+  function agentStart() {
+    if (!(accounts.length || get(LINKUSED_KEY) === "1" || /[?&]box=1\b/.test(location.search))) return;   // never talk to the helper if the viewer never used it
+    if (/[?&]box=1\b/.test(location.search)) set(LINKUSED_KEY, "1");
+    agentPoll(); clearInterval(agentTimer); agentTimer = setInterval(agentPoll, 30000);
+  }
+  document.addEventListener("visibilitychange", function () { if (!document.hidden && agentTimer) agentPoll(); });
+  function agentSwitch(key, on) { return linkGet("/api/agent", (function (o) { o[key] = on ? "1" : "0"; return o; })({})).then(agentPoll); }
+  function openAgent() {
+    set(LINKUSED_KEY, "1");
+    $("info-title").textContent = "EYE3 agent";
+    var body = $("info-body"), draw = function () {
+      var nodes = [];
+      if (!agent) {
+        nodes.push(para(linkUp === false ? "EYE3 Link is not running on this computer. Start it (the box install does this by itself at every start) and this page reconnects within half a minute." : "Checking EYE3 Link…"));
+        var retry = make("button", "btn", "Check again"); retry.type = "button"; retry.addEventListener("click", function () { agentPoll().then(draw); });
+        nodes.push(retry); rowsHtml(body, nodes); return retry;
+      }
+      var up = agent.uptime >= 3600 ? Math.floor(agent.uptime / 3600) + " h" : Math.max(1, Math.floor(agent.uptime / 60)) + " min";
+      nodes.push(para("EYE3 Link " + agent.version + " is running (" + up + ")" + (agent.packaged ? "" : ", from the Python file") + (agent.proxy ? ", through your proxy" : "") + "."));
+      var fix = make("button", "btn", "Fix connection problems by itself: " + (agent.auto_fix ? "on" : "off")); fix.type = "button";
+      fix.addEventListener("click", function () { agentSwitch("auto_fix", !agent.auto_fix).then(draw); });
+      var upd = make("button", "btn", "Update by itself: " + (agent.auto_update ? "on" : "off")); upd.type = "button";
+      upd.addEventListener("click", function () { agentSwitch("auto_update", !agent.auto_update).then(draw); });
+      var kv = make("div", "kv"); kv.appendChild(fix); kv.appendChild(upd);
+      nodes.push(kv);
+      nodes.push(para("Fixing: when your computer cannot find a provider's address, EYE3 asks a secure DNS service (Cloudflare) and keeps going. It is not a VPN. Updating: the downloaded program is checked against its published SHA-256 first and replaces itself at the next start."));
+      var u = agent.update || {};
+      var line = u.error ? "Update check: " + u.error : u.available ? "Version " + u.latest + " is available." : "You have the newest version.";
+      if (u.staged) line = "Version " + u.latest + " is downloaded and checked. It starts at the next restart.";
+      nodes.push(make("h3", "", "Updates")); nodes.push(para(line));
+      var kv2 = make("div", "kv"), check = make("button", "btn", "Check now"); check.type = "button";
+      check.addEventListener("click", function () { linkGet("/api/update", { force: "1" }).then(agentPoll).then(draw, draw); });
+      kv2.appendChild(check);
+      if (u.available && !u.staged && agent.packaged) {
+        var now = make("button", "btn", "Download update"); now.type = "button";
+        now.addEventListener("click", function () { now.textContent = "Downloading…"; linkGet("/api/update", { apply: "1" }).then(function (r) { toast(r.message || "Update downloaded and checked"); return agentPoll(); }).then(draw, function (e) { toast(e.message); draw(); }); });
+        kv2.appendChild(now);
+      }
+      if (u.staged && agent.managed) {
+        var rs = make("button", "btn", "Restart now"); rs.type = "button";
+        rs.addEventListener("click", function () { linkGet("/api/restart", {}).then(function () { toast("Restarting…"); setTimeout(agentPoll, 4000); }); });
+        kv2.appendChild(rs);
+      }
+      nodes.push(kv2);
+      if (u.available && !agent.packaged) nodes.push(para("This copy runs from the Python file, so download the new eye3-link.py (or the ready-to-run program) to update."));
+      nodes.push(make("h3", "", "Playlists folder"));
+      var files = localFiles.filter(function (f) { return visibleLocal(f) > 0; });
+      if (files.length) { var ul = make("div", "ch action"); ul.textContent = files.map(function (f) { return f.name + " (" + visibleLocal(f) + ")"; }).join(" · "); nodes.push(nt(ul)); }
+      nodes.push(para(files.length ? "These are your own files. Put more .m3u, .m3u8 or .txt lists in the playlists folder next to EYE3 Link (on the stick) and they appear in Live TV by themselves." : "Put your own .m3u, .m3u8 or .txt lists in the playlists folder next to EYE3 Link (on the stick). They appear in Live TV by themselves. Nothing is uploaded."));
+      var reload = make("button", "btn", "Read the folder again"); reload.type = "button"; reload.addEventListener("click", function () { loadLocal().then(draw); });
+      nodes.push(reload);
+      var ev = (agent.events || []).slice().reverse();
+      if (ev.length) { nodes.push(make("h3", "", "What the agent did")); ev.forEach(function (e) { nodes.push(para(e.t)); }); }
+      rowsHtml(body, nodes); return fix;
+    };
+    var first = draw(); openOverlay("ov-info");
+    agentPoll().then(function () { if ($("ov-info").classList.contains("open") && $("info-title").textContent === "EYE3 agent") draw(); });
+    setTimeout(function () { try { first.focus(); } catch (e) {} }, 60);
+  }
+  $("agentchip").addEventListener("click", openAgent);
+  $("agentchip").addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openAgent(); } });
+  setTimeout(agentStart, 1200);
+
   // ---- Connect your TV: the addresses to type into a MAG box, Smart STB or an IPTV app ----
   function copyText(text) {
     var done = function () { toast("Copied"); };
@@ -1443,7 +1551,8 @@
     $("ex-pin-label").textContent = pin ? "Your PIN" : "Optional: set a PIN (4–8 digits) to protect this";
     $("ex-unlock").hidden = explicitUnlocked; $("ex-lock").hidden = !explicitUnlocked; $("ex-removepin").hidden = !(explicitUnlocked && pin);
     $("ex-pin").value = ""; $("ex-age").checked = false;
-    exMsg(explicitUnlocked ? "Unlocked for this session. It locks again after a reload, the screensaver or the sleep timer." : "", explicitUnlocked ? "good" : "");
+    var nLocal = explicitUnlocked ? localChannels.filter(function (c) { return c.adult; }).length : 0;
+    exMsg(explicitUnlocked ? "Unlocked for this session. It locks again after a reload, the screensaver or the sleep timer." + (nLocal ? " Your playlists folder adds " + nLocal + "." : "") : "", explicitUnlocked ? "good" : "");
   }
   function openExplicit() {
     paintExplicit(); openOverlay("ov-explicit");
@@ -2418,6 +2527,8 @@
     sl.addEventListener("click", function () { cycleSleep(); paintSl(); });
     var ac = make("button", "btn", "IPTV accounts (M3U, Xtream, MAG)");
     ac.type = "button"; ac.addEventListener("click", function () { closeOverlays(); openAccounts(); });
+    var ag = make("button", "btn", "EYE3 agent (updates, fixes, playlists folder)");
+    ag.type = "button"; ag.addEventListener("click", openAgent);
     var ts = make("button", "btn", "Connect your TV (addresses)");
     ts.type = "button"; ts.addEventListener("click", openTvSetup);
     var gl = make("button", "btn", get(XMLTV_KEY) ? "TV guide link: set" : "TV guide link (XMLTV)…");
@@ -2431,7 +2542,7 @@
     hp.type = "button"; hp.addEventListener("click", openHelp);
     var sy = make("button", "btn", syncCode ? "Sync phone and laptop: on" : "Sync phone and laptop");
     sy.type = "button"; sy.addEventListener("click", function () { openSyncInfo(); });
-    var kv = make("div", "kv"); kv.appendChild(fs); kv.appendChild(ac); kv.appendChild(ts); kv.appendChild(hp); kv.appendChild(gl); kv.appendChild(rc); kv.appendChild(sy); kv.appendChild(sl); kv.appendChild(sv); kv.appendChild(pl); kv.appendChild(inst); kv.appendChild(setup); kv.appendChild(ph);
+    var kv = make("div", "kv"); kv.appendChild(fs); kv.appendChild(ac); kv.appendChild(ag); kv.appendChild(ts); kv.appendChild(hp); kv.appendChild(gl); kv.appendChild(rc); kv.appendChild(sy); kv.appendChild(sl); kv.appendChild(sv); kv.appendChild(pl); kv.appendChild(inst); kv.appendChild(setup); kv.appendChild(ph);
     rowsHtml(body, [
       para("EYE3 Home runs in this browser and shows on the TV over HDMI. For the best look, press F or use the button below to go fullscreen."),
       kv,
