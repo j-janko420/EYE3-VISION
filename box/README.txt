@@ -2,9 +2,11 @@ EYE3 Box kit: install EYE3 once, from a USB stick or the network
 ================================================================
 
 What it is
-  A small program (EYE3 Link) plus a start-up script. After one install, the computer that is plugged
-  into your TV with HDMI starts EYE3 by itself at every power-on, shows EYE3 Home fullscreen, keeps
-  EYE3 Link running, fixes connection problems by itself and updates itself.
+  A small program (EYE3 Link) plus a start-up script. After one install, EYE3 Link starts by itself at
+  every sign-in, keeps running, fixes connection problems by itself and updates itself.
+  By default your normal browser is NOT touched: your saved lists, accounts, PIN and theme stay as they are,
+  and you open EYE3 Home from the "EYE3 Home" link the installer puts on your Desktop.
+  For the box behind a TV, add the kiosk option and EYE3 Home also opens fullscreen at every start.
 
 What it needs
   A PC, laptop, mini-PC, Raspberry Pi or Mac connected to the TV by HDMI.
@@ -13,7 +15,9 @@ What it needs
 
 Install from a USB stick (no internet needed for the program)
   Windows : open the folder on the stick and double-click  install.bat
+            (box behind a TV: run  install.bat -Kiosk  from a command prompt)
   Linux / Raspberry Pi / Mac : open a terminal in the folder and run   sh install.sh
+            (box behind a TV:  sh install.sh --kiosk)
   Your own playlists: copy .m3u / .m3u8 / .txt files into the  playlists  folder on the stick before you
   install, or into  EYE3\playlists  afterwards.
 
@@ -40,7 +44,8 @@ Your own lists, the Explicit section
   own files stay hidden until you unlock the Explicit section (double-click the eye logo, or Shift+X,
   tick "I am 18 or older", optional PIN). They are never shown in the normal lists.
 
-Remove
-  sh install.sh --uninstall    (Windows: install.bat -Uninstall)   removes the start-up entries only.
+Remove / go back to normal
+  sh install.sh --uninstall    (Windows: install.bat -Uninstall)   removes the start-up entries and the Desktop
+  link. Nothing in your browser is ever changed or deleted by the installer.
 
 Chrome may ask once to allow EYE3 Home to talk to apps on this computer. Choose Allow.

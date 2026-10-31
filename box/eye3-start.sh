@@ -10,7 +10,7 @@ export EYE3_MANAGED=1
 
 if [ "${1:-}" = "--browser" ]; then
   sleep "${EYE3_BROWSER_DELAY:-6}"
-  FLAGS="--kiosk --noerrdialogs --disable-infobars --autoplay-policy=no-user-gesture-required --no-first-run --user-data-dir=$DIR/browser-profile"
+  FLAGS="--kiosk --noerrdialogs --disable-infobars --autoplay-policy=no-user-gesture-required --no-first-run"
   for b in chromium-browser chromium google-chrome google-chrome-stable microsoft-edge; do
     if command -v "$b" >/dev/null 2>&1; then exec "$b" $FLAGS "$URL"; fi
   done

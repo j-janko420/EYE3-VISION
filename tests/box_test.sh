@@ -26,6 +26,11 @@ printf '{"auto_fix": false}' > "$T/inst/eye3-link.conf"
 EYE3_NO_SERVICE=1 sh "$K/install.sh" --dir="$T/inst" >/dev/null 2>&1
 grep -q '"auto_fix": false' "$T/inst/eye3-link.conf" && ok "a second install keeps the viewer's settings" || bad "conf kept"
 
+# 2b. kiosk is opt-in: the default install writes no browser start-up entry and no separate browser profile
+grep -rq 'user-data-dir' box/eye3-start.sh box/eye3-browser.bat && bad 'the launchers must use the normal browser profile' || ok 'launchers use the normal browser profile (saved lists stay)'
+sh box/install.sh --dry-run --dir="$T/k" >"$T/k1.log" 2>&1; sh box/install.sh --dry-run --kiosk --dir="$T/k" >"$T/k2.log" 2>&1
+! grep -qi 'kiosk' "$T/k1.log" && grep -qi 'kiosk' "$T/k2.log" && ok 'kiosk only with --kiosk' || bad 'kiosk opt-in'
+
 # 3. the launcher restarts after exit 75 and after a crash, and stops after a clean exit
 cat > "$T/inst/eye3-link" <<'STUB'
 #!/bin/sh

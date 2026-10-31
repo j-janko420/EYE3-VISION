@@ -247,7 +247,7 @@ const toast = (p) => p.evaluate(() => [...document.querySelectorAll('.toast')].m
     if (!process.env.EYE3_HTTPS) { console.log('  skip (no https test server)'); return; }
     const ctx = await browser.newContext({ ignoreHTTPSErrors: true }); const p = await ctx.newPage(); const sent = [];
     p.on('request', (r) => { if (r.url().startsWith('http://127.0.0.1:8765/stream')) sent.push(r.url()); });
-    await p.addInitScript(() => { if (!localStorage.getItem('s')) { localStorage.setItem('s', '1'); localStorage.setItem('eye3.home.mychannels', JSON.stringify([{ n: 'Plain Http Channel', u: 'http://example.test/live/a.m3u8', g: '', l: '', i: '' }])); } });
+    await p.addInitScript(() => { if (!localStorage.getItem('s')) { localStorage.setItem('s', '1'); localStorage.setItem('eye3.home.setup', '1'); localStorage.setItem('eye3.home.mychannels', JSON.stringify([{ n: 'Plain Http Channel', u: 'http://example.test/live/a.m3u8', g: '', l: '', i: '' }])); } });
     await p.goto('https://localhost:8443/home/?splash=0', { waitUntil: 'domcontentloaded' }); await p.waitForTimeout(800);
     await openTv(p); await pickCat(p, 'My channels');
     await p.click('#chlist .ch >> text=Plain Http Channel'); await p.waitForTimeout(2000);
@@ -257,6 +257,7 @@ const toast = (p) => p.evaluate(() => [...document.querySelectorAll('.toast')].m
 
   await suite('EYE3 agent: chip, playlists folder, Explicit gating, reconnect after a restart', async () => {
     const quiet = await browser.newContext(); const q = await quiet.newPage(); const touched = [];
+    await q.addInitScript(() => localStorage.setItem('eye3.home.setup', '1'));
     q.on('request', (r) => { if (r.url().indexOf('127.0.0.1:8765') > -1) touched.push(r.url()); });
     await q.goto(HOME, { waitUntil: 'domcontentloaded' }); await q.waitForTimeout(2800);
     check('a viewer who never used EYE3 Link is not contacted at all', touched.length === 0, touched);
@@ -320,6 +321,112 @@ const toast = (p) => p.evaluate(() => [...document.querySelectorAll('.toast')].m
     check('the Android projector card is there with the browser route', /Android projector, TV box or stick/.test(text) && /TV Bro/.test(text) && /Install app/.test(text));
     check('the one-time install kit card is there', /One-time install kit/.test(text) && /install\.bat/.test(text));
     check('the page does not scroll sideways on a phone', await p.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
+  });
+
+  await suite('main app: the brand reads on two lines with "by i3 Design", selection is crimson', async () => {
+    const p = await open(browser, {}, { ctx: { viewport: { width: 1461, height: 706 } }, url: HOME.replace('/home/?splash=0', '/index.html') });
+    const m = await p.evaluate(() => { const n = document.querySelector('.brand-name').getBoundingClientRect(), s = document.querySelector('.brand-subtitle').getBoundingClientRect(); return { nameBottom: n.bottom, subTop: s.top, sub: document.querySelector('.brand-subtitle').textContent, sel: getComputedStyle(document.querySelector('.brand-name'), '::selection').backgroundColor }; });
+    check('the subtitle sits under the name, not beside it', m.subTop >= m.nameBottom - 1, m);
+    check('it says by i3 Design', /i3 Design/.test(m.sub), m.sub);
+    check('it uses the same eye-in-diamond mark as Home', await p.evaluate(() => document.querySelector('.brand-mark').getAttribute('viewBox') === '0 0 160 160' && !!document.querySelector('.brand-mark .iris')));
+    check('EYE3 is crimson, VISION white', await p.evaluate(() => getComputedStyle(document.querySelector('.brand-name b')).color === 'rgb(255, 38, 63)'));
+    check('text selection is crimson, not blue', m.sel === 'rgb(255, 38, 63)', m.sel);
+    for (const f of ['home/', 'bridge/', 'remote/']) {
+      const q = await open(browser, {}, { url: HOME.replace('/home/?splash=0', '/' + f) });
+      check(f + ' selection is crimson too', await q.evaluate(() => getComputedStyle(document.body, '::selection').backgroundColor) === 'rgb(255, 38, 63)');
+    }
+  });
+
+  await suite('pro pack: welcome, profiles and parent PIN, guide grid, multi-view, cast, TV tools', async () => {
+    // first-run welcome: once, never for someone who already has something
+    let p = await open(browser, { 'eye3.home.setup': '' });
+    await p.waitForFunction(() => document.getElementById('info-title').textContent === 'Welcome to EYE3' && document.getElementById('ov-info').classList.contains('open'), null, { timeout: 5000 }).catch(() => {});
+    const w = await p.evaluate(() => ({ title: document.getElementById('info-title').textContent, btns: [...document.querySelectorAll('#info-body .btn.big')].map((b) => b.textContent) }));
+    check('a new viewer sees the welcome with four ways to start', w.title === 'Welcome to EYE3' && w.btns.length === 4 && /free channels/.test(w.btns[0]) && /IPTV account/.test(w.btns[1]), w);
+    await p.click('#info-body .btn.big >> nth=0'); await p.waitForTimeout(1500);
+    check('"Watch free channels" opens Live TV', await p.evaluate(() => document.getElementById('ov-tv').classList.contains('open')));
+    await p.reload({ waitUntil: 'domcontentloaded' }); await p.waitForTimeout(1800);
+    check('the welcome is shown only once', !(await p.evaluate(() => document.getElementById('info-title').textContent === 'Welcome to EYE3' && document.getElementById('ov-info').classList.contains('open'))));
+    p = await open(browser, { 'eye3.home.setup': '', 'eye3.home.accts': [XT] }); await p.waitForTimeout(1500);
+    check('someone with an account never sees it', !(await p.evaluate(() => document.getElementById('ov-info').classList.contains('open'))));
+
+    // profiles and the parent PIN
+    p = await open(browser, { 'eye3.home.mychannels': [ch('News Alpha', 'https://example.test/a.m3u8'), ch('Cartoon Beta', 'https://example.test/b.m3u8'), ch('Hidden Adult', 'https://example.test/c.m3u8')] });
+    await openTv(p); const allCats = await p.evaluate(() => [...document.querySelectorAll('#tv-cat option')].map((o) => o.textContent));
+    await p.keyboard.press('Escape'); await p.waitForTimeout(300);
+    await p.evaluate(() => document.querySelector('.tile[data-key="settings"], .tile:last-child').click()).catch(() => {});
+    await p.keyboard.press('Escape'); await p.waitForTimeout(200);
+    await p.keyboard.press('Control+k'); await p.waitForTimeout(300); await p.keyboard.type('profiles'); await p.waitForTimeout(300); await p.keyboard.press('Enter'); await p.waitForTimeout(500);
+    check('Profiles opens from quick search', await p.evaluate(() => document.getElementById('info-title').textContent === 'Profiles'));
+    await p.click('text=Add a profile'); await p.waitForTimeout(400);
+    await p.fill('#info-body input[type=text]', 'Kids');
+    await p.check('#info-body label:has-text("Kids profile") input'); 
+    await p.check('#info-body label:has-text("My channels") input');
+    await p.click('#info-body >> text=Save'); await p.waitForTimeout(500);
+    check('a kids profile asks for a parent PIN first', await p.evaluate(() => document.getElementById('ov-pin').classList.contains('open') && /Choose a parent PIN/.test(document.getElementById('pin-title').textContent)));
+    await p.fill('#pin-input', '12'); await p.press('#pin-input', 'Enter'); await p.waitForTimeout(200);
+    check('a short PIN is refused', /4 to 8 digits/.test(await p.evaluate(() => document.getElementById('pin-msg').textContent)));
+    await p.fill('#pin-input', '4321'); await p.press('#pin-input', 'Enter'); await p.waitForTimeout(700);
+    const stored = await p.evaluate(() => localStorage.getItem('eye3.home.parentpin') + localStorage.getItem('eye3.home.profiles'));
+    check('the parent PIN is stored salted and hashed, never as digits', /"h":"[0-9a-f]{64}"/.test(stored) && stored.indexOf('4321') === -1);
+    check('the profile chip appears', await p.evaluate(() => !document.getElementById('profchip').hidden));
+    await p.click('#info-body .acct-row:has-text("Kids") >> text=Use'); await p.waitForTimeout(700);
+    check('the kids profile is in use', await p.evaluate(() => /Kids/.test(document.getElementById('profchip').textContent)));
+    await openTv(p);
+    const kidCats = await p.evaluate(() => [...document.querySelectorAll('#tv-cat option')].map((o) => o.textContent));
+    check('the hidden category is gone in the kids profile', allCats.some((x) => /^My channels/.test(x)) && !kidCats.some((x) => /^My channels/.test(x)), { allCats, kidCats });
+    await p.keyboard.press('Escape'); await p.waitForTimeout(300);
+    await p.keyboard.press('Shift+X'); await p.waitForTimeout(400);
+    check('the Explicit section will not open in a kids profile', !(await p.evaluate(() => document.getElementById('ov-explicit').classList.contains('open'))) && /kids profile/.test(await toast(p)), await toast(p));
+    await p.click('#profchip'); await p.waitForTimeout(400);
+    await p.click('#info-body .acct-row:has-text("Main") >> text=Use'); await p.waitForTimeout(400);
+    check('leaving the kids profile asks for the parent PIN', await p.evaluate(() => document.getElementById('ov-pin').classList.contains('open')));
+    await p.fill('#pin-input', '9999'); await p.press('#pin-input', 'Enter'); await p.waitForTimeout(600);
+    check('a wrong PIN keeps the kids profile', await p.evaluate(() => /Kids/.test(document.getElementById('profchip').textContent)));
+    await p.click('#info-body .acct-row:has-text("Main") >> text=Use'); await p.waitForTimeout(400);
+    await p.fill('#pin-input', '4321'); await p.press('#pin-input', 'Enter'); await p.waitForTimeout(700);
+    check('the right PIN switches back to Main', await p.evaluate(() => /Main/.test(document.getElementById('profchip').textContent)));
+    check('no page errors in profiles', p.errs.length === 0, p.errs);
+
+    // guide grid
+    p = await open(browser, { 'eye3.home.accts': [XT] }); await openTv(p); await pickCat(p, 'Mock TV');
+    await p.keyboard.press('d'); await p.waitForFunction(() => document.querySelectorAll('#grid-wrap .gr-prog').length > 0, null, { timeout: 6000 }).catch(() => {});
+    const g = await p.evaluate(() => ({ open: document.getElementById('ov-grid').classList.contains('open'), rows: document.querySelectorAll('#grid-wrap .gr-row').length, progs: [...document.querySelectorAll('#grid-wrap .gr-prog')].map((b) => b.textContent), none: [...document.querySelectorAll('#grid-wrap .gr-none')].map((b) => b.textContent), ticks: document.querySelectorAll('.gr-scale span').length, now: document.querySelectorAll('.gr-now').length }));
+    check('the grid lists the channels with time ticks and a now-line', g.open && g.rows === 2 && g.ticks === 6 && g.now === 2, g);
+    check('programmes are placed from the guide (now and next)', g.progs.includes('Evening News') && g.progs.includes('Late Show'), g);
+    check('a channel without a guide says so', g.none.length >= 1, g);
+    await p.keyboard.press('ArrowRight'); await p.waitForTimeout(150);
+    check('the arrows reach a programme and show its details', /Evening News/.test(await p.evaluate(() => document.getElementById('grid-detail').textContent)));
+    await p.keyboard.press('Escape'); await p.waitForTimeout(300);
+    check('Back closes the grid but keeps Live TV open', await p.evaluate(() => !document.getElementById('ov-grid').classList.contains('open') && document.getElementById('ov-tv').classList.contains('open')));
+
+    // multi-view
+    p = await open(browser, { 'eye3.home.mychannels': [ch('One', 'https://example.test/1.m3u8'), ch('Two', 'https://example.test/2.m3u8'), ch('Three', 'https://example.test/3.m3u8'), ch('Four', 'https://example.test/4.m3u8'), ch('Five', 'https://example.test/5.m3u8')] });
+    await openTv(p); await pickCat(p, 'My channels');
+    for (let i = 0; i < 5; i++) { await p.keyboard.press('m'); await p.waitForTimeout(250); await p.keyboard.press('Escape'); await p.waitForTimeout(150); await p.evaluate(() => document.getElementById('ov-tv').classList.add('open')); await p.keyboard.press('ArrowDown'); await p.waitForTimeout(100); }
+    await p.keyboard.press('m'); await p.waitForTimeout(400);
+    const mvs = await p.evaluate(() => ({ open: document.getElementById('ov-multi').classList.contains('open'), tiles: document.querySelectorAll('.mv-tile').length, audio: document.querySelectorAll('.mv-tile.audio').length }));
+    check('multi-view holds 4 channels with one sound', mvs.open && mvs.tiles === 4 && mvs.audio === 1, mvs);
+    await p.keyboard.press('3'); await p.waitForTimeout(150);
+    check('the 3 key moves the sound to the third picture', await p.evaluate(() => [...document.querySelectorAll('.mv-tile')].map((t) => t.classList.contains('audio')).join()) === 'false,false,true,false');
+    await p.click('.mv-tile >> nth=1 >> button'); await p.waitForTimeout(200);
+    check('a picture can be removed', await p.evaluate(() => document.querySelectorAll('.mv-tile').length) === 3);
+    await p.click('#mv-clear'); await p.waitForTimeout(200);
+    check('Clear empties it and explains how to add', await p.evaluate(() => document.querySelectorAll('.mv-tile').length === 0 && /press M/.test(document.querySelector('.mv-empty').textContent)));
+    check('no page errors in multi-view', p.errs.length === 0, p.errs);
+
+    // cast, mini window, TV tools
+    p = await open(browser, {}, { init: "Object.defineProperty(HTMLVideoElement.prototype,'remote',{value:{prompt:()=>{window.__cast=(window.__cast||0)+1;return Promise.resolve();}},configurable:true});" });
+    await openTv(p); await p.keyboard.press('c'); await p.waitForTimeout(300);
+    check('Cast asks to play a channel first', /Play a channel first/.test(await toast(p)), await toast(p));
+    await p.evaluate(() => { document.getElementById('video').src = location.href; });
+    await p.keyboard.press('c'); await p.waitForTimeout(300);
+    check('with a picture, Cast opens the browser cast list', await p.evaluate(() => window.__cast === 1));
+    await p.keyboard.press('Escape'); await p.waitForTimeout(200);
+    await p.keyboard.press('Control+k'); await p.waitForTimeout(300); await p.keyboard.type('smart tv'); await p.waitForTimeout(300); await p.keyboard.press('Enter'); await p.waitForTimeout(500);
+    const tl = await p.evaluate(() => ({ title: document.getElementById('info-title').textContent, text: document.getElementById('info-body').textContent }));
+    check('Smart TV tools lists codecs, screen and the speed test', tl.title === 'Smart TV tools' && /H\.264/.test(tl.text) && /HEVC/.test(tl.text) && /Test my connection/.test(tl.text) && /HLS/.test(tl.text), tl.text.slice(0, 200));
+    check('no page errors in the tools', p.errs.length === 0, p.errs);
   });
 
   await browser.close();

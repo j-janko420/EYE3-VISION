@@ -46,9 +46,14 @@
         background: #131312;
       }
       .brand { display: flex; align-items: center; gap: 0.75rem; padding: 0 0.5rem; }
-      .brand-mark { width: 2.625rem; height: 2.625rem; flex: 0 0 auto; }
-      .brand-name { font-size: 0.9375rem; font-weight: 750; letter-spacing: .16em; }
-      .brand-subtitle { margin-top: 0.1875rem; color: var(--muted); font-size: 0.625rem; letter-spacing: .12em; text-transform: uppercase; }
+      .brand-mark { width: 2.625rem; height: 2.625rem; flex: 0 0 auto; color: #ff263f; filter: drop-shadow(0 0 8px rgba(255, 0, 35, .6)); }
+      .brand-name b { color: #ff263f; font-weight: 800; }
+      .brand-mark .iris { transform-box: fill-box; transform-origin: center; animation: eyeBlink 7s ease-in-out infinite; }
+      @keyframes eyeBlink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(.08); } }
+      .brand > span:last-child { display: block; min-width: 0; }
+      .brand-name { display: block; font-size: 0.9375rem; font-weight: 750; letter-spacing: .16em; white-space: nowrap; }
+      ::selection { background: #ff263f; color: #fff5f6; }
+      .brand-subtitle { display: block; margin-top: 0.1875rem; white-space: nowrap; color: var(--muted); font-size: 0.625rem; letter-spacing: .12em; text-transform: uppercase; }
       .nav-label { margin: 2.6875rem 0.625rem 0.75rem; color: #9d8c91; font-size: 0.625rem; font-weight: 700; letter-spacing: .15em; text-transform: uppercase; }
       .nav { display: grid; gap: 0.3125rem; }
       .nav-link {
@@ -284,6 +289,7 @@
         .prototype-tag { font-size: 0.5625rem; }
       }
       @media (prefers-reduced-motion: reduce) {
+        .brand-mark .iris { animation: none; }
         *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation: none !important; }
       }
     
@@ -426,14 +432,15 @@
     <div class="app">
       <aside class="sidebar" aria-label="Main sidebar">
         <a class="brand" href="#overview" aria-label="EYE3 Vision home">
-          <svg class="brand-mark" viewBox="0 0 48 48" role="img" aria-label="Three-eye mark">
-            <path d="M5 18c5-7 12-7 17 0-5 7-12 7-17 0Z" fill="none" stroke="#ff263f" stroke-width="1.8"/>
-            <path d="M26 18c5-7 12-7 17 0-5 7-12 7-17 0Z" fill="none" stroke="#ff263f" stroke-width="1.8"/>
-            <path d="M15.5 31c5-7 12-7 17 0-5 7-12 7-17 0Z" fill="none" stroke="#ff263f" stroke-width="1.8"/>
-            <circle cx="13.5" cy="18" r="2" fill="#ff263f"/><circle cx="34.5" cy="18" r="2" fill="#ff263f"/>
-            <circle cx="24" cy="31" r="2" fill="#ff263f"/>
+          <svg class="brand-mark" viewBox="0 0 160 160" role="img" aria-label="EYE3 eye mark">
+            <path d="M80 7 153 80 80 153 7 80Z" fill="none" stroke="currentColor" stroke-width="3.4"/>
+            <path d="M13 80Q80 18 147 80Q80 142 13 80Z" fill="#020001" stroke="currentColor" stroke-width="4.2"/>
+            <path d="M80 26 105 80 80 134 55 80Z" fill="none" stroke="currentColor" stroke-width="2" opacity=".8"/>
+            <circle class="iris" cx="80" cy="80" r="24" fill="currentColor"/>
+            <ellipse class="iris" cx="80" cy="80" rx="8" ry="18" fill="#020001"/>
+            <circle class="ring" cx="80" cy="80" r="35" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".65"/>
           </svg>
-          <span><span class="brand-name">EYE3 VISION</span><span class="brand-subtitle">Visual intelligence</span></span>
+          <span><span class="brand-name"><b>EYE3</b> VISION</span><span class="brand-subtitle">See beyond · by i3 Design</span></span>
         </a>
 
         <div class="nav-label">Workspace</div>
