@@ -1,6 +1,6 @@
 // EYE3 Home service worker: cache the app shell so it opens instantly and even offline.
 // Live streams and the web/YouTube frames still need the network; this only caches the UI.
-var CACHE = "eye3-home-v22";
+var CACHE = "eye3-home-v23";
 var SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./i18n-fr.js", "./i18n-ar.js"];
 self.addEventListener("install", function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(SHELL); }).then(function () { return self.skipWaiting(); }));
