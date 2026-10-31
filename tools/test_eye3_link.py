@@ -133,6 +133,35 @@ class Mock(BaseHTTPRequestHandler):
             return self.reply("AE\n", "text/plain")
         if u.path == "/forbidden/index.m3u8":
             return self.reply("denied", "text/plain", 403)
+        if u.path.startswith("/rec/"):
+            if u.path == "/rec/media.m3u8":
+                return self.reply("#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:2\n#EXTINF:2,\ns0.ts\n#EXTINF:2,\ns1.ts\n#EXTINF:2,\ns2.ts\n#EXT-X-ENDLIST\n", "application/vnd.apple.mpegurl")
+            if u.path in ("/rec/s0.ts", "/rec/s1.ts", "/rec/s2.ts", "/rec/hi0.ts"):
+                return self.reply((b"\x47" + u.path.rsplit("/", 1)[1][:-3].encode() * 93) * 2, "video/mp2t")
+            if u.path == "/rec/master.m3u8":
+                return self.reply("#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=300000\nlow.m3u8\n#EXT-X-STREAM-INF:BANDWIDTH=3000000\nhi.m3u8\n", "application/vnd.apple.mpegurl")
+            if u.path == "/rec/low.m3u8":
+                return self.reply("#EXTM3U\n#EXT-X-TARGETDURATION:2\n#EXTINF:2,\ns0.ts\n#EXT-X-ENDLIST\n", "application/vnd.apple.mpegurl")
+            if u.path == "/rec/hi.m3u8":
+                return self.reply("#EXTM3U\n#EXT-X-TARGETDURATION:2\n#EXTINF:2,\nhi0.ts\n#EXT-X-ENDLIST\n", "application/vnd.apple.mpegurl")
+            if u.path == "/rec/enc.m3u8":
+                return self.reply('#EXTM3U\n#EXT-X-KEY:METHOD=AES-128,URI="k.bin"\n#EXT-X-TARGETDURATION:2\n#EXTINF:2,\ns0.ts\n#EXT-X-ENDLIST\n', "application/vnd.apple.mpegurl")
+            if u.path == "/rec/raw.ts":
+                return self.reply(b"\x47" + b"r" * 100000, "video/mp2t")
+            if u.path == "/rec/endless.ts":
+                self.send_response(200)
+                self.send_header("Content-Type", "video/mp2t")
+                self.send_header("Connection", "close")
+                self.end_headers()
+                self.close_connection = True
+                try:
+                    while True:
+                        self.wfile.write(b"\x47" + bytes(4095))
+                        self.wfile.flush()
+                        import time as _t
+                        _t.sleep(0.02)
+                except (BrokenPipeError, ConnectionResetError, OSError):
+                    return
         if u.path == "/hls/index.m3u8":
             return self.reply('#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-KEY:METHOD=AES-128,URI="key.bin"\n#EXT-X-TARGETDURATION:4\n#EXTINF:4,\nseg1.ts\n#EXTINF:4,\n%s/abs/seg2.ts\n' % host, "application/vnd.apple.mpegurl")
         if u.path in ("/hls/seg1.ts", "/abs/seg2.ts"):
@@ -451,6 +480,97 @@ class LinkTests(unittest.TestCase):
             link.DOH.clear(); link.DOH.update(old[2])
             link.install_dns("")
             doh.shutdown()
+
+
+    # --- recording (EYE3 Link 1.8)
+    def rec_start(self, path, **kw):
+        code, _, body = self.api("/api/record/start", u=self.up_url + path, **kw)
+        return code, json.loads(body)
+
+    def rec_list(self):
+        return json.loads(self.api("/api/record/list")[2])
+
+    def rec_wait(self, rid, timeout=8):
+        import time as _t
+        end = _t.time() + timeout
+        while _t.time() < end:
+            it = [i for i in self.rec_list()["items"] if i["id"] == rid][0]
+            if it["state"] != "recording":
+                return it
+            _t.sleep(0.1)
+        self.fail("the recording did not finish")
+
+    def with_rec_dir(self):
+        import tempfile
+        d = tempfile.mkdtemp()
+        old = link.STATE["recordings"]
+        link.STATE["recordings"] = d
+        self.addCleanup(lambda: link.STATE.__setitem__("recordings", old))
+        return d
+
+    def test_record_hls_saves_every_segment_and_stops_at_the_end_of_the_list(self):
+        d = self.with_rec_dir()
+        code, r = self.rec_start("/rec/media.m3u8", name="Evening News")
+        self.assertEqual(code, 200)
+        it = self.rec_wait(r["id"])
+        self.assertEqual((it["state"], it["error"]), ("done", ""))
+        with open(os.path.join(d, it["file"]), "rb") as fh:
+            data = fh.read()
+        self.assertEqual(len(data), 374 * 3)                                              # three segments, in order
+        self.assertTrue(data[1:3] == b"s0" and data[375:377] == b"s1" and data[749:751] == b"s2")
+        self.assertTrue(it["file"].startswith("Evening News ") and it["file"].endswith(".ts"))
+        self.assertNotIn("u=", json.dumps(self.rec_list()))                              # the stream address (it can hold a login) is never listed
+
+    def test_record_a_master_playlist_takes_the_best_variant(self):
+        d = self.with_rec_dir()
+        it = self.rec_wait(self.rec_start("/rec/master.m3u8", name="Best")[1]["id"])
+        self.assertEqual(it["state"], "done")
+        self.assertEqual(open(os.path.join(d, it["file"]), "rb").read()[1:4], b"hi0")
+
+    def test_record_a_plain_stream_and_encrypted_streams_are_refused(self):
+        d = self.with_rec_dir()
+        it = self.rec_wait(self.rec_start("/rec/raw.ts", name="Raw")[1]["id"])
+        self.assertEqual((it["state"], it["bytes"]), ("done", 100001))
+        bad = self.rec_wait(self.rec_start("/rec/enc.m3u8", name="Locked")[1]["id"])
+        self.assertEqual(bad["state"], "failed")
+        self.assertIn("encrypted", bad["error"])                                          # no help with protected streams
+        self.assertEqual([f for f in os.listdir(d) if f.startswith("Locked")], [])        # and no empty file is left behind
+
+    def test_record_stop_ends_a_running_recording_and_the_file_stays(self):
+        d = self.with_rec_dir()
+        import time as _t
+        r = self.rec_start("/rec/endless.ts", name="Live")[1]
+        _t.sleep(0.5)
+        self.assertEqual(self.api("/api/record/stop", id=r["id"])[0], 200)
+        it = self.rec_wait(r["id"])
+        self.assertEqual(it["state"], "stopped")
+        self.assertGreater(os.path.getsize(os.path.join(d, it["file"])), 1000)
+
+    def test_record_names_cannot_leave_the_folder_and_the_limits_hold(self):
+        d = self.with_rec_dir()
+        import time as _t
+        ids = []
+        for i in range(3):
+            c, r = self.rec_start("/rec/endless.ts?n=%d" % i, name="../../evil/%d" % i)
+            self.assertEqual(c, 200)
+            self.assertNotIn("/", r["file"])
+            ids.append(r["id"])
+        c, r = self.rec_start("/rec/endless.ts?n=9", name="four")
+        self.assertEqual(c, 502)
+        self.assertIn("3 recordings are already running", r["error"])
+        again = self.rec_start("/rec/endless.ts?n=0", name="again")[1]
+        self.assertEqual(again["id"], ids[0])                                             # the same stream is not recorded twice
+        for i in ids:
+            self.api("/api/record/stop", id=i)
+            self.rec_wait(i)
+        self.assertTrue(all(os.path.dirname(os.path.join(d, f)) == d for f in os.listdir(d)))
+        _t.sleep(0.1)
+
+    def test_record_refuses_non_http_and_Links_own_address(self):
+        self.with_rec_dir()
+        self.assertEqual(self.api("/api/record/start", u="file:///etc/passwd", name="x")[0], 502)
+        self.assertEqual(self.api("/api/record/start", u="http://127.0.0.1:%d/stream?u=http://a/b&t=x" % self.port, name="x")[0], 502)
+        self.assertEqual(get(self.port, "/api/record/start?u=" + up.quote(self.up_url + "/rec/raw.ts"))[0], 403)   # a page that is not allowed cannot start one
 
     # --- XMLTV guide, custom User-Agent
     def xmltv(self, path="/epg/guide.xml", **kw):

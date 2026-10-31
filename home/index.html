@@ -333,7 +333,8 @@
   @media (max-width: 900px) { .mv-grid { grid-template-columns: 1fr; } }
   #ov-pin { z-index: 20; }
   #ov-info > .rows, #ov-pin > .rows { min-height: 0; overflow-y: auto; }
-  #profchip { cursor: pointer; }
+  #profchip, #recchip { cursor: pointer; }
+  #recchip { border-color: var(--accent); color: #fff; background: rgba(255, 38, 63, .22); }
   .rows .btn.big { padding: 16px 20px; font-size: clamp(15px, 1.3vw, 20px); text-align: start; }
   .rows .big-actions { display: grid; gap: 12px; }
   .rows .opt { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
@@ -389,7 +390,7 @@
 
   <div class="foot">
     <div class="hintkeys"><b>Arrows</b> move · <b>Enter</b> open · <b>Back/Esc</b> return · <b>F</b> fullscreen · <b>S</b> screensaver · <b>Z</b> sleep timer</div>
-    <div class="right"><span class="chip" id="profchip" role="button" tabindex="0" hidden></span><span class="chip" id="agentchip" role="button" tabindex="0" hidden></span><span class="chip" id="sleepchip" hidden></span><span class="chip" id="rcchip" hidden>📱 Phone remote on</span><div class="net"><span class="dot" id="netdot"></span><span id="netlabel">Online</span></div></div>
+    <div class="right"><span class="chip" id="profchip" role="button" tabindex="0" hidden></span><span class="chip" id="agentchip" role="button" tabindex="0" hidden></span><span class="chip" id="recchip" role="button" tabindex="0" hidden></span><span class="chip" id="sleepchip" hidden></span><span class="chip" id="rcchip" hidden>📱 Phone remote on</span><div class="net"><span class="dot" id="netdot"></span><span id="netlabel">Online</span></div></div>
   </div>
 </main>
 
@@ -410,6 +411,7 @@
       <button class="btn" id="tv-multi" type="button" title="Watch up to 4 channels at once (M adds the selected channel)">Multi-view</button>
       <button class="btn" id="tv-cast" type="button" title="Cast to a TV or speaker (C)">Cast</button>
       <button class="btn" id="tv-pip" type="button" title="Mini window (O)">Mini window</button>
+      <button class="btn" id="tv-rec" type="button" title="Record the channel that is playing (R). Needs EYE3 Link.">Record</button>
       <button class="btn" id="tv-vod" type="button">Movies &amp; series</button>
       <button class="btn" id="tv-maker" type="button">Playlist maker</button>
       <button class="btn" id="tv-accts" type="button">IPTV accounts</button>
@@ -425,7 +427,7 @@
     <button class="btn" id="tv-check" type="button" title="Test these channels from this computer's own connection (needs EYE3 Link)">Check from my connection</button>
     <label class="chip" style="cursor:pointer"><input type="checkbox" id="tv-hidefailed" checked> hide failed</label>
     <span class="chip" id="tv-count">0 channels</span>
-    <span class="hintkeys">↑↓ channel · ←→ category · 0-9 number · <b>P</b> previous · <b>L</b> favourite · <b>G</b> guide · <b>D</b> grid · <b>M</b> multi · <b>C</b> cast · <b>X</b> shape · <b>A</b> audio · <b>T</b> subtitles · <b>V</b> VLC · <b>/</b> search · <b>?</b> all keys</span>
+    <span class="hintkeys">↑↓ channel · ←→ category · 0-9 number · <b>P</b> previous · <b>L</b> favourite · <b>G</b> guide · <b>D</b> grid · <b>M</b> multi · <b>C</b> cast · <b>R</b> record · <b>X</b> shape · <b>A</b> audio · <b>T</b> subtitles · <b>V</b> VLC · <b>/</b> search · <b>?</b> all keys</span>
   </div>
   <div class="tv">
     <div class="chlist" id="chlist"></div>
@@ -2602,6 +2604,8 @@
     ag.type = "button"; ag.addEventListener("click", openAgent);
     var pr = make("button", "btn", "Profiles & parent PIN");
     pr.type = "button"; pr.addEventListener("click", openProfiles);
+    var rc2 = make("button", "btn", "Recordings");
+    rc2.type = "button"; rc2.addEventListener("click", openRecordings);
     var tl = make("button", "btn", "Smart TV tools");
     tl.type = "button"; tl.addEventListener("click", openTools);
     var wg = make("button", "btn", "Setup guide");
@@ -2619,7 +2623,7 @@
     hp.type = "button"; hp.addEventListener("click", openHelp);
     var sy = make("button", "btn", syncCode ? "Sync phone and laptop: on" : "Sync phone and laptop");
     sy.type = "button"; sy.addEventListener("click", function () { openSyncInfo(); });
-    var kv = make("div", "kv"); kv.appendChild(fs); kv.appendChild(ac); kv.appendChild(ag); kv.appendChild(pr); kv.appendChild(tl); kv.appendChild(wg); kv.appendChild(ts); kv.appendChild(hp); kv.appendChild(gl); kv.appendChild(rc); kv.appendChild(sy); kv.appendChild(sl); kv.appendChild(sv); kv.appendChild(pl); kv.appendChild(inst); kv.appendChild(setup); kv.appendChild(ph);
+    var kv = make("div", "kv"); kv.appendChild(fs); kv.appendChild(ac); kv.appendChild(ag); kv.appendChild(pr); kv.appendChild(rc2); kv.appendChild(tl); kv.appendChild(wg); kv.appendChild(ts); kv.appendChild(hp); kv.appendChild(gl); kv.appendChild(rc); kv.appendChild(sy); kv.appendChild(sl); kv.appendChild(sv); kv.appendChild(pl); kv.appendChild(inst); kv.appendChild(setup); kv.appendChild(ph);
     rowsHtml(body, [
       para("EYE3 Home runs in this browser and shows on the TV over HDMI. For the best look, press F or use the button below to go fullscreen."),
       kv,
@@ -2646,7 +2650,7 @@
     $("info-title").textContent = "Keyboard shortcuts";
     var rows = [["Everywhere", null], ["Ctrl / ⌘ + K", "Quick search: any channel or action"], ["?", "This list"], ["F", "Fullscreen"], ["S", "Screensaver"], ["Z", "Sleep timer"], ["Esc / Backspace", "Back"], ["Shift + X", "Hidden section"],
       ["Live TV", null], ["↑ ↓", "Channel"], ["← →", "Category"], ["0–9", "Channel number"], ["Enter", "Play"], ["P", "Previous channel"], ["L", "Favourite"], ["/", "Search"], ["G", "TV guide of this channel"],
-      ["X", "Picture shape"], ["A", "Audio track"], ["T", "Subtitles"], ["V", "Save the stream for VLC"], ["D", "Guide grid"], ["M", "Add to multi-view"], ["C", "Cast"], ["O", "Mini window"], ["Movies & series", null], ["↑ ↓ Enter", "Choose and play"], ["←", "Back to the series list"]];
+      ["X", "Picture shape"], ["A", "Audio track"], ["T", "Subtitles"], ["V", "Save the stream for VLC"], ["D", "Guide grid"], ["M", "Add to multi-view"], ["C", "Cast"], ["O", "Mini window"], ["R", "Record the channel that is playing"], ["Movies & series", null], ["↑ ↓ Enter", "Choose and play"], ["←", "Back to the series list"]];
     var wrap = make("div", "keys");
     rows.forEach(function (r) { if (r[1] === null) wrap.appendChild(make("h3", "", r[0])); else { wrap.appendChild(make("kbd", "", r[0])); wrap.appendChild(make("span", "", r[1])); } });
     rowsHtml($("info-body"), [wrap]); openOverlay("ov-info");
@@ -2658,7 +2662,7 @@
     return [["Open Live TV", function () { openTile("tv"); }], ["Open Radio", function () { openTile("radio"); }], ["Open My media", function () { openTile("media"); }],
       ["Movies & series", function () { closeOverlays(); openVod(); }], ["Free movies", function () { closeOverlays(); openVod(); freeOpen(); }],
       ["Playlist maker", function () { closeOverlays(); openMaker(); }], ["IPTV accounts", function () { closeOverlays(); openAccounts(); }],
-      ["Settings", function () { openTile("settings"); }], ["Profiles and parent PIN", function () { closeOverlays(); openProfiles(); }], ["Smart TV tools", function () { closeOverlays(); openTools(); }], ["Guide grid", function () { openTile("tv"); setTimeout(openGrid, 600); }], ["Multi-view", function () { closeOverlays(); mvOpen(); }], ["Copy support report", function () { closeOverlays(); openReport(); }], ["Sync phone and laptop", function () { closeOverlays(); openSyncInfo(); }],
+      ["Settings", function () { openTile("settings"); }], ["Profiles and parent PIN", function () { closeOverlays(); openProfiles(); }], ["Smart TV tools", function () { closeOverlays(); openTools(); }], ["Guide grid", function () { openTile("tv"); setTimeout(openGrid, 600); }], ["Recordings", function () { closeOverlays(); openRecordings(); }], ["Multi-view", function () { closeOverlays(); mvOpen(); }], ["Copy support report", function () { closeOverlays(); openReport(); }], ["Sync phone and laptop", function () { closeOverlays(); openSyncInfo(); }],
       ["Phone remote", function () { closeOverlays(); openRemoteInfo(); }], ["Keyboard shortcuts", function () { closeOverlays(); openShortcuts(); }], ["Go fullscreen", toggleFullscreen]];
   }
   function goChannel(c) {
@@ -3028,6 +3032,67 @@
   $("mv-close").addEventListener("click", mvClose);
   $("mv-clear").addEventListener("click", function () { mvStop(); mv = []; mvAudio = 0; mvPaint(); });
 
+
+  // ---- recording (EYE3 Link 1.8+): the channel that is playing is saved as a .ts file in the Link recordings folder ----
+  var recId = "", recTimer = 0, recName = "";
+  function recSource(c) {    // the address EYE3 Link should record: the original link, never Link's own wrapper
+    var u = String(c.url || "");
+    if (u.indexOf(LINK_BASE) === 0) {
+      try { var x = new URL(u); if (x.pathname !== "/stream" || !x.searchParams.get("u")) return null; return { u: x.searchParams.get("u"), h: x.searchParams.get("h") || "" }; } catch (e) { return null; }
+    }
+    return /^https?:\/\//i.test(u) ? { u: u, h: "" } : null;
+  }
+  function megabytes(n) { return n >= 1e9 ? (n / 1e9).toFixed(2) + " GB" : (n / 1e6).toFixed(1) + " MB"; }
+  function recMinutes(sec) { return ("0" + Math.floor(sec / 60)).slice(-2) + ":" + ("0" + (sec % 60)).slice(-2); }
+  function recLinkError(e) { return /Unknown request/.test(e.message) ? "Your EYE3 Link is older than 1.8. Update it in Settings → EYE3 agent, or download the new program." : e.message; }
+  function recPoll() {
+    return linkGet("/api/record/list", {}).then(function (d) {
+      var chip = $("recchip"), mine = null;
+      (d.items || []).forEach(function (i) { if (i.id === recId) mine = i; });
+      if (mine && mine.state === "recording") { chip.hidden = false; chip.textContent = "● REC " + recMinutes(mine.seconds) + " · " + megabytes(mine.bytes); return d; }
+      if (mine) {
+        clearInterval(recTimer); recTimer = 0; recId = ""; chip.hidden = true;
+        toast(mine.state === "failed" ? "Recording failed: " + mine.error : "Saved: " + mine.file + " (" + megabytes(mine.bytes) + ")");
+      } else if (recId) { clearInterval(recTimer); recTimer = 0; recId = ""; chip.hidden = true; }
+      return d;
+    })["catch"](function () { return null; });
+  }
+  function recToggle() {
+    if (recId) { linkGet("/api/record/stop", { id: recId }).then(recPoll, function (e) { toast(recLinkError(e)); }); return; }
+    var c = prevCh;
+    if (!c) { toast("Play a channel first, then press R to record it"); return; }
+    if (c.adult) { toast("Adult channels are never recorded"); return; }
+    var src = recSource(c);
+    if (!src) { toast("This channel cannot be recorded. Channels from links, M3U lists and Xtream accounts can."); return; }
+    var params = { u: src.u, name: c.name, minutes: "180" }; if (src.h) params.h = src.h;
+    linkGet("/api/record/start", params).then(function (r) {
+      recId = r.id; recName = c.name; toast("Recording " + c.name + " (stops by itself after 3 hours)");
+      clearInterval(recTimer); recTimer = setInterval(recPoll, 2000); recPoll();
+    }, function (e) { toast(recLinkError(e) + (/not running/.test(e.message) ? " Recording needs EYE3 Link." : "")); });
+  }
+  function openRecordings() {
+    $("info-title").textContent = "Recordings";
+    var nodes = [para("Recordings are saved by EYE3 Link as .ts files that VLC and most players open. Only channels from your own links, lists and accounts can be recorded; encrypted streams cannot, and adult channels are never recorded.")], box = para("Loading…");
+    nodes.push(box); rowsHtml($("info-body"), nodes); openOverlay("ov-info");
+    recPoll().then(function () { return linkGet("/api/record/list", {}); }).then(function (d) {
+      var list = [];
+      list.push(nt(para("Saved in: " + d.dir)));
+      if (!(d.items || []).length) list.push(para("No recordings yet. Play a channel in Live TV and press R."));
+      (d.items || []).forEach(function (i) {
+        var row = make("div", "acct-row"), who = make("div", "who");
+        who.appendChild(nt(make("b", "", i.file)));
+        who.appendChild(make("small", i.state === "failed" ? "bad" : "", (i.state === "recording" ? "recording · " : i.state === "failed" ? "failed: " + i.error + " · " : "") + recMinutes(i.seconds) + " · " + megabytes(i.bytes)));
+        row.appendChild(who);
+        if (i.state === "recording") { var st = make("button", "btn", "Stop"); st.type = "button"; st.addEventListener("click", function () { linkGet("/api/record/stop", { id: i.id }).then(function () { setTimeout(openRecordings, 600); }); }); row.appendChild(st); }
+        list.push(row);
+      });
+      rowsHtml($("info-body"), nodes.slice(0, 1).concat(list));
+    }, function (e) { box.textContent = recLinkError(e); });
+  }
+  $("tv-rec").addEventListener("click", recToggle);
+  $("recchip").addEventListener("click", openRecordings);
+  $("recchip").addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openRecordings(); } });
+
   // ---- Smart TV tools: what this screen can play, how fast the connection is ----
   var CODEC_TESTS = [["H.264 video (almost every channel)", 'video/mp4; codecs="avc1.640028"', "This should work. If not, update the browser."],
     ["H.265 / HEVC video", 'video/mp4; codecs="hvc1.1.6.L93.B0"', "Not supported: press V on a channel and open it in VLC."],
@@ -3113,6 +3178,7 @@
       else if (e.key === "m" || e.key === "M") { e.preventDefault(); mvAdd(channels[chIndex]); }
       else if (e.key === "c" || e.key === "C") { e.preventDefault(); castNow(); }
       else if (e.key === "o" || e.key === "O") { e.preventDefault(); miniWindow(); }
+      else if (e.key === "r" || e.key === "R") { e.preventDefault(); recToggle(); }
       else if (e.key === "v" || e.key === "V") { e.preventDefault(); var vc = channels[chIndex]; if (vc) downloadM3u(vc.name, vc.url); }
       else if (e.key === "x" || e.key === "X") { e.preventDefault(); cycleAspect(); }
       else if (e.key === "a" || e.key === "A") { e.preventDefault(); cycleAudio(); }
