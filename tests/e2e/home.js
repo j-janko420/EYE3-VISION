@@ -322,6 +322,20 @@ const toast = (p) => p.evaluate(() => [...document.querySelectorAll('.toast')].m
     check('the page does not scroll sideways on a phone', await p.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
   });
 
+  await suite('main app: the brand reads on two lines with "by i3 Design", selection is crimson', async () => {
+    const p = await open(browser, {}, { ctx: { viewport: { width: 1461, height: 706 } }, url: HOME.replace('/home/?splash=0', '/index.html') });
+    const m = await p.evaluate(() => { const n = document.querySelector('.brand-name').getBoundingClientRect(), s = document.querySelector('.brand-subtitle').getBoundingClientRect(); return { nameBottom: n.bottom, subTop: s.top, sub: document.querySelector('.brand-subtitle').textContent, sel: getComputedStyle(document.querySelector('.brand-name'), '::selection').backgroundColor }; });
+    check('the subtitle sits under the name, not beside it', m.subTop >= m.nameBottom - 1, m);
+    check('it says by i3 Design', /i3 Design/.test(m.sub), m.sub);
+    check('it uses the same eye-in-diamond mark as Home', await p.evaluate(() => document.querySelector('.brand-mark').getAttribute('viewBox') === '0 0 160 160' && !!document.querySelector('.brand-mark .iris')));
+    check('EYE3 is crimson, VISION white', await p.evaluate(() => getComputedStyle(document.querySelector('.brand-name b')).color === 'rgb(255, 38, 63)'));
+    check('text selection is crimson, not blue', m.sel === 'rgb(255, 38, 63)', m.sel);
+    for (const f of ['home/', 'bridge/', 'remote/']) {
+      const q = await open(browser, {}, { url: HOME.replace('/home/?splash=0', '/' + f) });
+      check(f + ' selection is crimson too', await q.evaluate(() => getComputedStyle(document.body, '::selection').backgroundColor) === 'rgb(255, 38, 63)');
+    }
+  });
+
   await browser.close();
   done();
 })().catch((e) => { console.error(e); process.exit(1); });
