@@ -390,7 +390,7 @@ const toast = (p) => p.evaluate(() => [...document.querySelectorAll('.toast')].m
 
     // guide grid
     p = await open(browser, { 'eye3.home.accts': [XT] }); await openTv(p); await pickCat(p, 'Mock TV');
-    await p.keyboard.press('d'); await p.waitForFunction(() => document.querySelectorAll('#grid-wrap .gr-prog').length > 0, null, { timeout: 6000 }).catch(() => {});
+    await p.keyboard.press('d'); await p.waitForFunction(() => document.querySelectorAll('#grid-wrap .gr-prog').length > 0 && document.querySelectorAll('#grid-wrap .gr-none').length > 0, null, { timeout: 8000 }).catch(() => {});
     const g = await p.evaluate(() => ({ open: document.getElementById('ov-grid').classList.contains('open'), rows: document.querySelectorAll('#grid-wrap .gr-row').length, progs: [...document.querySelectorAll('#grid-wrap .gr-prog')].map((b) => b.textContent), none: [...document.querySelectorAll('#grid-wrap .gr-none')].map((b) => b.textContent), ticks: document.querySelectorAll('.gr-scale span').length, now: document.querySelectorAll('.gr-now').length }));
     check('the grid lists the channels with time ticks and a now-line', g.open && g.rows === 2 && g.ticks === 6 && g.now === 2, g);
     check('programmes are placed from the guide (now and next)', g.progs.includes('Evening News') && g.progs.includes('Late Show'), g);
@@ -427,6 +427,27 @@ const toast = (p) => p.evaluate(() => [...document.querySelectorAll('.toast')].m
     const tl = await p.evaluate(() => ({ title: document.getElementById('info-title').textContent, text: document.getElementById('info-body').textContent }));
     check('Smart TV tools lists codecs, screen and the speed test', tl.title === 'Smart TV tools' && /H\.264/.test(tl.text) && /HEVC/.test(tl.text) && /Test my connection/.test(tl.text) && /HLS/.test(tl.text), tl.text.slice(0, 200));
     check('no page errors in the tools', p.errs.length === 0, p.errs);
+  });
+
+  await suite('recording: R saves the playing channel through EYE3 Link', async () => {
+    const REC = (process.env.TMPDIR || '/tmp') + '/eye3-test-rec';
+    try { fs.rmSync(REC, { recursive: true, force: true }); } catch (e) {}
+    const p = await open(browser, { 'eye3.home.link': '1', 'eye3.home.mychannels': [ch('Record Me', 'http://127.0.0.1:9191/live/u/p/rec.ts'), Object.assign(ch('Adult One', 'http://127.0.0.1:9191/live/u/p/rec.ts'), { g: 'XXX' })] }, { init: MPEGTS_STUB });
+    await openTv(p); await pickCat(p, 'My channels');
+    await p.keyboard.press('r'); await p.waitForTimeout(300);
+    check('R with nothing playing says what to do', /Play a channel first/.test(await toast(p)), await toast(p));
+    await p.keyboard.press('Enter'); await p.waitForTimeout(800);
+    await p.keyboard.press('r');
+    await p.waitForFunction(() => [...document.querySelectorAll('.toast')].some((t) => /Saved: Record Me/.test(t.textContent)), null, { timeout: 9000 }).catch(() => {});
+    const msg = await toast(p);
+    check('the recording finishes and the toast names the file', /Saved: Record Me .*\.ts \(0\.1 MB\)/.test(msg), msg);
+    const files = fs.existsSync(REC) ? fs.readdirSync(REC) : [];
+    check('the file is in the recordings folder with the stream bytes', files.length === 1 && fs.statSync(REC + '/' + files[0]).size === 60001, files);
+    await p.keyboard.press('Escape'); await p.waitForTimeout(200);
+    await p.keyboard.press('Control+k'); await p.waitForTimeout(300); await p.keyboard.type('recordings'); await p.waitForTimeout(300); await p.keyboard.press('Enter'); await p.waitForTimeout(900);
+    const rs = await p.evaluate(() => ({ title: document.getElementById('info-title').textContent, text: document.getElementById('info-body').textContent }));
+    check('the Recordings screen lists it with the folder', rs.title === 'Recordings' && /Record Me .*\.ts/.test(rs.text) && /Saved in:/.test(rs.text), rs.text.slice(0, 300));
+    check('no page errors in recording', p.errs.length === 0, p.errs);
   });
 
   await browser.close();

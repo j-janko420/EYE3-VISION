@@ -17,6 +17,8 @@ class H(BaseHTTPRequestHandler):
                     '<programme start="%s" stop="%s" channel="news.one"><title>Evening Bulletin</title><desc>All the news</desc></programme>'
                     '<programme start="%s" stop="%s" channel="news.one"><title>Late Talk</title></programme></tv>') % (f(n - 600), f(n + 1500), f(n + 1500), f(n + 4500))
             body = body.encode(); self.send_response(200); self.send_header("Content-Type", "text/xml"); self.send_header("Content-Length", str(len(body))); self.end_headers(); self.wfile.write(body); return
+        if u.path == "/live/u/p/rec.ts":
+            body = b"\x47" + b"t" * 60000; self.send_response(200); self.send_header("Content-Type", "video/mp2t"); self.send_header("Content-Length", str(len(body))); self.end_headers(); self.wfile.write(body); return
         if u.path == "/ua/list.m3u":
             open("/tmp/eye3_ua_seen.txt", "a").write((self.headers.get("User-Agent") or "") + "\n")
             body = ('#EXTM3U x-tvg-url="http://127.0.0.1:9191/epg/guide.xml"\n#EXTINF:-1 tvg-id="news.one" group-title="N",News One\nhttp://127.0.0.1:9191/live/x/y/1.ts\n').encode()
