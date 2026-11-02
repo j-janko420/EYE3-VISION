@@ -20,14 +20,14 @@ If your computer cannot find a provider's address ("getaddrinfo failed") but ano
 
 Run:   python3 eye3-link.py          (Windows: py eye3-link.py)      Stop: Ctrl+C
 """
-import argparse, base64, gzip, hashlib, ipaddress, json, os, re, secrets, socket, ssl, sys, threading, time
+import argparse, base64, gzip, hashlib, ipaddress, json, os, re, secrets, shutil, socket, ssl, sys, threading, time
 import xml.etree.ElementTree as ET
 import urllib.error as ue
 import urllib.parse as up
 import urllib.request as ur
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.7"
+VERSION = "1.8"
 ALLOWED_ORIGINS = ["https://j-janko420.github.io"]          # more: EYE3_ORIGINS=https://a,https://b
 LOCAL_ORIGIN = re.compile(r"^http://(localhost|127\.0\.0\.1)(:\d+)?$")
 BAD = re.compile(r"adult|xxx|18\+|porn|erotic|\bsex|playboy|hustler|brazzers|dorcel|penthouse|redlight", re.I)
@@ -43,7 +43,7 @@ class LinkError(Exception):
 
 
 STATE = {"token": secrets.token_urlsafe(24), "port": 0, "insecure": False, "proxy": "", "origins": list(ALLOWED_ORIGINS), "sessions": {}, "hdrs": {}, "events": [], "auto_fix": False, "auto_update": False, "playlists": "", "started": 0.0,
-         "last_stream": 0.0, "update": {}, "update_base": os.environ.get("EYE3_UPDATE_BASE", ""), "conf_path": ""}
+         "last_stream": 0.0, "recordings": "", "rec": {}, "update": {}, "update_base": os.environ.get("EYE3_UPDATE_BASE", ""), "conf_path": ""}
 
 
 def ssl_context():
@@ -217,7 +217,7 @@ def note_event(kind, text):
     del ev[:-20]
 
 
-CONF_KEYS = {"port": int, "dns": str, "proxy": str, "auto_fix": bool, "auto_update": bool, "playlists": str, "origins": list}
+CONF_KEYS = {"port": int, "dns": str, "proxy": str, "auto_fix": bool, "auto_update": bool, "playlists": str, "recordings": str, "origins": list}
 
 
 def load_conf(path):
@@ -1128,6 +1128,17 @@ class Handler(BaseHTTPRequestHandler):
             return
         if path == "/api/local":
             return self.send_json(200, local_playlists())
+        if path == "/api/record/start":
+            r = rec_start(one("u"), one("name"), int(one("minutes")) if one("minutes").isdigit() else 0, one("h"))
+            return self.send_json(200, rec_view(r))
+        if path == "/api/record/stop":
+            r = STATE["rec"].get(one("id"))
+            if not r:
+                raise LinkError("That recording is not known.")
+            r["stop"] = True
+            return self.send_json(200, rec_view(r))
+        if path == "/api/record/list":
+            return self.send_json(200, {"dir": rec_dir(), "items": [rec_view(r) for r in sorted(STATE["rec"].values(), key=lambda x: -x["started"])]})
         if path == "/api/probe":
             return self.send_json(200, probe_stream(one("u")))
         if path == "/api/where":
@@ -1235,6 +1246,156 @@ def rewrite_playlist(text, base, hid=""):
     return "\n".join(out) + "\n"
 
 
+# --- recording: save a stream from the viewer's own account or list to a file on this computer ------------------
+REC_MAX_BYTES = 8 * 1024 ** 3           # one recording
+REC_MAX_MINUTES = 360
+REC_ACTIVE = 3                          # recordings running at once
+_rec_lock = threading.Lock()
+
+
+def rec_dir():
+    d = STATE.get("recordings") or ""
+    if not d:
+        base = exe_dir() if getattr(sys, "frozen", False) else os.path.dirname(os.path.abspath(__file__))
+        d = os.path.join(base, "recordings")
+    return d
+
+
+def rec_path(name):
+    clean = re.sub(r"[^\w\- ]+", "", name or "", flags=re.UNICODE).strip()[:50] or "recording"
+    base = "%s %s" % (clean, time.strftime("%Y-%m-%d %H-%M"))
+    d, n, path = rec_dir(), 1, ""
+    while True:
+        path = os.path.join(d, base + ("" if n == 1 else " (%d)" % n) + ".ts")
+        if not os.path.exists(path):
+            return path
+        n += 1
+
+
+def _rec_pick_variant(text, base):
+    best, pick = -1, ""
+    lines = text.splitlines()
+    for i, line in enumerate(lines):
+        if line.startswith("#EXT-X-STREAM-INF"):
+            m = re.search(r"BANDWIDTH=(\d+)", line)
+            bw = int(m.group(1)) if m else 0
+            for nxt in lines[i + 1:]:
+                if nxt.strip() and not nxt.startswith("#"):
+                    if bw > best:
+                        best, pick = bw, up.urljoin(base, nxt.strip())
+                    break
+    return pick
+
+
+def _rec_hls(r, out, body, url, hdr, end):
+    seen, hops = set(), 0
+    while True:
+        text = body.decode("utf-8", "replace")
+        if "#EXT-X-STREAM-INF" in text:                      # a master playlist: follow the best variant
+            url = _rec_pick_variant(text, url)
+            hops += 1
+            if not url or hops > 3:
+                raise LinkError("The stream playlist has no usable video.")
+            body, _, _ = fetch(url, hdr, 25, MAX_PLAYLIST)
+            continue
+        if re.search(r"#EXT-X-KEY:(?!.*METHOD=NONE)", text):
+            raise LinkError("This stream is encrypted, so it cannot be recorded.")
+        segs = [up.urljoin(url, l.strip()) for l in text.splitlines() if l.strip() and not l.startswith("#")]
+        for seg in [x for x in segs if x not in seen]:
+            if r["stop"] or time.time() >= end or r["bytes"] >= REC_MAX_BYTES:
+                return
+            data, _, _ = fetch(seg, hdr, 25, 64 * 1024 * 1024)
+            out.write(data)
+            r["bytes"] += len(data)
+            seen.add(seg)
+        if "#EXT-X-ENDLIST" in text:
+            return
+        m = re.search(r"#EXT-X-TARGETDURATION:(\d+)", text)
+        wait = min(max(int(m.group(1)) / 2.0 if m else 2.0, 1.0), 6.0)
+        t0 = time.time()
+        while time.time() - t0 < wait:
+            if r["stop"] or time.time() >= end:
+                return
+            time.sleep(0.2)
+        body, _, _ = fetch(url, hdr, 25, MAX_PLAYLIST)
+        if len(seen) > 5000:
+            seen = set(list(seen)[-2000:])
+
+
+def rec_worker(r):
+    end = r["started"] + r["minutes"] * 60
+    try:
+        hdr = {"User-Agent": UA_PLAYER}
+        hdr.update(r["hdr"])
+        with open(r["path"], "wb") as out:
+            with open_url(ur.Request(r["url"], headers=hdr), 25) as resp:
+                ctype = (resp.headers.get("Content-Type") or "").lower()
+                final = resp.geturl()
+                if "mpegurl" in ctype or up.urlparse(final).path.lower().endswith(".m3u8"):
+                    body = resp.read(MAX_PLAYLIST)
+                    if body.lstrip()[:7] != b"#EXTM3U":
+                        raise LinkError("The address did not return a stream.")
+                    _rec_hls(r, out, body, final, hdr, end)
+                else:
+                    while not r["stop"] and time.time() < end and r["bytes"] < REC_MAX_BYTES:
+                        chunk = resp.read(65536)
+                        if not chunk:
+                            break
+                        out.write(chunk)
+                        r["bytes"] += len(chunk)
+        r["state"] = "stopped" if r["stop"] else "done"
+    except LinkError as e:
+        r["state"], r["error"] = "failed", str(e)
+    except ue.HTTPError as e:
+        r["state"], r["error"] = "failed", "The stream server answered HTTP %d." % e.code
+    except OSError as e:
+        r["state"], r["error"] = "failed", ("Could not write the file: %s" % e.strerror) if getattr(e, "filename", None) else reach_error(e).replace("the server", "the stream", 1)
+    except Exception as e:
+        r["state"], r["error"] = "failed", "Recording stopped: %s" % e
+    r["ended"] = time.time()
+    if r["state"] == "failed" and r["bytes"] == 0:
+        try:
+            os.remove(r["path"])
+        except OSError:
+            pass
+
+
+def rec_start(target, name, minutes, hid=""):
+    if not re.match(r"^https?://", target or "", re.I):
+        raise LinkError("Only http:// and https:// streams can be recorded.")
+    if up.urlparse(target).netloc in ("127.0.0.1:%d" % STATE["port"], "localhost:%d" % STATE["port"]):
+        raise LinkError("A stream cannot point back to EYE3 Link.")
+    minutes = min(max(minutes or 120, 1), REC_MAX_MINUTES)
+    with _rec_lock:
+        recs = STATE.setdefault("rec", {})
+        for r in recs.values():
+            if r["state"] == "recording" and r["url"] == target:
+                return r
+        if sum(1 for r in recs.values() if r["state"] == "recording") >= REC_ACTIVE:
+            raise LinkError("%d recordings are already running. Stop one first." % REC_ACTIVE)
+        d = rec_dir()
+        try:
+            os.makedirs(d, exist_ok=True)
+            if shutil.disk_usage(d).free < 1024 ** 3:
+                raise LinkError("Less than 1 GB of free disk space is left, so recording was not started.")
+        except OSError as e:
+            raise LinkError("Could not use the recordings folder: %s" % (e.strerror or e))
+        r = {"id": secrets.token_hex(4), "url": target, "name": name or "recording", "path": rec_path(name), "minutes": minutes,
+             "started": time.time(), "ended": 0.0, "bytes": 0, "state": "recording", "error": "", "stop": False,
+             "hdr": STATE["hdrs"].get(hid, {}) if re.fullmatch(r"[0-9a-f]{12}", hid or "") else {}}
+        recs[r["id"]] = r
+        for old in sorted([x for x in recs.values() if x["state"] != "recording"], key=lambda x: x["started"])[:-20]:
+            recs.pop(old["id"], None)
+        threading.Thread(target=rec_worker, args=(r,), daemon=True).start()
+        return r
+
+
+def rec_view(r):
+    sec = int((r["ended"] or time.time()) - r["started"])
+    return {"id": r["id"], "name": r["name"], "file": os.path.basename(r["path"]), "bytes": r["bytes"], "seconds": sec,
+            "state": r["state"], "error": r["error"]}
+
+
 def main():
     ap = argparse.ArgumentParser(description="EYE3 Link: helper for EYE3 Home (runs on this computer only).")
     ap.add_argument("--port", type=int, default=8765)
@@ -1245,6 +1406,7 @@ def main():
     ap.add_argument("--origin", action="append", default=[], help="also allow this web page origin (for your own copy of EYE3)")
     ap.add_argument("--config", default="", help="a JSON settings file (default: eye3-link.conf next to the program, if it exists)")
     ap.add_argument("--playlists", default="", help="a folder with your own .m3u/.m3u8/.txt playlists (default: 'playlists' next to the program, if it exists)")
+    ap.add_argument("--recordings", default="", help="the folder where recordings are saved (default: 'recordings' next to the program)")
     ap.add_argument("--auto-fix", action="store_true", help="the agent fixes problems by itself while running (for example secure DNS when an address cannot be found)")
     ap.add_argument("--auto-update", action="store_true", help="the agent downloads and installs new versions by itself (programs only; checked with SHA-256)")
     a = ap.parse_args()
@@ -1258,6 +1420,7 @@ def main():
     a.auto_fix = a.auto_fix or bool(conf.get("auto_fix"))
     a.auto_update = a.auto_update or bool(conf.get("auto_update"))
     a.origin = list(a.origin) + [o for o in conf.get("origins", []) if isinstance(o, str)]
+    rec_folder = a.recordings or conf.get("recordings") or ""
     play_dir = a.playlists or conf.get("playlists") or os.path.join(base_dir, "playlists")
     if getattr(sys, "frozen", False) and apply_staged_update():
         print("EYE3 Link was updated. Starting the new version…")
@@ -1275,7 +1438,7 @@ def main():
         print("--dns must be cloudflare, google or an https:// DNS-over-HTTPS address.")
         return 1
     STATE.update(port=a.port, insecure=a.insecure, verbose=a.verbose, proxy=a.proxy, auto_fix=a.auto_fix, auto_update=a.auto_update,
-                 playlists=play_dir if os.path.isdir(play_dir) else "", started=time.time(), conf_path=conf_path if os.path.exists(conf_path) else "")
+                 playlists=play_dir if os.path.isdir(play_dir) else "", recordings=rec_folder, started=time.time(), conf_path=conf_path if os.path.exists(conf_path) else "")
     if a.dns:
         install_dns(a.dns)
     STATE["where_url"] = os.environ.get("EYE3_WHERE_URL", "")  # for tests only

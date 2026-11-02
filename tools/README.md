@@ -105,6 +105,12 @@ EYE3 Link can look after itself. All switches are off by default when you start 
 
 EYE3 Home shows an **Agent** chip when Link runs; it reconnects by itself when Link restarts. The one-time install for the computer behind your TV (USB stick or download) is in `box/README.txt`.
 
+## Recording (EYE3 Link 1.8)
+
+Play a channel in EYE3 Home and press **R** (or the **Record** button). EYE3 Link saves it as a `.ts` file in the `recordings` folder next to the program (change it with `--recordings FOLDER`). Press **R** again to stop; it also stops by itself after 3 hours. Settings → **Recordings** lists the files and shows the folder. Play them with VLC or any player that opens `.ts` files.
+
+Limits: your own links, lists and accounts only; encrypted streams cannot be recorded; adult channels are never recorded; up to 3 recordings at once; recording does not start if less than 1 GB of disk space is free.
+
 ## Problems
 - "EYE3 Link is not running": start it (above), then press **Check again**.
 - "The server rejected this username or password": check them with your provider.

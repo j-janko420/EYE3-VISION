@@ -18,7 +18,7 @@ start() { "$@" >/dev/null 2>&1 & PIDS="$PIDS $!"; }
 start python3 -m http.server 8099 --bind 127.0.0.1
 start python3 tests/mocks/xt_mock.py
 start python3 tests/mocks/ntfy_mock.py
-start python3 tools/eye3-link.py --port 8765 --origin https://localhost:8443 --playlists tests/mocks/playlists --auto-fix
+start python3 tools/eye3-link.py --port 8765 --origin https://localhost:8443 --playlists tests/mocks/playlists --recordings "${TMPDIR:-/tmp}/eye3-test-rec" --auto-fix
 if command -v openssl >/dev/null 2>&1; then
   openssl req -x509 -newkey rsa:2048 -nodes -keyout /tmp/eye3_key.pem -out /tmp/eye3_cert.pem -days 2 -subj "/CN=localhost" >/dev/null 2>&1
   start python3 tests/mocks/https_srv.py
