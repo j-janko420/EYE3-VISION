@@ -339,6 +339,30 @@
   .rows .big-actions { display: grid; gap: 12px; }
   .rows .opt { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
   .rows .opt input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--accent); }
+  /* Geeni */
+  .geeni { position: fixed; inset-inline-end: clamp(14px, 2vw, 28px); bottom: clamp(52px, 8vh, 76px); z-index: 60; display: none; place-items: center; width: 64px; height: 64px; padding: 0; border: 1px solid rgba(255, 35, 60, .55); border-radius: 50%; background: radial-gradient(circle at 30% 25%, #2d0811, #0b0203 70%); color: var(--accent); cursor: pointer; box-shadow: 0 0 26px rgba(255, 38, 63, .45); animation: geeniFloat 4.5s ease-in-out infinite; }
+  .geeni.on { display: grid; }
+  .geeni svg { width: 40px; height: 40px; filter: drop-shadow(0 0 6px rgba(255, 0, 35, .8)); }
+  .geeni:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+  @keyframes geeniFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+  .geeni-panel { position: fixed; inset-inline-end: clamp(14px, 2vw, 28px); bottom: clamp(130px, 18vh, 150px); z-index: 61; display: none; flex-direction: column; width: min(400px, calc(100vw - 28px)); max-height: min(72vh, 580px); border: 1px solid rgba(255, 35, 60, .45); border-radius: 12px; background: rgba(12, 3, 5, .97); box-shadow: 0 10px 40px rgba(0, 0, 0, .7), 0 0 30px rgba(255, 38, 63, .2); }
+  .geeni-panel.open { display: flex; }
+  .g-head { display: flex; align-items: baseline; gap: 10px; padding: 12px 14px; border-bottom: 1px solid rgba(255, 30, 55, .3); }
+  .g-head b { color: var(--accent); font-size: 18px; letter-spacing: .08em; }
+  .g-head small { flex: 1; color: var(--muted); font-size: 12px; }
+  .g-head button { border: 0; background: none; color: var(--ink); font-size: 18px; cursor: pointer; }
+  .g-log { flex: 1; min-height: 120px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; }
+  .g-msg { max-width: 92%; padding: 9px 12px; border-radius: 10px; font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
+  .g-msg.bot { align-self: flex-start; border: 1px solid rgba(255, 35, 60, .3); background: rgba(40, 10, 15, .9); }
+  .g-msg.me { align-self: flex-end; background: rgba(255, 38, 63, .25); }
+  .g-acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .g-acts .btn { padding: 6px 12px; font-size: 13px; }
+  .g-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 14px 8px; }
+  .g-chips .chip { cursor: pointer; background: none; color: var(--ink); font: inherit; font-size: 12px; }
+  .g-chips .chip:hover, .g-chips .chip:focus-visible { border-color: var(--accent); outline: none; }
+  .g-form { display: flex; gap: 8px; padding: 10px 14px 14px; border-top: 1px solid rgba(255, 30, 55, .2); }
+  .g-form .field { padding: 10px 12px; font-size: 14px; }
+  .g-form .btn { padding: 8px 14px; }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
 </head>
@@ -667,6 +691,17 @@
     <input class="field" id="pin-input" type="password" inputmode="numeric" maxlength="8" autocomplete="off" aria-label="PIN, 4 to 8 digits">
     <div class="kv"><button class="btn" type="submit">OK</button></div>
   </form>
+</section>
+
+<!-- Geeni, the built-in EYE3 assistant (three clicks on the eye logo) -->
+<button class="geeni" id="geeni" type="button" aria-label="Geeni, the EYE3 assistant">
+  <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M5 18c5-7 12-7 17 0-5 7-12 7-17 0Z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M26 18c5-7 12-7 17 0-5 7-12 7-17 0Z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 31c5-7 12-7 17 0-5 7-12 7-17 0Z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="13.5" cy="18" r="2.2" fill="currentColor"/><circle cx="34.5" cy="18" r="2.2" fill="currentColor"/><circle cx="24" cy="31" r="2.2" fill="currentColor"/></svg>
+</button>
+<section class="geeni-panel" id="geeni-panel" role="dialog" aria-label="Geeni, the EYE3 assistant">
+  <div class="g-head"><b>Geeni</b><small>EYE3 helper · runs on this device only</small><button id="geeni-x" type="button" aria-label="Close Geeni">✕</button></div>
+  <div class="g-log" id="geeni-log" aria-live="polite"></div>
+  <div class="g-chips" id="geeni-chips"></div>
+  <form class="g-form" id="geeni-form" autocomplete="off"><input class="field" id="geeni-in" type="text" maxlength="160" placeholder="Ask Geeni…" aria-label="Ask Geeni"><button class="btn" type="submit">Ask</button></form>
 </section>
 
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js" defer></script>
@@ -1665,12 +1700,12 @@
     });
   });
   $("ex-close").addEventListener("click", function () { closeOverlays(); });
-  $("brand").addEventListener("dblclick", function (e) { e.preventDefault(); if (!overlayOpen()) openExplicit(); });
   var lastTap = 0;   // double-tap on a touch screen
+  $("brand").addEventListener("dblclick", function (e) { e.preventDefault(); armExplicit(); });
   $("brand").addEventListener("pointerup", function (e) {
     if (e.pointerType !== "touch") return;
     var n = Date.now();
-    if (n - lastTap < 400) { lastTap = 0; if (!overlayOpen()) openExplicit(); } else lastTap = n;
+    if (n - lastTap < 400) { lastTap = 0; armExplicit(); } else lastTap = n;
   });
 
   // ---- check channels from THIS connection (via EYE3 Link, and through your own proxy/VPN if you set one) ----
@@ -3141,10 +3176,127 @@
     })["catch"](function () { out.textContent = "The test could not run (offline, or a blocker?)."; });
   }
 
+  // ---- Geeni: the built-in EYE3 assistant. Three clicks on the eye logo call it or send it away. ----
+  // It runs in this page only: no server, no key, nothing is sent anywhere. It answers about EYE3, checks what is wrong and opens the right screen.
+  var GEENI_KEY = "eye3.home.geeni";   // sessionStorage: Geeni stays while this tab lives
+  function geeniShow(on) {
+    $("geeni").classList.toggle("on", on); if (!on) $("geeni-panel").classList.remove("open");
+    try { sessionStorage.setItem(GEENI_KEY, on ? "1" : ""); } catch (e) {}
+  }
+  function geeniPanel(open) {
+    var p = $("geeni-panel"); p.classList.toggle("open", open);
+    if (open) { if (!$("geeni-log").firstChild) geeniHello(); setTimeout(function () { try { $("geeni-in").focus(); } catch (e) {} }, 60); }
+  }
+  function geeniSay(text, who, actions) {
+    var log = $("geeni-log"), m = make("div", "g-msg " + who);
+    m.appendChild(make("span", "", text));
+    if (actions && actions.length) {
+      var row = make("div", "g-acts");
+      actions.forEach(function (a) { var b = make("button", "btn", a[0]); b.type = "button"; if (a[2]) nt(b); b.addEventListener("click", function () { geeniPanel(false); a[1](); }); row.appendChild(b); });
+      m.appendChild(row);
+    }
+    log.appendChild(m); log.scrollTop = log.scrollHeight;
+  }
+  var GEENI_CHIPS = ["Add my IPTV account", "Import a playlist", "Record a channel", "Why won't it play?", "Show shortcuts"];
+  function geeniHello() {
+    geeniSay("Hi, I am Geeni, the EYE3 helper. Ask me how something works, tell me a channel to find (for example “play CNN”), or ask “why won't it play?” and I will check.", "bot");
+    var c = $("geeni-chips"); while (c.firstChild) c.removeChild(c.firstChild);
+    GEENI_CHIPS.forEach(function (t) { var b = make("button", "chip", t); b.type = "button"; b.addEventListener("click", function () { geeniAsk(t); }); c.appendChild(b); });
+  }
+  var geeniOpenTv = function () { openTile("tv"); };
+  function geeniFind(q, cb) {
+    var go = function () {
+      var words = fold(q).split(/\s+/).filter(Boolean), out = [];
+      if (!rawAll.length) buildAll();
+      for (var i = 0; i < allChannels.length && out.length < 5; i++) {
+        var c = allChannels[i]; if (c.adult) continue;
+        var n = fold(c.name); if (words.every(function (w) { return n.indexOf(w) > -1; })) out.push(c);
+      }
+      cb(out);
+    };
+    if (catalogueState === "idle") loadCatalogue();
+    var tries = 0, wait = function () { if (catalogueState !== "loading" || ++tries > 25) go(); else setTimeout(wait, 200); };
+    wait();
+  }
+  function geeniPlay(c) {
+    openTile("tv");
+    setTimeout(function () {
+      tvFilter.cat = "All"; tvFilter.group = ""; tvFilter.country = ""; tvFilter.q = c.name; $("tv-search").value = c.name; fillSelects(); applyFilter();
+      for (var i = 0; i < channels.length; i++) if (channels[i].url === c.url) { chIndex = i; paintChannels(); scrollCh(); playChannel(i); return; }
+    }, 600);
+  }
+  function geeniDiagnose() {
+    linkHello().then(function (h) { return "EYE3 Link is running (version " + h.version + "). "; }, function () { return "EYE3 Link is not running. Channels from your own accounts and http:// streams need it. "; }).then(function (linkText) {
+      var c = prevCh, bits = [linkText];
+      if (!c) bits.push("You have not played a channel yet: open Live TV, pick one and press OK.");
+      else {
+        bits.push("Last channel: " + c.name + ".");
+        if (/^http:\/\//i.test(c.url) && location.protocol === "https:" && c.url.indexOf(LINK_BASE) !== 0) bits.push("It is an http:// stream and this page is https://, so it only plays through EYE3 Link.");
+        else if (looksTs(c.url)) bits.push("It is a raw TS stream; these need a moment to start and the TS player from the internet.");
+        else bits.push("Try another channel of the same list first: if others play, this one is down or blocked in your country.");
+        bits.push("Press V to open it in VLC (it plays H.265 and Dolby sound). Live TV → Check from my connection tests every channel.");
+      }
+      geeniSay(bits.join(" "), "bot", [["Open Smart TV tools", openTools], ["Open EYE3 agent", openAgent]]);
+    });
+  }
+  var GEENI_TOPICS = [
+    [/hello|\bhi\b|\bhey\b|who are you|your name|what can you do|\bhelp\b/, "I am Geeni. I can explain EYE3, find and play a channel, check why something does not play, and open any screen for you.", []],
+    [/add.*(account|xtream|m3u|mag|login|subscription|provider|portal)|xtream|stalker|\bmag\b|iptv account/, "Open IPTV accounts and choose M3U link, Xtream Codes login or MAG portal. It is saved on this computer only. It needs EYE3 Link, a small program that runs on your computer.", [["Open IPTV accounts", function () { openAccounts(); }]]],
+    [/import|playlist|\bm3u\b|\bpdf\b|\bfile\b|my own list/, "The Playlist maker imports an .m3u file, a pasted list or a PDF, and exports a list for other players. Nothing is uploaded.", [["Open Playlist maker", function () { openMaker(); }]]],
+    [/record/, "Play a channel and press R to record it, press R again to stop. Files go to the recordings folder next to EYE3 Link (it must be version 1.8 or newer). Protected streams and adult channels are never recorded.", [["Open Recordings", function () { openRecordings(); }]]],
+    [/guide|epg|programme|program|schedule|grid/, "Press D in Live TV for the guide grid: 40 channels across the next 3 hours. Xtream accounts bring their own guide; for other lists add an XMLTV link in Settings.", [["Open Live TV", geeniOpenTv], ["Open the guide grid", function () { openTile("tv"); setTimeout(openGrid, 700); }]]],
+    [/multi|several channels|split screen|4 channels/, "Multi-view shows up to 4 channels at once with one sound. Select a channel in Live TV and press M to add it; keys 1-4 move the sound.", [["Open Multi-view", function () { mvOpen(); }]]],
+    [/cast|chromecast|airplay|mirror|miracast|projector|screen to tv/, "Press C in Live TV to cast the playing channel with your browser's cast list (Chromecast, AirPlay in Safari). For a projector or TV: Android ones run EYE3 Home in their browser; others need a laptop or box on HDMI.", [["Open the TV setup guide", function () { location.href = "setup.html"; }]]],
+    [/profile|kids|child|parent|\bpin\b|lock/, "Profiles can hide categories. A kids profile also hides every adult channel and needs the parent PIN to leave.", [["Open Profiles", function () { openProfiles(); }]]],
+    [/install|usb|stick|pendrive|box|kiosk|android|tv box|set up|setup/, "For a computer behind your TV, download the one-time install kit from the release page and run install.bat (Windows) or install.sh. An Android projector can use its browser and the Home link. The setup page has the steps.", [["Open the TV setup guide", function () { location.href = "setup.html"; }]]],
+    [/speed|slow|buffer|codec|h\.?265|hevc|no sound|no audio|dolby|ac-?3|compat/, "Smart TV tools shows which video and sound formats this screen can play and tests your connection speed. If H.265 or Dolby is missing, press V on the channel to open it in VLC.", [["Open Smart TV tools", openTools]]],
+    [/sync|phone and laptop|two devices|same on phone/, "Sync keeps My channels and favourites the same on your phone and laptop, with an encrypted code. Accounts, passwords and PINs are never synced.", [["Open Sync", function () { openSyncInfo(); }]]],
+    [/remote|control from.*phone/, "The phone remote controls Home from your phone. Turn it on in Settings, then open the remote page on the phone and enter the code.", [["Open Phone remote", function () { openRemoteInfo(); }]]],
+    [/update|version|upgrade|agent/, "EYE3 Link can check for new versions and install them by itself. The agent screen shows what it did.", [["Open EYE3 agent", openAgent]]],
+    [/screensaver|sleep|timer|night/, "Press S for the screensaver and Z for the sleep timer. The sleep timer stops playback and locks the hidden sections.", []],
+    [/shortcut|keys?\b|keyboard|remote keys/, "Here are all the keys.", [["Show shortcuts", function () { openShortcuts(); }]]],
+    [/vpn|geo|blocked|country|region/, "EYE3 does not include a VPN. If your provider's channels are blocked where you are, run your own VPN or proxy and give it to EYE3 Link with --proxy. Live TV → Check from my connection shows which channels work from here.", [["Open Help", function () { openHelp(); }]]],
+    [/dns|getaddrinfo|server not|not connected|could not (reach|find)|link is not running|not working|doesn.?t work|won.?t play|wont play|error|problem|broken|fix/, null, []]
+  ];
+  function geeniAsk(raw) {
+    var q = String(raw || "").replace(/^\s+|\s+$/g, "").slice(0, 160); if (!q) return;
+    geeniSay(q, "me");
+    var f = fold(q);
+    if (/adult|explicit|xxx|18\+|porn|\bsex/.test(f)) { geeniSay("Adult content is never in the normal lists. Your own lists can unlock a separate hidden section with an age check and a PIN. I cannot open that section for you.", "bot"); return; }
+    var m = /^(?:please\s+)?(?:play|watch|find|search(?: for)?|open|show me)\s+(.{2,40})$/.exec(f);
+    if (m && !/^(live tv|radio|settings|my media|recordings?|profiles?|guide|multi.?view)$/.test(m[1])) {
+      geeniSay("Looking for “" + m[1] + "”…", "bot");
+      geeniFind(m[1], function (res) {
+        if (!res.length) { geeniSay("I found no channel with that name. Open Live TV once so the free list loads, or add your own list, then ask again.", "bot", [["Open Live TV", geeniOpenTv]]); return; }
+        geeniSay("I found " + res.length + (res.length === 1 ? " channel:" : " channels:"), "bot", res.map(function (c) { return ["▶ " + c.name, function () { geeniPlay(c); }, true]; }));
+      });
+      return;
+    }
+    for (var i = 0; i < GEENI_TOPICS.length; i++) {
+      var t = GEENI_TOPICS[i];
+      if (t[0].test(f)) { if (t[1] === null) { geeniDiagnose(); return; } geeniSay(t[1], "bot", t[2]); return; }
+    }
+    if (/why|how|can.*(play|watch)|play/.test(f) && /(play|watch|work|load|show)/.test(f)) { geeniDiagnose(); return; }
+    geeniSay("I did not get that. I can help with accounts and playlists, recording, the guide, multi-view, casting, profiles, the TV setup, updates and problems. You can also say “play” and a channel name.", "bot");
+  }
+  $("geeni").addEventListener("click", function () { geeniPanel(!$("geeni-panel").classList.contains("open")); });
+  $("geeni-x").addEventListener("click", function () { geeniPanel(false); });
+  $("geeni-form").addEventListener("submit", function (e) { e.preventDefault(); var v = $("geeni-in").value; $("geeni-in").value = ""; geeniAsk(v); });
+  try { if (sessionStorage.getItem(GEENI_KEY) === "1") $("geeni").classList.add("on"); } catch (e) {}
+
+  // three clicks on the eye logo: Geeni. Two clicks (or a double-tap) still open the hidden section, after a short wait to be sure no third click follows.
+  var brandClicks = 0, brandTimer = 0, exTimer = 0;
+  function armExplicit() { clearTimeout(exTimer); exTimer = setTimeout(function () { exTimer = 0; if (!overlayOpen()) openExplicit(); }, 420); }
+  $("brand").addEventListener("click", function () {
+    brandClicks++; clearTimeout(brandTimer); brandTimer = setTimeout(function () { brandClicks = 0; }, 800);
+    if (brandClicks >= 3) { brandClicks = 0; clearTimeout(exTimer); exTimer = 0; var on = !$("geeni").classList.contains("on"); geeniShow(on); toast(on ? "Geeni is here" : "Geeni went away"); }
+  });
+
   function isBack(e) { return e.key === "Escape" || e.key === "GoBack" || e.keyCode === 10009 || e.keyCode === 461 || e.key === "Backspace" && !isTyping(); }
   function isTyping() { var a = document.activeElement; return a && (a.tagName === "INPUT" || a.tagName === "TEXTAREA"); }
   document.addEventListener("keydown", function (e) {
     if ($("ov-pal").classList.contains("open")) { palKey(e); return; }
+    if ($("geeni-panel").classList.contains("open")) { if (isBack(e) && e.key === "Escape") { e.preventDefault(); geeniPanel(false); } return; }
     if ($("ov-pin").classList.contains("open")) { if (isBack(e)) { e.preventDefault(); $("pin-cancel").click(); } return; }
     if ($("ov-grid").classList.contains("open")) { gridKey(e); return; }
     if ($("ov-multi").classList.contains("open")) { multiKey(e); return; }
