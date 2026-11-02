@@ -445,9 +445,57 @@ const toast = (p) => p.evaluate(() => [...document.querySelectorAll('.toast')].m
     check('the file is in the recordings folder with the stream bytes', files.length === 1 && fs.statSync(REC + '/' + files[0]).size === 60001, files);
     await p.keyboard.press('Escape'); await p.waitForTimeout(200);
     await p.keyboard.press('Control+k'); await p.waitForTimeout(300); await p.keyboard.type('recordings'); await p.waitForTimeout(300); await p.keyboard.press('Enter'); await p.waitForTimeout(900);
+    await p.waitForFunction(() => !/Loading…/.test(document.getElementById('info-body').textContent), null, { timeout: 8000 }).catch(() => {});
     const rs = await p.evaluate(() => ({ title: document.getElementById('info-title').textContent, text: document.getElementById('info-body').textContent }));
     check('the Recordings screen lists it with the folder', rs.title === 'Recordings' && /Record Me .*\.ts/.test(rs.text) && /Saved in:/.test(rs.text), rs.text.slice(0, 300));
     check('no page errors in recording', p.errs.length === 0, p.errs);
+  });
+
+  await suite('catch-up TV: replay a past programme of an Xtream channel (key U)', async () => {
+    const p = await open(browser, { 'eye3.home.accts': [XT] }, { init: MPEGTS_STUB });
+    await openTv(p);
+    await p.waitForFunction(() => [...document.querySelectorAll('#tv-cat option')].some((o) => /^Mock TV/.test(o.textContent)), null, { timeout: 20000 }).catch(() => {});
+    await pickCat(p, 'Mock TV');
+    check('channels with catch-up carry the ⟲ mark', (await rows(p)).some((r) => /Xtream One.*⟲/.test(r)) && !(await rows(p)).some((r) => /Xtream Two.*⟲/.test(r)), await rows(p));
+    await p.click('#chlist .ch >> text=Xtream One'); await p.waitForTimeout(800);
+    await p.keyboard.press('u'); await p.waitForTimeout(1500);
+    check('U opens Catch-up TV with the past programmes, newest first', await p.evaluate(() => document.getElementById('info-title').textContent === 'Catch-up TV' && [...document.querySelectorAll('#info-body .cu-row')].map((b) => b.textContent).join('|').replace(/\d\d:\d\d–\d\d:\d\d\s+/g, '') === 'Noon News|Morning Show'), await p.textContent('#info-body'));
+    await p.evaluate(() => { window.__tsCalls = []; });
+    await p.click('#info-body .cu-row >> text=Morning Show'); await p.waitForTimeout(1500);
+    const calls = await p.evaluate(() => window.__tsCalls || []);
+    check('the replay plays through EYE3 Link as a timeshift stream', calls.some((u) => /127\.0\.0\.1:8765\/stream\?/.test(u) && /\/timeshift\/u\/p\/\d+\/\d{4}-\d\d-\d\d:\d\d-\d\d\/11\.ts/.test(decodeURIComponent(u))), calls);
+    check('the label says it is a replay', /⟲ Xtream One · Morning Show/.test(await p.textContent('#chlabel')), await p.textContent('#chlabel'));
+    await p.click('#chlist .ch >> text=Xtream Two'); await p.waitForTimeout(400);
+    await p.keyboard.press('u'); await p.waitForTimeout(400);
+    check('a channel without an archive says so', /has no catch-up/.test(await p.textContent('#info-body')));
+    check('no page errors', p.errs.length === 0, p.errs);
+    await p.close();
+  });
+
+  await suite('EYE3 Genie: three clicks summon it, it obeys typed commands, two clicks still open the hidden section', async () => {
+    const p = await open(browser, { 'eye3.home.mychannels': [ch('Alpha News HD', 'https://g.example/news.m3u8'), ch('Bravo Sport', 'https://g.example/sport.m3u8')] });
+    check('the genie is not there before it is called', await p.evaluate(() => document.getElementById('genie').hidden));
+    await p.click('#brand', { clickCount: 3 }); await p.waitForTimeout(500);
+    check('the 3D eye animation plays', await p.evaluate(() => !document.getElementById('genie-summon').hidden && getComputedStyle(document.querySelector('.gs-eye')).animationName === 'genieSpin'));
+    await p.waitForTimeout(1900);
+    check('then the genie floats on screen with its panel open', await p.evaluate(() => !document.getElementById('genie').hidden && !document.getElementById('genie-panel').hidden && document.getElementById('genie-summon').hidden && /genieFloat/.test(getComputedStyle(document.getElementById('genie-body')).animationName)));
+    check('the hidden section did not open on a triple click', !(await p.evaluate(() => document.getElementById('ov-explicit').classList.contains('open'))));
+    check('it wears the red eye on its forehead in the theme colours', await p.evaluate(() => { const b = document.querySelector('#genie-body svg'); return !!b.querySelector('.g-eye') && b.innerHTML.indexOf('#ff263f') > 0; }));
+    const say = async (t) => { await p.fill('#genie-input', t); await p.press('#genie-input', 'Enter'); await p.waitForTimeout(1800); return p.evaluate(() => [...document.querySelectorAll('#genie-log .bot')].pop().textContent); };
+    check('"help" lists what it can do', /play a channel/.test(await say('help')));
+    const r1 = await say('hey genie, play bravo sport please');
+    check('"play <name>" opens Live TV and plays that channel', /Playing Bravo Sport/.test(r1) && await p.evaluate(() => document.getElementById('ov-tv').classList.contains('open') && /Bravo Sport/.test(document.getElementById('chlabel').textContent)), r1);
+    check('"louder" changes the volume', /Louder/.test(await say('louder')));
+    check('it refuses anything about the hidden section without opening it', /not something I can do/.test(await say('unlock explicit channels')) && !(await p.evaluate(() => document.getElementById('ov-explicit').classList.contains('open'))));
+    check('an unknown long sentence gets a hint', /help/.test(await say('what is the meaning of all of this really')));
+    check('it remembers that it was called', await p.evaluate(() => localStorage.getItem('eye3.home.genie') === '1'));
+    await say('bye'); await p.waitForTimeout(1200);
+    check('"bye" sends it away', await p.evaluate(() => document.getElementById('genie').hidden && localStorage.getItem('eye3.home.genie') === '0'));
+    await p.keyboard.press('Escape'); await p.waitForTimeout(300);
+    await p.click('#brand', { clickCount: 2 }); await p.waitForTimeout(700);
+    check('two clicks on the eye still open the hidden section', await p.evaluate(() => document.getElementById('ov-explicit').classList.contains('open')));
+    check('no page errors', p.errs.length === 0, p.errs);
+    await p.close();
   });
 
   await browser.close();

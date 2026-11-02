@@ -61,7 +61,7 @@
 
   .home { position: relative; z-index: 1; display: flex; flex-direction: column; height: 100vh; height: 100dvh; padding: clamp(16px, 2.6vw, 42px); }
   .top { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
-  .brand { display: flex; align-items: center; gap: clamp(10px, 1.2vw, 16px); }
+  .brand { display: flex; align-items: center; gap: clamp(10px, 1.2vw, 16px); -webkit-user-select: none; user-select: none; }
   .mark { width: clamp(44px, 4.4vw, 66px); height: clamp(44px, 4.4vw, 66px); color: var(--accent); flex-shrink: 0; filter: drop-shadow(0 0 10px rgba(255, 0, 35, .7)); }
   .wordmark { margin: 0; font-size: clamp(22px, 2.5vw, 38px); font-weight: 800; letter-spacing: .06em; line-height: 1; }
   .wordmark b { color: var(--accent); font-weight: 800; }
@@ -145,6 +145,7 @@
   .acct-row .who small { display: block; margin-top: 3px; color: var(--muted); font-size: clamp(11px, .85vw, 14px); }
   .acct-row .who small.bad { color: #ffd27a; }
   .acct-row .btn { padding: 7px 12px; font-size: clamp(11px, .9vw, 14px); }
+  .cu-row { display: block; width: 100%; margin: 0 0 6px; text-align: start; white-space: normal; }
   .acct-form { display: grid; gap: 12px; align-content: start; max-width: 680px; }
   .acct-form[hidden], .acct-form [hidden] { display: none; }
   .acct-form label { display: grid; gap: 6px; color: var(--muted); font-size: clamp(11px, .9vw, 14px); letter-spacing: .04em; text-transform: uppercase; }
@@ -339,6 +340,51 @@
   .rows .big-actions { display: grid; gap: 12px; }
   .rows .opt { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
   .rows .opt input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--accent); }
+  /* EYE3 Genie: triple-click the eye logo; the eye spins in 3D, then turns into a small floating helper */
+  .genie-summon { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; pointer-events: none; background: radial-gradient(circle at 50% 50%, rgba(255, 38, 63, .22), rgba(5, 1, 1, 0) 60%); perspective: 900px; }
+  .genie-summon[hidden] { display: none; }
+  .gs-eye { position: relative; width: min(46vmin, 360px); aspect-ratio: 1; transform-style: preserve-3d; animation: genieSpin 1.9s cubic-bezier(.55, .05, .3, 1) both; color: var(--accent); filter: drop-shadow(0 0 24px rgba(255, 38, 63, .85)); }
+  .gs-eye svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .gs-eye .gs-l1 { transform: translateZ(26px); }
+  .gs-eye .gs-l2 { transform: translateZ(-26px); opacity: .55; }
+  .gs-eye .gs-ring { position: absolute; inset: 6%; border: 2px solid rgba(255, 122, 138, .7); border-radius: 50%; transform: rotateX(72deg); animation: genieRing 1.9s linear both; }
+  @keyframes genieSpin {
+    0% { transform: rotateY(0) rotateX(12deg) scale(.15); opacity: 0; }
+    18% { opacity: 1; }
+    65% { transform: rotateY(1080deg) rotateX(-8deg) scale(1.15); opacity: 1; }
+    100% { transform: rotateY(1440deg) rotateX(0) scale(.12) translate(120%, 120%); opacity: 0; }
+  }
+  @keyframes genieRing { from { transform: rotateX(72deg) rotateZ(0); } to { transform: rotateX(72deg) rotateZ(720deg); } }
+  .genie { position: fixed; z-index: 55; inset-inline-end: 28px; bottom: 28px; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; touch-action: none; }
+  .genie[hidden] { display: none; }
+  .genie-body { position: relative; width: clamp(74px, 7vw, 108px); padding: 0; border: 0; background: none; cursor: grab; animation: geniePop .6s cubic-bezier(.2, 1.6, .4, 1) backwards, genieFloat 3.6s ease-in-out .6s infinite; filter: drop-shadow(0 10px 18px rgba(255, 38, 63, .35)); }
+  .genie-body:active { cursor: grabbing; }
+  .genie-body:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 40%; }
+  .genie-body svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .genie-body .g-eye { transform-origin: 60px 40px; animation: genieBlink 5s ease-in-out infinite; }
+  .genie-body .g-arm-l { transform-origin: 26px 78px; animation: genieWave 2.4s ease-in-out infinite; }
+  .genie-body .g-glow { animation: genieGlow 2.2s ease-in-out infinite; }
+  .genie.listening .g-glow { animation-duration: .6s; }
+  .genie.thinking .g-eye { animation: genieLook 1s ease-in-out infinite; }
+  @keyframes geniePop { from { transform: scale(0) rotate(-30deg); opacity: 0; } to { transform: none; opacity: 1; } }
+  @keyframes genieFloat { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-12px) rotate(2deg); } }
+  @keyframes genieBlink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(.1); } }
+  @keyframes genieWave { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-24deg); } }
+  @keyframes genieGlow { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
+  @keyframes genieLook { 0%, 100% { transform: translateX(0); } 30% { transform: translateX(-4px); } 70% { transform: translateX(4px); } }
+  .genie-panel { width: min(380px, calc(100vw - 32px)); max-height: min(70vh, 520px); display: flex; flex-direction: column; gap: 10px; padding: 14px; border: 1px solid rgba(255, 38, 63, .45); border-radius: 10px; background: rgba(12, 3, 5, .96); box-shadow: 0 18px 50px rgba(0, 0, 0, .6), 0 0 0 1px rgba(255, 38, 63, .12) inset; }
+  .genie-panel[hidden] { display: none; }
+  .genie-panel h2 { margin: 0; font-size: clamp(15px, 1.2vw, 19px); color: var(--accent); letter-spacing: .04em; }
+  .genie-log { min-height: 60px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; font-size: clamp(13px, 1vw, 16px); }
+  .genie-log p { margin: 0; padding: 7px 10px; border-radius: 8px; max-width: 92%; line-height: 1.35; }
+  .genie-log .me { align-self: flex-end; background: rgba(255, 38, 63, .2); }
+  .genie-log .bot { align-self: flex-start; background: rgba(255, 245, 246, .06); border: 1px solid rgba(255, 38, 63, .18); }
+  .genie-form { display: flex; gap: 6px; }
+  .genie-form input { flex: 1; min-width: 0; }
+  .genie-form .btn { padding: 8px 12px; }
+  #genie-mic.on { border-color: var(--accent); background: rgba(255, 38, 63, .3); }
+  .genie-tips { margin: 0; color: var(--muted, #b9a9ac); font-size: clamp(11px, .85vw, 13px); }
+  @media (max-width: 900px) { .genie { inset-inline-end: 12px; bottom: 12px; } }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
 </head>
@@ -411,6 +457,7 @@
       <button class="btn" id="tv-multi" type="button" title="Watch up to 4 channels at once (M adds the selected channel)">Multi-view</button>
       <button class="btn" id="tv-cast" type="button" title="Cast to a TV or speaker (C)">Cast</button>
       <button class="btn" id="tv-pip" type="button" title="Mini window (O)">Mini window</button>
+      <button class="btn" id="tv-replay" type="button" title="Replay past programmes of this channel (U). Xtream channels with catch-up.">Replay</button>
       <button class="btn" id="tv-rec" type="button" title="Record the channel that is playing (R). Needs EYE3 Link.">Record</button>
       <button class="btn" id="tv-vod" type="button">Movies &amp; series</button>
       <button class="btn" id="tv-maker" type="button">Playlist maker</button>
@@ -621,6 +668,44 @@
   </div>
 </section>
 
+<div class="genie-summon" id="genie-summon" aria-hidden="true" hidden>
+  <div class="gs-eye"><span class="gs-ring"></span><svg class="gs-l2" viewBox="0 0 160 160"><path d="M80 7 153 80 80 153 7 80Z" fill="none" stroke="currentColor" stroke-width="3.4"/><path d="M13 80Q80 18 147 80Q80 142 13 80Z" fill="#020001" stroke="currentColor" stroke-width="4.2"/><path d="M80 26 105 80 80 134 55 80Z" fill="none" stroke="currentColor" stroke-width="2" opacity=".8"/><circle cx="80" cy="80" r="24" fill="currentColor"/><ellipse cx="80" cy="80" rx="8" ry="18" fill="#020001"/></svg><svg class="gs-l1" viewBox="0 0 160 160"><path d="M80 7 153 80 80 153 7 80Z" fill="none" stroke="currentColor" stroke-width="3.4"/><path d="M13 80Q80 18 147 80Q80 142 13 80Z" fill="#020001" stroke="currentColor" stroke-width="4.2"/><path d="M80 26 105 80 80 134 55 80Z" fill="none" stroke="currentColor" stroke-width="2" opacity=".8"/><circle cx="80" cy="80" r="24" fill="currentColor"/><ellipse cx="80" cy="80" rx="8" ry="18" fill="#020001"/></svg></div>
+</div>
+<div class="genie" id="genie" hidden>
+  <div class="genie-panel" id="genie-panel" role="dialog" aria-labelledby="genie-title" hidden>
+    <h2 id="genie-title">EYE3 Genie</h2>
+    <div class="genie-log" id="genie-log" aria-live="polite"></div>
+    <form class="genie-form" id="genie-form" autocomplete="off">
+      <input class="btn" id="genie-input" type="text" aria-label="Tell the genie what to do" placeholder="Play BBC News, open movies, volume up…">
+      <button class="btn" id="genie-mic" type="button" aria-label="Speak a command" title="Speak a command">🎤</button>
+      <button class="btn" type="submit">Go</button>
+    </form>
+    <p class="genie-tips">Try: “play Al Jazeera”, “channel 5”, “next channel”, “replay”, “guide”, “record”, “movies”, “radio”, “louder”, “pause”, “fullscreen”, “sleep”, “help”. “Bye” sends me away.</p>
+  </div>
+  <button class="genie-body" id="genie-body" type="button" aria-label="EYE3 Genie: open or close" aria-expanded="false" aria-controls="genie-panel">
+    <svg viewBox="0 0 120 150" aria-hidden="true">
+      <defs>
+        <linearGradient id="g-skin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff4d62"/><stop offset=".55" stop-color="#ff263f"/><stop offset="1" stop-color="#8a0a1a"/></linearGradient>
+        <radialGradient id="g-halo"><stop offset="0" stop-color="#ff263f" stop-opacity=".9"/><stop offset="1" stop-color="#ff263f" stop-opacity="0"/></radialGradient>
+      </defs>
+      <ellipse cx="60" cy="146" rx="26" ry="4" fill="#000" opacity=".45"/>
+      <path class="g-arm-l" d="M28 76Q12 70 10 56" fill="none" stroke="#c4142c" stroke-width="7" stroke-linecap="round"/>
+      <path d="M92 78Q108 84 106 98" fill="none" stroke="#c4142c" stroke-width="7" stroke-linecap="round"/>
+      <rect x="40" y="128" width="12" height="16" rx="5" fill="#2a0408"/><rect x="68" y="128" width="12" height="16" rx="5" fill="#2a0408"/>
+      <path d="M60 6C88 6 96 30 96 58V112C96 126 80 134 60 134S24 126 24 112V58C24 30 32 6 60 6Z" fill="url(#g-skin)"/>
+      <path d="M30 96H90V110C90 120 76 126 60 126S30 120 30 110Z" fill="#2a0408" opacity=".85"/>
+      <path d="M48 104H72" stroke="#ff7a8a" stroke-width="2" stroke-linecap="round" opacity=".7"/>
+      <circle class="g-glow" cx="60" cy="40" r="30" fill="url(#g-halo)"/>
+      <g class="g-eye">
+        <path d="M60 16 84 40 60 64 36 40Z" fill="#050101" stroke="#fff5f6" stroke-width="1.6"/>
+        <path d="M38 40Q60 22 82 40Q60 58 38 40Z" fill="#020001" stroke="#ff263f" stroke-width="2"/>
+        <circle cx="60" cy="40" r="8.5" fill="#ff263f"/><ellipse cx="60" cy="40" rx="2.8" ry="6.4" fill="#020001"/>
+        <circle cx="63" cy="36.5" r="1.6" fill="#fff5f6"/>
+      </g>
+      <path d="M48 76Q60 86 72 76" fill="none" stroke="#2a0408" stroke-width="3.2" stroke-linecap="round"/>
+    </svg>
+  </button>
+</div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <!-- Screensaver -->
@@ -1008,6 +1093,7 @@
       var meta = [c.q ? c.q + "p" : "", c.country, c.sub || (tvFilter.cat === "All" || tvFilter.cat === FAVS || tvFilter.cat === RECENT ? c.grp : "")].filter(Boolean).join(" · ");
       if (meta) row.appendChild(make("small", "", meta));
       if (isFav(c.url)) row.appendChild(make("i", "fav", "★"));
+      if (c.arc) { var cu = make("i", "fav", "⟲"); cu.title = "Catch-up: " + c.arc + " days (U)"; row.appendChild(cu); }
       if (health[c.url] && health[c.url][0] === 1 && Date.now() - health[c.url][1] < HEALTH_TTL) row.appendChild(make("i", "fav", "✓"));
       row.addEventListener("click", function () { chIndex = i; paintChannels(); playChannel(i); });
       if (i < 12) { row.classList.add("in"); row.style.animationDelay = (i * 22) + "ms"; }
@@ -1167,6 +1253,54 @@
     }
     rowsHtml($("info-body"), nodes); openOverlay("ov-info");
   }
+  // ---- catch-up TV (key U): replay a past programme of an Xtream channel whose panel keeps an archive (EYE3 Link 1.9+) ----
+  function dayName(sec) {
+    var d = new Date(sec * 1000), t = new Date(); t.setHours(0, 0, 0, 0);
+    var diff = Math.round((t.getTime() - new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()) / 86400000);
+    return diff === 0 ? "Today" : diff === 1 ? "Yesterday" : d.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "short" });
+  }
+  function catchupAccount(c) { var a = c && c.acct ? accounts.filter(function (x) { return x.id === c.acct; })[0] : null; return a && a.type === "xtream" && c.eid && c.arc ? a : null; }
+  function openCatchup() {
+    var c = prevCh; $("info-title").textContent = "Catch-up TV";
+    var nodes = [], a = catchupAccount(c);
+    if (!c) nodes.push(para("Play a channel first, then press U to replay its past programmes."));
+    else if (!a) nodes.push(para("“" + c.name + "” has no catch-up. Replay works for Xtream Codes channels whose provider keeps an archive (look for ⟲ in the channel list)."));
+    else {
+      nodes.push(nt(make("h3", "", c.name + " · " + c.arc + (c.arc === 1 ? " day" : " days") + " of replay")));
+      var box = para("Loading past programmes…"); nodes.push(box);
+      linkGet("/api/catchup", withUa(a, { server: a.server, user: a.user, pass: a.pass, id: String(c.eid), days: String(c.arc) })).then(function (d) {
+        var items = d.items || [];
+        if (!items.length) { box.textContent = "The provider lists nothing to replay for this channel right now."; return; }
+        var wrap = make("div", ""), day = "";
+        items.forEach(function (it) {
+          var dn = dayName(it.s);
+          if (dn !== day) { day = dn; wrap.appendChild(make("h3", "", dn)); }
+          var b = make("button", "btn cu-row", clock(it.s) + "–" + clock(it.e) + "  " + (it.on ? "● " : "") + it.t);
+          b.type = "button"; nt(b); b.title = it.d || "";
+          b.addEventListener("click", function () { playCatchup(c, a, it); });
+          wrap.appendChild(b);
+        });
+        box.parentNode.replaceChild(wrap, box);
+        var first = wrap.querySelector("button"); if (first) try { first.focus(); } catch (e) {}
+      })["catch"](function (err) { box.textContent = /Unknown request/.test(err.message) ? "Your EYE3 Link is older than 1.9. Update it in Settings → EYE3 agent, or download the new program." : "Could not load the replay list: " + err.message; });
+    }
+    rowsHtml($("info-body"), nodes); openOverlay("ov-info");
+  }
+  function playCatchup(c, a, it) {
+    var minutes = Math.max(1, Math.min(720, Math.ceil((it.e - it.s) / 60) + 2));
+    linkGet("/api/catchup/play", withUa(a, { server: a.server, user: a.user, pass: a.pass, id: String(c.eid), start: it.st, minutes: String(minutes) })).then(function (d) {
+      $("ov-info").classList.remove("open");   // back to Live TV; closing every overlay would stop the player
+      var replay = { name: c.name, url: d.url, alt: d.alt || "", ts: true, adult: c.adult, acct: c.acct };
+      var title = "⟲ " + c.name + " · " + it.t + " · " + dayName(it.s) + " " + clock(it.s);
+      $("idle").style.display = "none";
+      clearTimeout(epgTimer); stopHls(); reopenCount = 0;
+      var token = ++playToken;
+      showLabel(title, false);
+      openStream(replay, title, token, replay.url, true, false);
+      toast("Replay: " + it.t + " — press Enter on a channel to go back to live");
+    })["catch"](function (err) { toast("Replay failed: " + err.message); });
+  }
+
   // ---- playback: HLS (hls.js / native), raw MPEG-TS (mpegts.js), a fallback format, http streams through EYE3 Link, stall recovery ----
   var tsPlayer = null, mpegtsLoad = null, watchTimer = null, reopenCount = 0;
   var MPEGTS_SRC = "https://cdn.jsdelivr.net/npm/mpegts.js@1.7.3/dist/mpegts.js";
@@ -1384,7 +1518,7 @@
     paintAccounts();
     var req = acctRequest(a);
     return linkGet(req[0], req[1]).then(function (d) {
-      acctChannels[a.id] = (d.channels || []).map(function (c) { return { name: c.n, cat: a.name, grp: c.c || "", country: "", url: c.u, q: 0, sub: "", adult: !!c.x, eid: c.e || 0, acct: a.id, alt: c.a || "", ts: !!c.t, tvg: c.i || "" }; });
+      acctChannels[a.id] = (d.channels || []).map(function (c) { return { name: c.n, cat: a.name, grp: c.c || "", country: "", url: c.u, q: 0, sub: "", adult: !!c.x, eid: c.e || 0, arc: c.ar || 0, acct: a.id, alt: c.a || "", ts: !!c.t, tvg: c.i || "" }; });
       var info = d.account || {};
       acctInfo[a.id] = { epg: info.epg || "" };
       var bits = [acctChannels[a.id].filter(function (c) { return !c.adult; }).length + " channels"];
@@ -1665,12 +1799,23 @@
     });
   });
   $("ex-close").addEventListener("click", function () { closeOverlays(); });
-  $("brand").addEventListener("dblclick", function (e) { e.preventDefault(); if (!overlayOpen()) openExplicit(); });
-  var lastTap = 0;   // double-tap on a touch screen
-  $("brand").addEventListener("pointerup", function (e) {
+  // the eye logo: two clicks (or taps) open the hidden section, three summon the EYE3 Genie.
+  // The second click waits a moment so a third one can still turn it into the genie.
+  var brandTimer = null, lastTap = 0, taps = 0, lastPointer = "";
+  function brandCount(n) {
+    clearTimeout(brandTimer); brandTimer = null;
+    if (n >= 3) { genieSummon(); return; }
+    if (n === 2 && !overlayOpen()) brandTimer = setTimeout(function () { brandTimer = null; if (!overlayOpen()) openExplicit(); }, 380);
+  }
+  $("brand").addEventListener("pointerdown", function (e) { lastPointer = e.pointerType; });
+  $("brand").addEventListener("click", function (e) { if (lastPointer !== "touch" && e.detail >= 2) { e.preventDefault(); brandCount(e.detail); } });
+  $("brand").addEventListener("dblclick", function (e) { e.preventDefault(); });
+  $("brand").addEventListener("pointerup", function (e) {   // taps on a touch screen
     if (e.pointerType !== "touch") return;
     var n = Date.now();
-    if (n - lastTap < 400) { lastTap = 0; if (!overlayOpen()) openExplicit(); } else lastTap = n;
+    taps = n - lastTap < 420 ? taps + 1 : 1; lastTap = n;
+    if (taps >= 2) brandCount(taps);
+    if (taps >= 3) taps = 0;
   });
 
   // ---- check channels from THIS connection (via EYE3 Link, and through your own proxy/VPN if you set one) ----
@@ -2649,7 +2794,7 @@
   function openShortcuts() {
     $("info-title").textContent = "Keyboard shortcuts";
     var rows = [["Everywhere", null], ["Ctrl / ⌘ + K", "Quick search: any channel or action"], ["?", "This list"], ["F", "Fullscreen"], ["S", "Screensaver"], ["Z", "Sleep timer"], ["Esc / Backspace", "Back"], ["Shift + X", "Hidden section"],
-      ["Live TV", null], ["↑ ↓", "Channel"], ["← →", "Category"], ["0–9", "Channel number"], ["Enter", "Play"], ["P", "Previous channel"], ["L", "Favourite"], ["/", "Search"], ["G", "TV guide of this channel"],
+      ["Live TV", null], ["↑ ↓", "Channel"], ["← →", "Category"], ["0–9", "Channel number"], ["Enter", "Play"], ["P", "Previous channel"], ["L", "Favourite"], ["/", "Search"], ["G", "TV guide of this channel"], ["U", "Catch-up: replay a past programme"],
       ["X", "Picture shape"], ["A", "Audio track"], ["T", "Subtitles"], ["V", "Save the stream for VLC"], ["D", "Guide grid"], ["M", "Add to multi-view"], ["C", "Cast"], ["O", "Mini window"], ["R", "Record the channel that is playing"], ["Movies & series", null], ["↑ ↓ Enter", "Choose and play"], ["←", "Back to the series list"]];
     var wrap = make("div", "keys");
     rows.forEach(function (r) { if (r[1] === null) wrap.appendChild(make("h3", "", r[0])); else { wrap.appendChild(make("kbd", "", r[0])); wrap.appendChild(make("span", "", r[1])); } });
@@ -2908,6 +3053,7 @@
     v.requestPictureInPicture()["catch"](function () { toast("Could not open the mini window."); });
   }
   $("tv-cast").addEventListener("click", castNow);
+  $("tv-replay").addEventListener("click", openCatchup);
   $("tv-pip").addEventListener("click", miniWindow);
 
   // ---- guide grid ----
@@ -3174,6 +3320,7 @@
       }
       else if (e.key === "/") { e.preventDefault(); try { $("tv-search").focus(); } catch (er) {} }
       else if (e.key === "g" || e.key === "G") { e.preventDefault(); openGuide(); }
+      else if (e.key === "u" || e.key === "U") { e.preventDefault(); openCatchup(); }
       else if (e.key === "d" || e.key === "D") { e.preventDefault(); openGrid(); }
       else if (e.key === "m" || e.key === "M") { e.preventDefault(); mvAdd(channels[chIndex]); }
       else if (e.key === "c" || e.key === "C") { e.preventDefault(); castNow(); }
@@ -3660,6 +3807,183 @@
     }, 300);
   })();
   startLang();
+  // ---- EYE3 Genie: a floating helper that runs Home by typed or spoken commands ----
+  // Summoned by three clicks on the eye logo (or key H). Commands are matched here, in the page, against a fixed list of
+  // actions; nothing is sent to an AI service. Voice uses the browser's own speech recognition (in Chrome that service is
+  // Google's), only after the viewer presses the microphone. The genie never opens or mentions the hidden section.
+  var GENIE_KEY = "eye3.home.genie", GENIE_POS = "eye3.home.genie.pos", GENIE_VOICE = "eye3.home.genie.voice";
+  var genieEl = $("genie"), geniePanel = $("genie-panel"), genieLog = $("genie-log"), genieInput = $("genie-input");
+  var genieBusy = false, genieRec = null, genieSpoke = false;
+  function genieSay(text, who) {
+    var p = make("p", who === "me" ? "me" : "bot", text); if (who === "me") nt(p);
+    genieLog.appendChild(p);
+    while (genieLog.children.length > 40) genieLog.removeChild(genieLog.firstChild);
+    genieLog.scrollTop = genieLog.scrollHeight;
+    if (who !== "me" && genieSpoke && window.speechSynthesis && window.SpeechSynthesisUtterance) {
+      try { window.speechSynthesis.cancel(); var u = new SpeechSynthesisUtterance(text); u.rate = 1.05; u.pitch = 1.3; window.speechSynthesis.speak(u); } catch (e) {}
+    }
+  }
+  function genieOpenPanel(on) {
+    geniePanel.hidden = !on; $("genie-body").setAttribute("aria-expanded", on ? "true" : "false");
+    if (on) { if (!genieLog.children.length) genieSay("Hi, I’m your EYE3 Genie. Tell me what to do — type it or press 🎤 and say it."); setTimeout(function () { try { genieInput.focus(); } catch (e) {} }, 40); }
+    else { genieListen(false); try { genieInput.blur(); } catch (e) {} }
+  }
+  function genieShow(withPanel) {
+    genieEl.hidden = false; set(GENIE_KEY, "1");
+    try { var pos = JSON.parse(get(GENIE_POS) || "null"); if (pos && pos.x >= 0 && pos.y >= 0) genieMove(pos.x, pos.y); } catch (e) {}
+    if (withPanel) genieOpenPanel(true);
+  }
+  function genieSummon() {
+    if (!genieEl.hidden) { genieOpenPanel(true); return; }
+    if (genieBusy) return;
+    var fx = $("genie-summon");
+    if (reduceMotion) { genieShow(true); return; }
+    genieBusy = true; fx.hidden = false;
+    setTimeout(function () { fx.hidden = true; genieBusy = false; genieShow(true); }, 1850);
+  }
+  function genieDismiss() { genieOpenPanel(false); genieEl.hidden = true; set(GENIE_KEY, "0"); toast("The genie went back into the eye. Click the logo three times to call it again."); }
+  // drag the genie anywhere on the screen
+  function genieMove(x, y) {
+    var w = genieEl.offsetWidth || 100, h = genieEl.offsetHeight || 140;
+    x = Math.max(4, Math.min(window.innerWidth - w - 4, x)); y = Math.max(4, Math.min(window.innerHeight - h - 4, y));
+    genieEl.style.left = x + "px"; genieEl.style.top = y + "px"; genieEl.style.right = "auto"; genieEl.style.bottom = "auto"; genieEl.style.insetInlineEnd = "auto";
+  }
+  (function () {
+    var body = $("genie-body"), drag = null;
+    body.addEventListener("pointerdown", function (e) { var r = genieEl.getBoundingClientRect(); drag = { dx: e.clientX - r.left, dy: e.clientY - r.top, x0: e.clientX, y0: e.clientY, moved: false }; try { body.setPointerCapture(e.pointerId); } catch (er) {} });
+    body.addEventListener("pointermove", function (e) {
+      if (!drag) return;
+      if (!drag.moved && Math.abs(e.clientX - drag.x0) + Math.abs(e.clientY - drag.y0) < 8) return;
+      drag.moved = true; genieMove(e.clientX - drag.dx, e.clientY - drag.dy);
+    });
+    body.addEventListener("pointerup", function () {
+      if (drag && drag.moved) { var r = genieEl.getBoundingClientRect(); set(GENIE_POS, JSON.stringify({ x: Math.round(r.left), y: Math.round(r.top) })); body.dataset.dragged = "1"; }
+      drag = null;
+    });
+    body.addEventListener("click", function () { if (body.dataset.dragged) { delete body.dataset.dragged; return; } genieOpenPanel(geniePanel.hidden); });
+  })();
+  // ---- understanding a command ----
+  function genieClean(t) {
+    return fold(t).replace(/[!?.,;:"“”'’]+/g, " ").replace(/\b(hey|hi|ok|okay|hello)?\s*(genie|eye3|eye 3)\b/g, " ")
+      .replace(/\b(please|can you|could you|would you|i want to|i want|i would like to|for me|let s|lets)\b/g, " ").replace(/\s+/g, " ").trim();
+  }
+  var GENIE_WORDS = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10 };
+  function genieTv(then) {   // make sure Live TV is open and the channel list is ready, then go on
+    if (!$("ov-tv").classList.contains("open")) { closeOverlays(); openTile("tv"); }
+    var tries = 0;
+    (function wait() { if (allChannels.length || ++tries > 40) then(); else setTimeout(wait, 200); })();
+  }
+  function geniePlay(name) {
+    genieTv(function () {
+      var want = fold(name).replace(/\s+/g, " ").trim(), words = want.split(" ").filter(Boolean);
+      var pool = allChannels.filter(function (c) { return !c.adult && !(hideFailedOn() && failedRecently(c.url)); });
+      var exact = pool.filter(function (c) { return fold(c.name).trim() === want; });
+      var hits = exact.length ? exact : pool.filter(function (c) { var f = c._f || (c._f = fold(c.name)); return words.every(function (w) { return f.indexOf(w) >= 0; }); });
+      if (!hits.length) { genieSay("I couldn’t find a channel called “" + name + "”. Try a shorter name."); return; }
+      var pick = hits[0];
+      tvFilter.cat = "All"; tvFilter.group = ""; tvFilter.country = ""; tvFilter.q = name; $("tv-search").value = name;
+      fillSelects(); applyFilter(pick.url);
+      var i = channels.indexOf(pick); if (i < 0) i = 0;
+      chIndex = i; paintChannels(); scrollCh(); playChannel(i);
+      genieSay("Playing " + pick.name + (hits.length > 1 ? " (" + hits.length + " matches — say “next channel” for the others)." : "."));
+    });
+  }
+  function hideFailedOn() { return $("tv-hidefailed").checked; }
+  function genieHelp() {
+    genieSay("I can: play a channel by name or number, next / previous channel, replay a past programme, show the guide or guide grid, record, multi-view, cast, mini window, movies & series, free movies, radio, my media, YouTube, web search, louder / quieter / mute, pause / play, fullscreen, sleep timer, screensaver, IPTV accounts, settings, the time, and go home.");
+  }
+  function genieDo(raw) {
+    var t = genieClean(raw), m;
+    if (!t) { genieHelp(); return; }
+    if (/\b(explicit|adult|18 ?plus|18\+|xxx|porn|sex|nsfw|unlock)\b/.test(t)) { genieSay("That’s not something I can do."); return; }
+    if (/^(help|what can you do|commands|what do you do)/.test(t)) { genieHelp(); return; }
+    if (/^(hi|hello|hey|thanks|thank you|good (morning|evening|night))$/.test(t)) { genieSay(/thank/.test(t) ? "Any time!" : "Hello! What shall we watch?"); return; }
+    if (/^(bye|goodbye|go away|hide|dismiss|sleep genie)$/.test(t)) { genieSay("Bye! Three clicks on the eye bring me back."); setTimeout(genieDismiss, 900); return; }
+    // "play / watch / open X": a feature name opens that feature, anything else is a channel name
+    if ((m = /^(?:play|watch|put on|open|switch to|go to|show me|tune to|start|show)\s+(?:the\s+)?(.+)$/.exec(t))) {
+      var what = m[1];
+      if (!/^(radio|movies?|films?|series|shows?|free (movies?|films?)|youtube|my media|media|usb|photos|settings|guide|guide grid|grid|catch ?up|replay|live tv|tv|television|channels|next( channel)?|previous( channel)?|accounts?|iptv accounts?|multi ?view|mini window|web|vision|camera|eye3 vision|screensaver|shortcuts|home)$/.test(what)) {
+        var num = /^(?:channel\s+)?(\d{1,4}|one|two|three|four|five|six|seven|eight|nine|ten)$/.exec(what);
+        if (num) { genieDo("channel " + num[1]); return; }
+        geniePlay(what.replace(/^channel\s+/, "").replace(/\s+(channel|on tv|live)$/, "").trim() || what); return;
+      }
+      t = what;
+    }
+    if (/^(web|search)$/.test(t)) { closeOverlays(); openTile("web"); genieSay("Web search."); return; }
+    if (/^(what time is it|what s the time|whats the time|time|clock|tell me the time)$/.test(t)) { var d = new Date(); genieSay("It’s " + ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2) + "."); return; }
+    if ((m = /^(?:channel|number|go to channel|switch to channel)\s+(\d{1,4}|one|two|three|four|five|six|seven|eight|nine|ten)$/.exec(t))) {
+      var n = GENIE_WORDS[m[1]] || parseInt(m[1], 10);
+      genieTv(function () { if (!channels[n - 1]) { genieSay("There is no channel " + n + " in this list."); return; } chIndex = n - 1; paintChannels(); scrollCh(); playChannel(chIndex); genieSay("Channel " + n + ": " + channels[chIndex].name + "."); });
+      return;
+    }
+    if (/^(next|channel up|up)( channel)?$/.test(t)) { genieTv(function () { stepList(1); genieSay("Next channel."); }); return; }
+    if (/^(previous|prev|last|back|channel down|down)( channel)?$/.test(t)) { genieTv(function () { stepList(-1); genieSay("Previous channel."); }); return; }
+    if (/\b(replay|catch ?up|rewind|watch again|earlier|missed)\b/.test(t)) { if (!prevCh) { genieSay("Play a channel first, then ask me to replay it."); return; } openCatchup(); genieSay("Here’s what you can replay on " + prevCh.name + "."); return; }
+    if (/\bguide grid|grid\b/.test(t)) { genieTv(function () { openGrid(); genieSay("Guide grid."); }); return; }
+    if (/\b(guide|what s on|whats on|epg|programme|program)\b/.test(t)) { if (!prevCh) { genieSay("Play a channel first, then ask for its guide."); return; } openGuide(); genieSay("The guide for " + prevCh.name + "."); return; }
+    if (/\b(stop recording|record|recording)\b/.test(t)) { if (!prevCh) { genieSay("Play a channel first, then ask me to record it."); return; } recToggle(); genieSay("Done."); return; }
+    if (/\bmulti ?view|multi screen|split screen\b/.test(t)) { genieTv(function () { mvAdd(channels[chIndex]); genieSay("Added to multi-view."); }); return; }
+    if (/\b(mini window|picture in picture|pip)\b/.test(t)) { miniWindow(); genieSay("Mini window."); return; }
+    if (/\bfree (movie|film)s?\b/.test(t)) { closeOverlays(); openVod(); setTimeout(freeOpen, 200); genieSay("Free movies from the Internet Archive."); return; }
+    if (/\b(movie|movies|film|films|series|show|shows|vod)\b/.test(t)) { closeOverlays(); openVod(); genieSay("Movies & series."); return; }
+    if (/\bradio\b/.test(t)) { closeOverlays(); openTile("radio"); genieSay("Radio."); return; }
+    if (/\b(my media|usb|photos|my videos|media)\b/.test(t)) { closeOverlays(); openTile("media"); genieSay("My media."); return; }
+    if (/\byoutube\b/.test(t)) { closeOverlays(); openTile("youtube"); genieSay("YouTube."); return; }
+    if ((m = /^(?:search|search for|google|look up|find on web|web search)\s+(.+)$/.exec(t))) { closeOverlays(); openWeb("Web", "https://html.duckduckgo.com/html/?q=" + encodeURIComponent(m[1]), ""); genieSay("Searching the web for “" + m[1] + "”."); return; }
+    if (/\b(vision|camera|scan|detect|read text|ocr)\b/.test(t)) { genieSay("Opening EYE3 Vision."); setTimeout(function () { openTile("vision"); }, 600); return; }
+    if (/\b(accounts?|xtream|mag|stalker|m3u|add (my )?playlist|iptv)\b/.test(t)) { closeOverlays(); openAccounts(); genieSay("Your IPTV accounts."); return; }
+    if (/\bcast\b/.test(t)) { genieTv(function () { castNow(); genieSay("Looking for a screen to cast to."); }); return; }
+    if (/\b(unmute|sound on)\b/.test(t)) { var els = mediaEls(); if (els[0].muted) setVolume(0, true); genieSay("Sound on."); return; }
+    if (/\b(mute|silence|quiet mode)\b/.test(t)) { var el2 = mediaEls(); if (!el2[0].muted) setVolume(0, true); genieSay("Muted."); return; }
+    if (/\b(louder|volume up|turn it up|increase volume|more volume)\b/.test(t)) { setVolume(0.2); genieSay("Louder."); return; }
+    if (/\b(quieter|softer|volume down|turn it down|lower volume|less volume)\b/.test(t)) { setVolume(-0.2); genieSay("Quieter."); return; }
+    if (/^(pause|stop|resume|continue|play)$/.test(t)) { togglePlay(); genieSay("Okay."); return; }
+    if (/\bfull ?screen\b/.test(t)) { toggleFullscreen(); genieSay("Fullscreen."); return; }
+    if (/\b(sleep|timer|turn off later)\b/.test(t)) { cycleSleep(); var left = sleepLeft(); genieSay(left ? "Sleep timer: " + left + " minutes." : "Sleep timer off."); return; }
+    if (/\b(screensaver|screen saver)\b/.test(t)) { showSaver(); return; }
+    if (/\b(settings|options|preferences)\b/.test(t)) { closeOverlays(); openSettings(); genieSay("Settings."); return; }
+    if (/\b(shortcuts|keys|keyboard)\b/.test(t)) { openShortcuts(); return; }
+    if (/^(home|close|go home|main menu|exit)$/.test(t)) { closeOverlays(); focusIndex = 0; paintFocus(); genieSay("Home."); return; }
+    if (/^(live tv|tv|television|channels)$/.test(t)) { genieTv(function () { genieSay("Live TV. Tell me a channel name to play it."); }); return; }
+    if (t.split(" ").length <= 4) { geniePlay(t); return; }   // a short phrase is most likely a channel name
+    genieSay("I didn’t catch that. Say “help” to hear what I can do.");
+  }
+  function genieRun(text, spoken) {
+    text = String(text || "").replace(/^\s+|\s+$/g, "").slice(0, 160);
+    if (!text) return;
+    genieSpoke = !!spoken;
+    genieSay(text, "me");
+    genieEl.classList.add("thinking");
+    setTimeout(function () { genieEl.classList.remove("thinking"); try { genieDo(text); } catch (e) { genieSay("Something went wrong: " + e.message); } }, 250);
+  }
+  $("genie-form").addEventListener("submit", function (e) { e.preventDefault(); var v = genieInput.value; genieInput.value = ""; genieRun(v, false); });
+  genieInput.addEventListener("keydown", function (e) {
+    e.stopPropagation();   // typing here must not move the home tiles, start the screensaver or change channels
+    if (e.key === "Escape") { e.preventDefault(); genieOpenPanel(false); try { $("genie-body").focus(); } catch (er) {} }
+  });
+  // ---- voice: the browser's speech recognition, started only by the microphone button ----
+  function genieListen(on) {
+    var mic = $("genie-mic");
+    if (!on) { if (genieRec) { try { genieRec.abort(); } catch (e) {} genieRec = null; } mic.classList.remove("on"); genieEl.classList.remove("listening"); return; }
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { genieSay("Voice isn’t available in this browser. Type your command instead (Chrome and Edge support voice)."); return; }
+    if (get(GENIE_VOICE) !== "1") {
+      set(GENIE_VOICE, "1");
+      genieSay("Voice uses your browser’s speech service: in Chrome and Edge your words are sent to Google or Microsoft to be turned into text. Press 🎤 again to talk, or just type.");
+      return;
+    }
+    var rec = new SR(); genieRec = rec;
+    rec.lang = navigator.language || "en-US"; rec.interimResults = false; rec.maxAlternatives = 1;
+    rec.onresult = function (e) { var r = e.results && e.results[0] && e.results[0][0]; if (r) genieRun(r.transcript, true); };
+    rec.onerror = function (e) { if (e.error !== "aborted" && e.error !== "no-speech") genieSay(e.error === "not-allowed" ? "The microphone is blocked. Allow it in the browser’s address bar, then try again." : "I couldn’t hear that (" + e.error + ")."); };
+    rec.onend = function () { if (genieRec === rec) genieRec = null; mic.classList.remove("on"); genieEl.classList.remove("listening"); };
+    try { rec.start(); mic.classList.add("on"); genieEl.classList.add("listening"); genieSay("Listening…"); } catch (e) { genieSay("Voice could not start: " + e.message); }
+  }
+  $("genie-mic").addEventListener("click", function () { genieListen(!genieRec); });
+  document.addEventListener("keydown", function (e) {
+    if ((e.key === "h" || e.key === "H") && !e.ctrlKey && !e.metaKey && !e.altKey && !isTyping() && !overlayOpen()) { e.preventDefault(); genieSummon(); }
+  });
+  if (get(GENIE_KEY) === "1") genieShow(false);
 })();
 </script>
 </body>

@@ -27,7 +27,7 @@ import urllib.parse as up
 import urllib.request as ur
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.8"
+VERSION = "1.9"
 ALLOWED_ORIGINS = ["https://j-janko420.github.io"]          # more: EYE3_ORIGINS=https://a,https://b
 LOCAL_ORIGIN = re.compile(r"^http://(localhost|127\.0\.0\.1)(:\d+)?$")
 BAD = re.compile(r"adult|xxx|18\+|porn|erotic|\bsex|playboy|hustler|brazzers|dorcel|penthouse|redlight", re.I)
@@ -621,6 +621,9 @@ def channels_from_xtream(server, user, password):
             continue
         prefix = "%s/live/%s/%s/%s" % (base, up.quote(user, safe=""), up.quote(password, safe=""), s["stream_id"])
         ch = {"n": name, "c": cat, "l": str(s.get("stream_icon") or ""), "e": s["stream_id"]}
+        days = archive_days(s)
+        if days:
+            ch["ar"] = days                                   # catch-up: the panel keeps this many days of the channel
         if hls_ok:
             ch["u"], ch["a"] = stream_url(prefix + ".m3u8", base_hid()), stream_url(prefix + ".ts", base_hid())   # HLS first, raw TS as fallback
         else:
@@ -753,6 +756,78 @@ def xtream_epg(server, user, password, stream_id, limit=4):
             out.append({"t": title[:160], "d": b64text(r.get("description")).strip()[:300], "s": start, "e": stop})
     out.sort(key=lambda x: x["s"])
     return {"items": out}
+
+
+# ------------------------------------------------------------------------------- catch-up (replay of past programmes)
+MAX_ARCHIVE_DAYS = 30
+SERVER_TIME = re.compile(r"^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})")
+SHIFT_START = re.compile(r"^\d{4}-\d{2}-\d{2}:\d{2}-\d{2}$")
+
+
+def archive_days(s):
+    """Days of catch-up an Xtream live row offers (tv_archive=1 and tv_archive_duration>0), else 0."""
+    try:
+        if int(s.get("tv_archive") or 0) != 1:
+            return 0
+        return max(0, min(int(s.get("tv_archive_duration") or 0), MAX_ARCHIVE_DAYS))
+    except (TypeError, ValueError):
+        return 0
+
+
+def shift_start(row, start):
+    """The programme start in the panel's own clock, as timeshift wants it ('2026-11-02:20-30').
+    Panels send 'start' in their time zone next to the UTC timestamp; use it when present, else UTC."""
+    m = SERVER_TIME.match(str(row.get("start") or ""))
+    if m:
+        return "%s-%s-%s:%s-%s" % m.groups()
+    return time.strftime("%Y-%m-%d:%H-%M", time.gmtime(start))
+
+
+def xtream_catchup(server, user, password, stream_id, days):
+    """Past programmes of one channel that the panel can replay (Xtream get_simple_data_table), newest first."""
+    base, api = xtream_api(server, user, password)
+    if not str(stream_id).isdigit():
+        raise LinkError("That channel has no valid id.")
+    data = vod_json(api + "&action=get_simple_data_table&stream_id=%s" % stream_id)
+    rows = data.get("epg_listings") if isinstance(data, dict) else []
+    now = time.time()
+    oldest = now - max(1, min(days or 7, MAX_ARCHIVE_DAYS)) * 86400
+    out = []
+    for r in rows or []:
+        if not isinstance(r, dict):
+            continue
+        try:
+            start, stop = int(r.get("start_timestamp")), int(r.get("stop_timestamp"))
+        except (TypeError, ValueError):
+            continue
+        if str(r.get("has_archive", "1")) in ("0", "False", "false") or stop <= start or start < oldest or start > now - 60:
+            continue                                          # not kept by the panel, broken, too old, or not started yet
+        title = b64text(r.get("title")).strip()
+        if title:
+            out.append({"t": title[:160], "d": b64text(r.get("description")).strip()[:300], "s": start, "e": min(stop, int(now)),
+                        "st": shift_start(r, start), "on": stop > now})
+    out.sort(key=lambda x: -x["s"])
+    return {"items": out[:400]}
+
+
+def catchup_play_url(server, user, password, stream_id, start, minutes):
+    """A replay link for one programme (timeshift), wrapped by /stream like any other stream."""
+    base = xtream_base(server)
+    if not str(stream_id).isdigit():
+        raise LinkError("That channel has no valid id.")
+    if not SHIFT_START.match(start or ""):
+        raise LinkError("That programme has no valid start time.")
+    try:
+        minutes = int(minutes)
+    except (TypeError, ValueError):
+        minutes = 0
+    if not 1 <= minutes <= 720:
+        raise LinkError("A replay must last between 1 minute and 12 hours.")
+    u, p = up.quote(user, safe=""), up.quote(password, safe="")
+    path = "%s/timeshift/%s/%s/%d/%s/%s.ts" % (base, u, p, minutes, start, stream_id)
+    php = "%s/streaming/timeshift.php?username=%s&password=%s&stream=%s&start=%s&duration=%d" % (base, u, p, stream_id, start, minutes)
+    hid = base_hid()
+    return {"url": stream_url(path, hid), "alt": stream_url(php, hid)}   # two spellings: panels support one or the other
 
 
 # ------------------------------------------------------------------------------- XMLTV guide
@@ -1157,6 +1232,13 @@ class Handler(BaseHTTPRequestHandler):
             if not (one("server") and one("user") and one("pass")):
                 raise LinkError("Enter the server, username and password.")
             return self.send_json(200, xtream_epg(one("server"), one("user"), one("pass"), one("id"), min(int(one("n")), 24) if one("n").isdigit() and int(one("n")) > 0 else 4))
+        if path in ("/api/catchup", "/api/catchup/play"):
+            if not (one("server") and one("user") and one("pass")):
+                raise LinkError("Enter the server, username and password.")
+            creds = (one("server"), one("user"), one("pass"))
+            if path == "/api/catchup":
+                return self.send_json(200, xtream_catchup(*creds, stream_id=one("id"), days=int(one("days")) if one("days").isdigit() else 7))
+            return self.send_json(200, catchup_play_url(*creds, stream_id=one("id"), start=one("start"), minutes=one("minutes")))
         if path in ("/api/vod", "/api/vod/series", "/api/vod/play"):
             if not (one("server") and one("user") and one("pass")):
                 raise LinkError("Enter the server, username and password.")
