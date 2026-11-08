@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Offline tests for eye3-link.py: mock IPTV servers (M3U, Xtream, Stalker, HLS) on localhost. Run: python3 tools/test_eye3_link.py"""
-import http.client, importlib.util, json, os, threading, unittest
+import http.client, importlib.util, json, os, threading, time, unittest
 import urllib.parse as up
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
@@ -45,8 +45,22 @@ class Mock(BaseHTTPRequestHandler):
             if act == "get_live_categories":
                 return self.reply([{"category_id": "1", "category_name": "News"}, {"category_id": "2", "category_name": "XXX Adult"}])
             if act == "get_live_streams":
-                return self.reply([{"name": "Xtream One", "stream_id": 11, "category_id": "1", "stream_icon": "i.png"},
-                                   {"name": "Hidden", "stream_id": 12, "category_id": "2"}])
+                return self.reply([{"name": "Xtream One", "stream_id": 11, "category_id": "1", "stream_icon": "i.png", "tv_archive": 1, "tv_archive_duration": "3"},
+                                   {"name": "Hidden", "stream_id": 12, "category_id": "2", "tv_archive": "0", "tv_archive_duration": "7"}])
+            if act == "get_simple_data_table":
+                import base64 as _b
+                enc = lambda t: _b.b64encode(t.encode()).decode()
+                now = int(time.time())
+                if q.get("stream_id") != "11":
+                    return self.reply({"epg_listings": []})
+                return self.reply({"epg_listings": [
+                    {"title": enc("Morning Show"), "description": enc("Coffee"), "start": "2026-01-02 08:00:00", "start_timestamp": str(now - 7200), "stop_timestamp": str(now - 3600), "has_archive": 1},
+                    {"title": enc("Noon News"), "start_timestamp": str(now - 3600), "stop_timestamp": str(now - 1800), "has_archive": 1},
+                    {"title": enc("Not Kept"), "start_timestamp": str(now - 1800), "stop_timestamp": str(now - 900), "has_archive": 0},
+                    {"title": enc("Too Old"), "start_timestamp": str(now - 9 * 86400), "stop_timestamp": str(now - 9 * 86400 + 1800), "has_archive": 1},
+                    {"title": enc("On Now"), "start_timestamp": str(now - 900), "stop_timestamp": str(now + 900), "has_archive": 1},
+                    {"title": enc("Later"), "start_timestamp": str(now + 900), "stop_timestamp": str(now + 2700), "has_archive": 1},
+                    {"title": enc("Bad"), "start_timestamp": "x", "stop_timestamp": "y"}]})
             if act == "get_short_epg":
                 import base64 as _b
                 enc = lambda t: _b.b64encode(t.encode()).decode()
@@ -622,6 +636,35 @@ class LinkTests(unittest.TestCase):
         self.assertEqual(self.vod("/api/epg", id="1;rm")[0], 502)            # ids must be numeric
         code, _, body = self.api("/api/xtream", server=self.up_url, user="u", **{"pass": "p"})
         self.assertEqual(json.loads(body)["channels"][0]["e"], 11)           # live rows carry their stream id
+
+    # --- catch-up (replay of past programmes)
+    def test_catchup_days_are_reported_on_live_channels(self):
+        chans = {c["n"]: c for c in json.loads(self.api("/api/xtream", server=self.up_url, user="u", **{"pass": "p"})[2])["channels"]}
+        self.assertEqual(chans["Xtream One"]["ar"], 3)
+        self.assertNotIn("ar", chans["Hidden"])                             # tv_archive 0: no catch-up
+
+    def test_catchup_lists_only_kept_past_programmes_newest_first(self):
+        code, _, body = self.vod("/api/catchup", id="11", days="3")
+        self.assertEqual(code, 200)
+        items = json.loads(body)["items"]
+        self.assertEqual([i["t"] for i in items], ["On Now", "Noon News", "Morning Show"])
+        self.assertTrue(items[0]["on"])
+        self.assertEqual(items[2]["st"], "2026-01-02:08-00")              # the panel's own clock is used for timeshift
+        self.assertEqual(items[2]["d"], "Coffee")
+        self.assertRegex(items[1]["st"], r"^\d{4}-\d{2}-\d{2}:\d{2}-\d{2}$")
+        self.assertEqual(json.loads(self.vod("/api/catchup", id="99")[2])["items"], [])
+        self.assertEqual(self.vod("/api/catchup", id="11;x")[0], 502)
+
+    def test_catchup_play_builds_both_timeshift_links_behind_the_token(self):
+        d = json.loads(self.vod("/api/catchup/play", id="11", start="2026-01-02:08-00", minutes="60")[2])
+        for key, needle in (("url", "/timeshift/u/p/60/2026-01-02:08-00/11.ts"), ("alt", "timeshift.php?username=u&password=p&stream=11&start=2026-01-02:08-00&duration=60")):
+            self.assertIn("/stream?", d[key])
+            self.assertIn("t=" + self.tok, d[key])
+            self.assertIn(up.quote(needle, safe=""), d[key].replace("%2F", "%2F"))
+        self.assertEqual(self.vod("/api/catchup/play", id="11", start="2026-01-02 08:00/../x", minutes="60")[0], 502)
+        self.assertEqual(self.vod("/api/catchup/play", id="11", start="2026-01-02:08-00", minutes="0")[0], 502)
+        self.assertEqual(self.vod("/api/catchup/play", id="11", start="2026-01-02:08-00", minutes="9999")[0], 502)
+        self.assertEqual(self.vod("/api/catchup/play", id="../11", start="2026-01-02:08-00", minutes="30")[0], 502)
 
     # --- --dns: DNS-over-HTTPS only when the normal lookup fails
     def test_dns_off_gives_a_hint_and_on_resolves_through_doh(self):
