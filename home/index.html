@@ -340,51 +340,56 @@
   .rows .big-actions { display: grid; gap: 12px; }
   .rows .opt { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
   .rows .opt input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--accent); }
-  /* EYE3 Genie: triple-click the eye logo; the eye spins in 3D, then turns into a small floating helper */
-  .genie-summon { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; pointer-events: none; background: radial-gradient(circle at 50% 50%, rgba(255, 38, 63, .22), rgba(5, 1, 1, 0) 60%); perspective: 900px; }
-  .genie-summon[hidden] { display: none; }
-  .gs-eye { position: relative; width: min(46vmin, 360px); aspect-ratio: 1; transform-style: preserve-3d; animation: genieSpin 1.9s cubic-bezier(.55, .05, .3, 1) both; color: var(--accent); filter: drop-shadow(0 0 24px rgba(255, 38, 63, .85)); }
+  /* Geeni: three clicks on the eye logo spin the eye in 3D, then it turns into a small floating helper */
+  .geeni-summon { position: fixed; inset: 0; z-index: 70; display: grid; place-items: center; pointer-events: none; background: radial-gradient(circle at 50% 50%, rgba(255, 38, 63, .22), rgba(5, 1, 1, 0) 60%); perspective: 900px; }
+  .geeni-summon[hidden] { display: none; }
+  .gs-eye { position: relative; width: min(46vmin, 360px); aspect-ratio: 1; transform-style: preserve-3d; animation: geeniSpin 1.9s cubic-bezier(.55, .05, .3, 1) both; color: var(--accent); filter: drop-shadow(0 0 24px rgba(255, 38, 63, .85)); }
   .gs-eye svg { position: absolute; inset: 0; width: 100%; height: 100%; }
   .gs-eye .gs-l1 { transform: translateZ(26px); }
   .gs-eye .gs-l2 { transform: translateZ(-26px); opacity: .55; }
-  .gs-eye .gs-ring { position: absolute; inset: 6%; border: 2px solid rgba(255, 122, 138, .7); border-radius: 50%; transform: rotateX(72deg); animation: genieRing 1.9s linear both; }
-  @keyframes genieSpin {
+  .gs-eye .gs-ring { position: absolute; inset: 6%; border: 2px solid rgba(255, 122, 138, .7); border-radius: 50%; transform: rotateX(72deg); animation: geeniRing 1.9s linear both; }
+  @keyframes geeniSpin {
     0% { transform: rotateY(0) rotateX(12deg) scale(.15); opacity: 0; }
     18% { opacity: 1; }
     65% { transform: rotateY(1080deg) rotateX(-8deg) scale(1.15); opacity: 1; }
     100% { transform: rotateY(1440deg) rotateX(0) scale(.12) translate(120%, 120%); opacity: 0; }
   }
-  @keyframes genieRing { from { transform: rotateX(72deg) rotateZ(0); } to { transform: rotateX(72deg) rotateZ(720deg); } }
-  .genie { position: fixed; z-index: 55; inset-inline-end: 28px; bottom: 28px; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; touch-action: none; }
-  .genie[hidden] { display: none; }
-  .genie-body { position: relative; width: clamp(74px, 7vw, 108px); padding: 0; border: 0; background: none; cursor: grab; animation: geniePop .6s cubic-bezier(.2, 1.6, .4, 1) backwards, genieFloat 3.6s ease-in-out .6s infinite; filter: drop-shadow(0 10px 18px rgba(255, 38, 63, .35)); }
-  .genie-body:active { cursor: grabbing; }
-  .genie-body:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 40%; }
-  .genie-body svg { display: block; width: 100%; height: auto; overflow: visible; }
-  .genie-body .g-eye { transform-origin: 60px 40px; animation: genieBlink 5s ease-in-out infinite; }
-  .genie-body .g-arm-l { transform-origin: 26px 78px; animation: genieWave 2.4s ease-in-out infinite; }
-  .genie-body .g-glow { animation: genieGlow 2.2s ease-in-out infinite; }
-  .genie.listening .g-glow { animation-duration: .6s; }
-  .genie.thinking .g-eye { animation: genieLook 1s ease-in-out infinite; }
-  @keyframes geniePop { from { transform: scale(0) rotate(-30deg); opacity: 0; } to { transform: none; opacity: 1; } }
-  @keyframes genieFloat { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-12px) rotate(2deg); } }
-  @keyframes genieBlink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(.1); } }
-  @keyframes genieWave { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-24deg); } }
-  @keyframes genieGlow { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
-  @keyframes genieLook { 0%, 100% { transform: translateX(0); } 30% { transform: translateX(-4px); } 70% { transform: translateX(4px); } }
-  .genie-panel { width: min(380px, calc(100vw - 32px)); max-height: min(70vh, 520px); display: flex; flex-direction: column; gap: 10px; padding: 14px; border: 1px solid rgba(255, 38, 63, .45); border-radius: 10px; background: rgba(12, 3, 5, .96); box-shadow: 0 18px 50px rgba(0, 0, 0, .6), 0 0 0 1px rgba(255, 38, 63, .12) inset; }
-  .genie-panel[hidden] { display: none; }
-  .genie-panel h2 { margin: 0; font-size: clamp(15px, 1.2vw, 19px); color: var(--accent); letter-spacing: .04em; }
-  .genie-log { min-height: 60px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; font-size: clamp(13px, 1vw, 16px); }
-  .genie-log p { margin: 0; padding: 7px 10px; border-radius: 8px; max-width: 92%; line-height: 1.35; }
-  .genie-log .me { align-self: flex-end; background: rgba(255, 38, 63, .2); }
-  .genie-log .bot { align-self: flex-start; background: rgba(255, 245, 246, .06); border: 1px solid rgba(255, 38, 63, .18); }
-  .genie-form { display: flex; gap: 6px; }
-  .genie-form input { flex: 1; min-width: 0; }
-  .genie-form .btn { padding: 8px 12px; }
-  #genie-mic.on { border-color: var(--accent); background: rgba(255, 38, 63, .3); }
-  .genie-tips { margin: 0; color: var(--muted, #b9a9ac); font-size: clamp(11px, .85vw, 13px); }
-  @media (max-width: 900px) { .genie { inset-inline-end: 12px; bottom: 12px; } }
+  @keyframes geeniRing { from { transform: rotateX(72deg) rotateZ(0); } to { transform: rotateX(72deg) rotateZ(720deg); } }
+  .geeni { position: fixed; inset-inline-end: clamp(14px, 2vw, 28px); bottom: clamp(40px, 6vh, 60px); z-index: 60; display: none; width: clamp(74px, 7vw, 104px); padding: 0; border: 0; background: none; color: var(--accent); cursor: pointer; filter: drop-shadow(0 10px 18px rgba(255, 38, 63, .35)); animation: geeniPop .6s cubic-bezier(.2, 1.6, .4, 1) backwards, geeniFloat 3.6s ease-in-out .6s infinite; }
+  .geeni.on { display: block; }
+  .geeni.arriving { visibility: hidden; animation: none; }
+  .geeni:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; border-radius: 40%; }
+  .geeni svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .geeni .g-eye { transform-origin: 60px 40px; animation: geeniBlink 5s ease-in-out infinite; }
+  .geeni .g-arm-l { transform-origin: 26px 78px; animation: geeniWave 2.4s ease-in-out infinite; }
+  .geeni .g-glow { animation: geeniGlow 2.2s ease-in-out infinite; }
+  .geeni.listening .g-glow { animation-duration: .6s; }
+  @keyframes geeniPop { from { transform: scale(0) rotate(-30deg); opacity: 0; } to { transform: none; opacity: 1; } }
+  @keyframes geeniFloat { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-12px) rotate(2deg); } }
+  @keyframes geeniBlink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(.1); } }
+  @keyframes geeniWave { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-24deg); } }
+  @keyframes geeniGlow { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
+  #geeni-mic.on { border-color: var(--accent); background: rgba(255, 38, 63, .3); }
+  /* Geeni */
+  .geeni:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+  .geeni-panel { position: fixed; inset-inline-end: clamp(14px, 2vw, 28px); bottom: clamp(150px, 22vh, 190px); z-index: 61; display: none; flex-direction: column; width: min(400px, calc(100vw - 28px)); max-height: min(72vh, 580px); border: 1px solid rgba(255, 35, 60, .45); border-radius: 12px; background: rgba(12, 3, 5, .97); box-shadow: 0 10px 40px rgba(0, 0, 0, .7), 0 0 30px rgba(255, 38, 63, .2); }
+  .geeni-panel.open { display: flex; }
+  .g-head { display: flex; align-items: baseline; gap: 10px; padding: 12px 14px; border-bottom: 1px solid rgba(255, 30, 55, .3); }
+  .g-head b { color: var(--accent); font-size: 18px; letter-spacing: .08em; }
+  .g-head small { flex: 1; color: var(--muted); font-size: 12px; }
+  .g-head button { border: 0; background: none; color: var(--ink); font-size: 18px; cursor: pointer; }
+  .g-log { flex: 1; min-height: 120px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; }
+  .g-msg { max-width: 92%; padding: 9px 12px; border-radius: 10px; font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
+  .g-msg.bot { align-self: flex-start; border: 1px solid rgba(255, 35, 60, .3); background: rgba(40, 10, 15, .9); }
+  .g-msg.me { align-self: flex-end; background: rgba(255, 38, 63, .25); }
+  .g-acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .g-acts .btn { padding: 6px 12px; font-size: 13px; }
+  .g-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 14px 8px; }
+  .g-chips .chip { cursor: pointer; background: none; color: var(--ink); font: inherit; font-size: 12px; }
+  .g-chips .chip:hover, .g-chips .chip:focus-visible { border-color: var(--accent); outline: none; }
+  .g-form { display: flex; gap: 8px; padding: 10px 14px 14px; border-top: 1px solid rgba(255, 30, 55, .2); }
+  .g-form .field { padding: 10px 12px; font-size: 14px; }
+  .g-form .btn { padding: 8px 14px; }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
 </head>
@@ -668,43 +673,8 @@
   </div>
 </section>
 
-<div class="genie-summon" id="genie-summon" aria-hidden="true" hidden>
+<div class="geeni-summon" id="geeni-summon" aria-hidden="true" hidden>
   <div class="gs-eye"><span class="gs-ring"></span><svg class="gs-l2" viewBox="0 0 160 160"><path d="M80 7 153 80 80 153 7 80Z" fill="none" stroke="currentColor" stroke-width="3.4"/><path d="M13 80Q80 18 147 80Q80 142 13 80Z" fill="#020001" stroke="currentColor" stroke-width="4.2"/><path d="M80 26 105 80 80 134 55 80Z" fill="none" stroke="currentColor" stroke-width="2" opacity=".8"/><circle cx="80" cy="80" r="24" fill="currentColor"/><ellipse cx="80" cy="80" rx="8" ry="18" fill="#020001"/></svg><svg class="gs-l1" viewBox="0 0 160 160"><path d="M80 7 153 80 80 153 7 80Z" fill="none" stroke="currentColor" stroke-width="3.4"/><path d="M13 80Q80 18 147 80Q80 142 13 80Z" fill="#020001" stroke="currentColor" stroke-width="4.2"/><path d="M80 26 105 80 80 134 55 80Z" fill="none" stroke="currentColor" stroke-width="2" opacity=".8"/><circle cx="80" cy="80" r="24" fill="currentColor"/><ellipse cx="80" cy="80" rx="8" ry="18" fill="#020001"/></svg></div>
-</div>
-<div class="genie" id="genie" hidden>
-  <div class="genie-panel" id="genie-panel" role="dialog" aria-labelledby="genie-title" hidden>
-    <h2 id="genie-title">EYE3 Genie</h2>
-    <div class="genie-log" id="genie-log" aria-live="polite"></div>
-    <form class="genie-form" id="genie-form" autocomplete="off">
-      <input class="btn" id="genie-input" type="text" aria-label="Tell the genie what to do" placeholder="Play BBC News, open movies, volume up…">
-      <button class="btn" id="genie-mic" type="button" aria-label="Speak a command" title="Speak a command">🎤</button>
-      <button class="btn" type="submit">Go</button>
-    </form>
-    <p class="genie-tips">Try: “play Al Jazeera”, “channel 5”, “next channel”, “replay”, “guide”, “record”, “movies”, “radio”, “louder”, “pause”, “fullscreen”, “sleep”, “help”. “Bye” sends me away.</p>
-  </div>
-  <button class="genie-body" id="genie-body" type="button" aria-label="EYE3 Genie: open or close" aria-expanded="false" aria-controls="genie-panel">
-    <svg viewBox="0 0 120 150" aria-hidden="true">
-      <defs>
-        <linearGradient id="g-skin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff4d62"/><stop offset=".55" stop-color="#ff263f"/><stop offset="1" stop-color="#8a0a1a"/></linearGradient>
-        <radialGradient id="g-halo"><stop offset="0" stop-color="#ff263f" stop-opacity=".9"/><stop offset="1" stop-color="#ff263f" stop-opacity="0"/></radialGradient>
-      </defs>
-      <ellipse cx="60" cy="146" rx="26" ry="4" fill="#000" opacity=".45"/>
-      <path class="g-arm-l" d="M28 76Q12 70 10 56" fill="none" stroke="#c4142c" stroke-width="7" stroke-linecap="round"/>
-      <path d="M92 78Q108 84 106 98" fill="none" stroke="#c4142c" stroke-width="7" stroke-linecap="round"/>
-      <rect x="40" y="128" width="12" height="16" rx="5" fill="#2a0408"/><rect x="68" y="128" width="12" height="16" rx="5" fill="#2a0408"/>
-      <path d="M60 6C88 6 96 30 96 58V112C96 126 80 134 60 134S24 126 24 112V58C24 30 32 6 60 6Z" fill="url(#g-skin)"/>
-      <path d="M30 96H90V110C90 120 76 126 60 126S30 120 30 110Z" fill="#2a0408" opacity=".85"/>
-      <path d="M48 104H72" stroke="#ff7a8a" stroke-width="2" stroke-linecap="round" opacity=".7"/>
-      <circle class="g-glow" cx="60" cy="40" r="30" fill="url(#g-halo)"/>
-      <g class="g-eye">
-        <path d="M60 16 84 40 60 64 36 40Z" fill="#050101" stroke="#fff5f6" stroke-width="1.6"/>
-        <path d="M38 40Q60 22 82 40Q60 58 38 40Z" fill="#020001" stroke="#ff263f" stroke-width="2"/>
-        <circle cx="60" cy="40" r="8.5" fill="#ff263f"/><ellipse cx="60" cy="40" rx="2.8" ry="6.4" fill="#020001"/>
-        <circle cx="63" cy="36.5" r="1.6" fill="#fff5f6"/>
-      </g>
-      <path d="M48 76Q60 86 72 76" fill="none" stroke="#2a0408" stroke-width="3.2" stroke-linecap="round"/>
-    </svg>
-  </button>
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
@@ -752,6 +722,37 @@
     <input class="field" id="pin-input" type="password" inputmode="numeric" maxlength="8" autocomplete="off" aria-label="PIN, 4 to 8 digits">
     <div class="kv"><button class="btn" type="submit">OK</button></div>
   </form>
+</section>
+
+<!-- Geeni, the built-in EYE3 assistant (three clicks on the eye logo) -->
+<button class="geeni" id="geeni" type="button" aria-label="Geeni, the EYE3 assistant" aria-controls="geeni-panel">
+  <svg viewBox="0 0 120 150" aria-hidden="true">
+        <defs>
+          <linearGradient id="g-skin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff4d62"/><stop offset=".55" stop-color="#ff263f"/><stop offset="1" stop-color="#8a0a1a"/></linearGradient>
+          <radialGradient id="g-halo"><stop offset="0" stop-color="#ff263f" stop-opacity=".9"/><stop offset="1" stop-color="#ff263f" stop-opacity="0"/></radialGradient>
+        </defs>
+        <ellipse cx="60" cy="146" rx="26" ry="4" fill="#000" opacity=".45"/>
+        <path class="g-arm-l" d="M28 76Q12 70 10 56" fill="none" stroke="#c4142c" stroke-width="7" stroke-linecap="round"/>
+        <path d="M92 78Q108 84 106 98" fill="none" stroke="#c4142c" stroke-width="7" stroke-linecap="round"/>
+        <rect x="40" y="128" width="12" height="16" rx="5" fill="#2a0408"/><rect x="68" y="128" width="12" height="16" rx="5" fill="#2a0408"/>
+        <path d="M60 6C88 6 96 30 96 58V112C96 126 80 134 60 134S24 126 24 112V58C24 30 32 6 60 6Z" fill="url(#g-skin)"/>
+        <path d="M30 96H90V110C90 120 76 126 60 126S30 120 30 110Z" fill="#2a0408" opacity=".85"/>
+        <path d="M48 104H72" stroke="#ff7a8a" stroke-width="2" stroke-linecap="round" opacity=".7"/>
+        <circle class="g-glow" cx="60" cy="40" r="30" fill="url(#g-halo)"/>
+        <g class="g-eye">
+          <path d="M60 16 84 40 60 64 36 40Z" fill="#050101" stroke="#fff5f6" stroke-width="1.6"/>
+          <path d="M38 40Q60 22 82 40Q60 58 38 40Z" fill="#020001" stroke="#ff263f" stroke-width="2"/>
+          <circle cx="60" cy="40" r="8.5" fill="#ff263f"/><ellipse cx="60" cy="40" rx="2.8" ry="6.4" fill="#020001"/>
+          <circle cx="63" cy="36.5" r="1.6" fill="#fff5f6"/>
+        </g>
+        <path d="M48 76Q60 86 72 76" fill="none" stroke="#2a0408" stroke-width="3.2" stroke-linecap="round"/>
+      </svg>
+</button>
+<section class="geeni-panel" id="geeni-panel" role="dialog" aria-label="Geeni, the EYE3 assistant">
+  <div class="g-head"><b>Geeni</b><small>EYE3 helper · runs on this device only</small><button id="geeni-x" type="button" aria-label="Close Geeni">✕</button></div>
+  <div class="g-log" id="geeni-log" aria-live="polite"></div>
+  <div class="g-chips" id="geeni-chips"></div>
+  <form class="g-form" id="geeni-form" autocomplete="off"><input class="field" id="geeni-in" type="text" maxlength="160" placeholder="Ask or tell Geeni: “play CNN”, “louder”…" aria-label="Ask Geeni"><button class="btn" id="geeni-mic" type="button" aria-label="Speak to Geeni" title="Speak to Geeni">🎤</button><button class="btn" type="submit">Ask</button></form>
 </section>
 
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js" defer></script>
@@ -1799,23 +1800,12 @@
     });
   });
   $("ex-close").addEventListener("click", function () { closeOverlays(); });
-  // the eye logo: two clicks (or taps) open the hidden section, three summon the EYE3 Genie.
-  // The second click waits a moment so a third one can still turn it into the genie.
-  var brandTimer = null, lastTap = 0, taps = 0, lastPointer = "";
-  function brandCount(n) {
-    clearTimeout(brandTimer); brandTimer = null;
-    if (n >= 3) { genieSummon(); return; }
-    if (n === 2 && !overlayOpen()) brandTimer = setTimeout(function () { brandTimer = null; if (!overlayOpen()) openExplicit(); }, 380);
-  }
-  $("brand").addEventListener("pointerdown", function (e) { lastPointer = e.pointerType; });
-  $("brand").addEventListener("click", function (e) { if (lastPointer !== "touch" && e.detail >= 2) { e.preventDefault(); brandCount(e.detail); } });
-  $("brand").addEventListener("dblclick", function (e) { e.preventDefault(); });
-  $("brand").addEventListener("pointerup", function (e) {   // taps on a touch screen
+  var lastTap = 0;   // double-tap on a touch screen
+  $("brand").addEventListener("dblclick", function (e) { e.preventDefault(); armExplicit(); });
+  $("brand").addEventListener("pointerup", function (e) {
     if (e.pointerType !== "touch") return;
     var n = Date.now();
-    taps = n - lastTap < 420 ? taps + 1 : 1; lastTap = n;
-    if (taps >= 2) brandCount(taps);
-    if (taps >= 3) taps = 0;
+    if (n - lastTap < 400) { lastTap = 0; armExplicit(); } else lastTap = n;
   });
 
   // ---- check channels from THIS connection (via EYE3 Link, and through your own proxy/VPN if you set one) ----
@@ -3287,10 +3277,201 @@
     })["catch"](function () { out.textContent = "The test could not run (offline, or a blocker?)."; });
   }
 
+  // ---- Geeni: the built-in EYE3 assistant. Three clicks on the eye logo call it or send it away. ----
+  // It runs in this page only: no server, no key, nothing is sent anywhere. It answers about EYE3, checks what is wrong and opens the right screen.
+  var GEENI_KEY = "eye3.home.geeni";   // sessionStorage: Geeni stays while this tab lives
+  var geeniFxTimer = 0;
+  function geeniShow(on, summon) {
+    var g = $("geeni");
+    g.classList.toggle("on", on); if (!on) { $("geeni-panel").classList.remove("open"); geeniListen(false); }
+    try { sessionStorage.setItem(GEENI_KEY, on ? "1" : ""); } catch (e) {}
+    if (on && summon && !reduceMotion) {   // the eye spins in 3D, then Geeni pops out of it
+      var fx = $("geeni-summon"); clearTimeout(geeniFxTimer);
+      g.classList.add("arriving"); fx.hidden = false;
+      geeniFxTimer = setTimeout(function () { fx.hidden = true; g.classList.remove("arriving"); }, 1850);
+    }
+  }
+  function geeniPanel(open) {
+    var p = $("geeni-panel"); p.classList.toggle("open", open);
+    if (open) { if (!$("geeni-log").firstChild) geeniHello(); setTimeout(function () { try { $("geeni-in").focus(); } catch (e) {} }, 60); }
+  }
+  var geeniSpoke = false, geeniRec = null;
+  function geeniSay(text, who, actions) {
+    if (who === "bot" && geeniSpoke && window.speechSynthesis && window.SpeechSynthesisUtterance) {   // answer aloud only when the viewer spoke
+      try { window.speechSynthesis.cancel(); var u = new SpeechSynthesisUtterance(text); u.rate = 1.05; u.pitch = 1.3; window.speechSynthesis.speak(u); } catch (e) {}
+    }
+    var log = $("geeni-log"), m = make("div", "g-msg " + who);
+    m.appendChild(make("span", "", text));
+    if (actions && actions.length) {
+      var row = make("div", "g-acts");
+      actions.forEach(function (a) { var b = make("button", "btn", a[0]); b.type = "button"; if (a[2]) nt(b); b.addEventListener("click", function () { geeniPanel(false); a[1](); }); row.appendChild(b); });
+      m.appendChild(row);
+    }
+    log.appendChild(m); log.scrollTop = log.scrollHeight;
+  }
+  var GEENI_CHIPS = ["Add my IPTV account", "Import a playlist", "Record a channel", "Why won't it play?", "Show shortcuts"];
+  function geeniHello() {
+    geeniSay("Hi, I am Geeni, the EYE3 helper. Ask me how something works, tell me what to do (“play CNN”, “next channel”, “louder”, “replay”), or ask “why won't it play?” and I will check. Press 🎤 to talk.", "bot");
+    var c = $("geeni-chips"); while (c.firstChild) c.removeChild(c.firstChild);
+    GEENI_CHIPS.forEach(function (t) { var b = make("button", "chip", t); b.type = "button"; b.addEventListener("click", function () { geeniAsk(t); }); c.appendChild(b); });
+  }
+  var geeniOpenTv = function () { openTile("tv"); };
+  function geeniFind(q, cb) {
+    var go = function () {
+      var words = fold(q).split(/\s+/).filter(Boolean), out = [];
+      if (!rawAll.length) buildAll();
+      for (var i = 0; i < allChannels.length && out.length < 5; i++) {
+        var c = allChannels[i]; if (c.adult) continue;
+        var n = fold(c.name); if (words.every(function (w) { return n.indexOf(w) > -1; })) out.push(c);
+      }
+      cb(out);
+    };
+    if (catalogueState === "idle") loadCatalogue();
+    var tries = 0, wait = function () { if (catalogueState !== "loading" || ++tries > 25) go(); else setTimeout(wait, 200); };
+    wait();
+  }
+  function geeniPlay(c) {
+    openTile("tv");
+    setTimeout(function () {
+      tvFilter.cat = "All"; tvFilter.group = ""; tvFilter.country = ""; tvFilter.q = c.name; $("tv-search").value = c.name; fillSelects(); applyFilter();
+      for (var i = 0; i < channels.length; i++) if (channels[i].url === c.url) { chIndex = i; paintChannels(); scrollCh(); playChannel(i); return; }
+    }, 600);
+  }
+  function geeniDiagnose() {
+    linkHello().then(function (h) { return "EYE3 Link is running (version " + h.version + "). "; }, function () { return "EYE3 Link is not running. Channels from your own accounts and http:// streams need it. "; }).then(function (linkText) {
+      var c = prevCh, bits = [linkText];
+      if (!c) bits.push("You have not played a channel yet: open Live TV, pick one and press OK.");
+      else {
+        bits.push("Last channel: " + c.name + ".");
+        if (/^http:\/\//i.test(c.url) && location.protocol === "https:" && c.url.indexOf(LINK_BASE) !== 0) bits.push("It is an http:// stream and this page is https://, so it only plays through EYE3 Link.");
+        else if (looksTs(c.url)) bits.push("It is a raw TS stream; these need a moment to start and the TS player from the internet.");
+        else bits.push("Try another channel of the same list first: if others play, this one is down or blocked in your country.");
+        bits.push("Press V to open it in VLC (it plays H.265 and Dolby sound). Live TV → Check from my connection tests every channel.");
+      }
+      geeniSay(bits.join(" "), "bot", [["Open Smart TV tools", openTools], ["Open EYE3 agent", openAgent]]);
+    });
+  }
+  var GEENI_TOPICS = [
+    [/hello|\bhi\b|\bhey\b|who are you|your name|what can you do|\bhelp\b/, "I am Geeni. I can explain EYE3, find and play a channel, check why something does not play, and open any screen for you.", []],
+    [/add.*(account|xtream|m3u|mag|login|subscription|provider|portal)|xtream|stalker|\bmag\b|iptv account/, "Open IPTV accounts and choose M3U link, Xtream Codes login or MAG portal. It is saved on this computer only. It needs EYE3 Link, a small program that runs on your computer.", [["Open IPTV accounts", function () { openAccounts(); }]]],
+    [/import|playlist|\bm3u\b|\bpdf\b|\bfile\b|my own list/, "The Playlist maker imports an .m3u file, a pasted list or a PDF, and exports a list for other players. Nothing is uploaded.", [["Open Playlist maker", function () { openMaker(); }]]],
+    [/record/, "Play a channel and press R to record it, press R again to stop. Files go to the recordings folder next to EYE3 Link (it must be version 1.8 or newer). Protected streams and adult channels are never recorded.", [["Open Recordings", function () { openRecordings(); }]]],
+    [/guide|epg|programme|program|schedule|grid/, "Press D in Live TV for the guide grid: 40 channels across the next 3 hours. Xtream accounts bring their own guide; for other lists add an XMLTV link in Settings.", [["Open Live TV", geeniOpenTv], ["Open the guide grid", function () { openTile("tv"); setTimeout(openGrid, 700); }]]],
+    [/multi|several channels|split screen|4 channels/, "Multi-view shows up to 4 channels at once with one sound. Select a channel in Live TV and press M to add it; keys 1-4 move the sound.", [["Open Multi-view", function () { mvOpen(); }]]],
+    [/cast|chromecast|airplay|mirror|miracast|projector|screen to tv/, "Press C in Live TV to cast the playing channel with your browser's cast list (Chromecast, AirPlay in Safari). For a projector or TV: Android ones run EYE3 Home in their browser; others need a laptop or box on HDMI.", [["Open the TV setup guide", function () { location.href = "setup.html"; }]]],
+    [/profile|kids|child|parent|\bpin\b|lock/, "Profiles can hide categories. A kids profile also hides every adult channel and needs the parent PIN to leave.", [["Open Profiles", function () { openProfiles(); }]]],
+    [/install|usb|stick|pendrive|box|kiosk|android|tv box|set up|setup/, "For a computer behind your TV, download the one-time install kit from the release page and run install.bat (Windows) or install.sh. An Android projector can use its browser and the Home link. The setup page has the steps.", [["Open the TV setup guide", function () { location.href = "setup.html"; }]]],
+    [/speed|slow|buffer|codec|h\.?265|hevc|no sound|no audio|dolby|ac-?3|compat/, "Smart TV tools shows which video and sound formats this screen can play and tests your connection speed. If H.265 or Dolby is missing, press V on the channel to open it in VLC.", [["Open Smart TV tools", openTools]]],
+    [/sync|phone and laptop|two devices|same on phone/, "Sync keeps My channels and favourites the same on your phone and laptop, with an encrypted code. Accounts, passwords and PINs are never synced.", [["Open Sync", function () { openSyncInfo(); }]]],
+    [/remote|control from.*phone/, "The phone remote controls Home from your phone. Turn it on in Settings, then open the remote page on the phone and enter the code.", [["Open Phone remote", function () { openRemoteInfo(); }]]],
+    [/update|version|upgrade|agent/, "EYE3 Link can check for new versions and install them by itself. The agent screen shows what it did.", [["Open EYE3 agent", openAgent]]],
+    [/screensaver|sleep|timer|night/, "Press S for the screensaver and Z for the sleep timer. The sleep timer stops playback and locks the hidden sections.", []],
+    [/shortcut|keys?\b|keyboard|remote keys/, "Here are all the keys.", [["Show shortcuts", function () { openShortcuts(); }]]],
+    [/vpn|geo|blocked|country|region/, "EYE3 does not include a VPN. If your provider's channels are blocked where you are, run your own VPN or proxy and give it to EYE3 Link with --proxy. Live TV → Check from my connection shows which channels work from here.", [["Open Help", function () { openHelp(); }]]],
+    [/dns|getaddrinfo|server not|not connected|could not (reach|find)|link is not running|not working|doesn.?t work|won.?t play|wont play|error|problem|broken|fix/, null, []]
+  ];
+  // short orders Geeni carries out at once ("louder", "next channel", "channel 5", "replay"...); questions go on to the topics below
+  var GEENI_NUM = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10 };
+  function geeniTv(then) {   // Live TV open and its list ready, then go on
+    if (!$("ov-tv").classList.contains("open")) openTile("tv");
+    var tries = 0; (function wait() { if (allChannels.length || ++tries > 40) then(); else setTimeout(wait, 200); })();
+  }
+  function geeniCommand(t) {
+    var m, done = function (text) { geeniSay(text, "bot"); return true; };
+    if ((m = /^(?:channel|go to channel|switch to channel|number)\s+(\d{1,4}|one|two|three|four|five|six|seven|eight|nine|ten)$/.exec(t))) {
+      var n = GEENI_NUM[m[1]] || parseInt(m[1], 10);
+      geeniTv(function () { if (!channels[n - 1]) { geeniSay("There is no channel " + n + " in this list.", "bot"); return; } chIndex = n - 1; paintChannels(); scrollCh(); playChannel(chIndex); geeniSay("Channel " + n + ": " + channels[chIndex].name + ".", "bot"); });
+      return true;
+    }
+    if (/^(next|channel up)( channel)?$/.test(t)) { geeniTv(function () { stepList(1); }); return done("Next channel."); }
+    if (/^(previous|prev|channel down)( channel)?$/.test(t)) { geeniTv(function () { stepList(-1); }); return done("Previous channel."); }
+    if (/^(louder|volume up|turn it up|more volume)$/.test(t)) { setVolume(0.2); return done("Louder."); }
+    if (/^(quieter|softer|volume down|turn it down|less volume)$/.test(t)) { setVolume(-0.2); return done("Quieter."); }
+    if (/^(mute|silence)$/.test(t)) { if (!mediaEls()[0].muted) setVolume(0, true); return done("Muted."); }
+    if (/^(unmute|sound on)$/.test(t)) { if (mediaEls()[0].muted) setVolume(0, true); return done("Sound on."); }
+    if (/^(pause|resume|continue|stop|play)$/.test(t)) { togglePlay(); return done("Okay."); }
+    if (/^full ?screen$/.test(t)) { toggleFullscreen(); return done("Fullscreen."); }
+    if (/^(replay|catch ?up|rewind|watch (it )?again)( this| it)?$/.test(t)) { if (!prevCh) return done("Play a channel first, then ask me to replay it."); geeniPanel(false); openCatchup(); return true; }
+    if (/^(record|record (this|it)|start recording|stop recording)( channel)?$/.test(t)) { if (!prevCh) return done("Play a channel first, then ask me to record it."); recToggle(); return done("Done."); }
+    if (/^(sleep|sleep timer)$/.test(t)) { cycleSleep(); var left = sleepLeft(); return done(left ? "Sleep timer: " + left + " minutes." : "Sleep timer off."); }
+    if (/^(movies|series|movies and series|films)$/.test(t)) { geeniPanel(false); closeOverlays(); openVod(); return true; }
+    if (/^free (movies|films)$/.test(t)) { geeniPanel(false); closeOverlays(); openVod(); setTimeout(freeOpen, 200); return true; }
+    if (/^(radio|youtube|my media|settings|live tv)$/.test(t)) { geeniPanel(false); closeOverlays(); openTile({ "my media": "media", "live tv": "tv" }[t] || t); return true; }
+    if (/^(home|go home|main menu)$/.test(t)) { closeOverlays(); focusIndex = 0; paintFocus(); return done("Home."); }
+    if (/^(what time is it|what s the time|whats the time|time)$/.test(t)) { var d = new Date(); return done("It is " + ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2) + "."); }
+    if (/^(bye|goodbye|go away|see you)$/.test(t)) { geeniSay("Bye! Three clicks on the eye bring me back.", "bot"); setTimeout(function () { geeniShow(false); }, 900); return true; }
+    return false;
+  }
+  // voice: the browser's own speech recognition, started only by the microphone button
+  var GEENI_VOICE = "eye3.home.geeni.voice";
+  function geeniListen(on) {
+    var mic = $("geeni-mic");
+    if (!on) { if (geeniRec) { try { geeniRec.abort(); } catch (e) {} geeniRec = null; } mic.classList.remove("on"); $("geeni").classList.remove("listening"); return; }
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { geeniSay("Voice is not available in this browser. Type instead (Chrome and Edge support voice).", "bot"); return; }
+    if (get(GEENI_VOICE) !== "1") {
+      set(GEENI_VOICE, "1");
+      geeniSay("Voice uses your browser's speech service: in Chrome and Edge your words are sent to Google or Microsoft to be turned into text. Press 🎤 again to talk, or just type.", "bot");
+      return;
+    }
+    var rec = new SR(); geeniRec = rec;
+    rec.lang = navigator.language || "en-US"; rec.interimResults = false; rec.maxAlternatives = 1;
+    rec.onresult = function (e) { var r = e.results && e.results[0] && e.results[0][0]; if (r) geeniAsk(r.transcript, true); };
+    rec.onerror = function (e) { if (e.error !== "aborted" && e.error !== "no-speech") geeniSay(e.error === "not-allowed" ? "The microphone is blocked. Allow it in the browser's address bar, then try again." : "I could not hear that (" + e.error + ").", "bot"); };
+    rec.onend = function () { if (geeniRec === rec) geeniRec = null; mic.classList.remove("on"); $("geeni").classList.remove("listening"); };
+    try { rec.start(); mic.classList.add("on"); $("geeni").classList.add("listening"); } catch (e) { geeniSay("Voice could not start: " + e.message, "bot"); }
+  }
+  function geeniAsk(raw, spoken) {
+    var q = String(raw || "").replace(/^\s+|\s+$/g, "").slice(0, 160); if (!q) return;
+    geeniSpoke = !!spoken;
+    geeniSay(q, "me");
+    var f = fold(q).replace(/[!?.,;:"“”]+/g, " ").replace(/\b(hey|hi|ok|okay)?\s*(geeni|genie)\b/g, " ").replace(/\bplease\b/g, " ").replace(/\s+/g, " ").replace(/^\s+|\s+$/g, "");
+    if (!f) { geeniHello(); return; }
+    if (/adult|explicit|xxx|18\+|porn|\bsex/.test(f)) { geeniSay("Adult content is never in the normal lists. Your own lists can unlock a separate hidden section with an age check and a PIN. I cannot open that section for you.", "bot"); return; }
+    if (geeniCommand(f)) return;
+    var m = /^(?:please\s+)?(?:play|watch|find|search(?: for)?|open|show me)\s+(.{2,40})$/.exec(f);
+    if (m && !/^(live tv|radio|settings|my media|recordings?|profiles?|guide|multi.?view)$/.test(m[1])) {
+      geeniSay("Looking for “" + m[1] + "”…", "bot");
+      geeniFind(m[1], function (res) {
+        if (!res.length) { geeniSay("I found no channel with that name. Open Live TV once so the free list loads, or add your own list, then ask again.", "bot", [["Open Live TV", geeniOpenTv]]); return; }
+        var want = fold(m[1]).replace(/\s+/g, " "), best = res.filter(function (c) { return fold(c.name) === want; })[0] || res[0];
+        var others = res.filter(function (c) { return c !== best; });
+        geeniPlay(best); if (!others.length) geeniPanel(false);   // tuck the panel away so the picture shows
+        geeniSay("Playing " + best.name + "." + (others.length ? " Other matches:" : ""), "bot", others.map(function (c) { return ["▶ " + c.name, function () { geeniPlay(c); }, true]; }));
+      });
+      return;
+    }
+    for (var i = 0; i < GEENI_TOPICS.length; i++) {
+      var t = GEENI_TOPICS[i];
+      if (t[0].test(f)) { if (t[1] === null) { geeniDiagnose(); return; } geeniSay(t[1], "bot", t[2]); return; }
+    }
+    if (/why|how|can.*(play|watch)|play/.test(f) && /(play|watch|work|load|show)/.test(f)) { geeniDiagnose(); return; }
+    geeniSay("I did not get that. I can help with accounts and playlists, recording, the guide, multi-view, casting, profiles, the TV setup, updates and problems. You can also say “play” and a channel name.", "bot");
+  }
+  $("geeni").addEventListener("click", function () { geeniPanel(!$("geeni-panel").classList.contains("open")); });
+  $("geeni-x").addEventListener("click", function () { geeniPanel(false); });
+  $("geeni-form").addEventListener("submit", function (e) { e.preventDefault(); var v = $("geeni-in").value; $("geeni-in").value = ""; geeniAsk(v); });
+  try { if (sessionStorage.getItem(GEENI_KEY) === "1") $("geeni").classList.add("on"); } catch (e) {}
+
+  // three clicks on the eye logo: Geeni. Two clicks (or a double-tap) still open the hidden section, after a short wait to be sure no third click follows.
+  var brandClicks = 0, brandTimer = 0, exTimer = 0;
+  function armExplicit() { clearTimeout(exTimer); exTimer = setTimeout(function () { exTimer = 0; if (!overlayOpen()) openExplicit(); }, 420); }
+  $("brand").addEventListener("click", function () {
+    brandClicks++; clearTimeout(brandTimer); brandTimer = setTimeout(function () { brandClicks = 0; }, 800);
+    if (brandClicks >= 3) { brandClicks = 0; clearTimeout(exTimer); exTimer = 0; var on = !$("geeni").classList.contains("on"); geeniShow(on, true); toast(on ? "Geeni is here" : "Geeni went away"); }
+  });
+  $("geeni-mic").addEventListener("click", function () { geeniListen(!geeniRec); });
+  document.addEventListener("keydown", function (e) {   // H calls Geeni from the home screen
+    if ((e.key === "h" || e.key === "H") && !e.ctrlKey && !e.metaKey && !e.altKey && !isTyping() && !overlayOpen() && !$("geeni-panel").classList.contains("open")) {
+      e.preventDefault(); var fresh = !$("geeni").classList.contains("on"); geeniShow(true, fresh); setTimeout(function () { geeniPanel(true); }, fresh && !reduceMotion ? 1850 : 0);
+    }
+  });
+
   function isBack(e) { return e.key === "Escape" || e.key === "GoBack" || e.keyCode === 10009 || e.keyCode === 461 || e.key === "Backspace" && !isTyping(); }
   function isTyping() { var a = document.activeElement; return a && (a.tagName === "INPUT" || a.tagName === "TEXTAREA"); }
   document.addEventListener("keydown", function (e) {
     if ($("ov-pal").classList.contains("open")) { palKey(e); return; }
+    if ($("geeni-panel").classList.contains("open")) { if (isBack(e) && e.key === "Escape") { e.preventDefault(); geeniPanel(false); } return; }
     if ($("ov-pin").classList.contains("open")) { if (isBack(e)) { e.preventDefault(); $("pin-cancel").click(); } return; }
     if ($("ov-grid").classList.contains("open")) { gridKey(e); return; }
     if ($("ov-multi").classList.contains("open")) { multiKey(e); return; }
@@ -3807,183 +3988,6 @@
     }, 300);
   })();
   startLang();
-  // ---- EYE3 Genie: a floating helper that runs Home by typed or spoken commands ----
-  // Summoned by three clicks on the eye logo (or key H). Commands are matched here, in the page, against a fixed list of
-  // actions; nothing is sent to an AI service. Voice uses the browser's own speech recognition (in Chrome that service is
-  // Google's), only after the viewer presses the microphone. The genie never opens or mentions the hidden section.
-  var GENIE_KEY = "eye3.home.genie", GENIE_POS = "eye3.home.genie.pos", GENIE_VOICE = "eye3.home.genie.voice";
-  var genieEl = $("genie"), geniePanel = $("genie-panel"), genieLog = $("genie-log"), genieInput = $("genie-input");
-  var genieBusy = false, genieRec = null, genieSpoke = false;
-  function genieSay(text, who) {
-    var p = make("p", who === "me" ? "me" : "bot", text); if (who === "me") nt(p);
-    genieLog.appendChild(p);
-    while (genieLog.children.length > 40) genieLog.removeChild(genieLog.firstChild);
-    genieLog.scrollTop = genieLog.scrollHeight;
-    if (who !== "me" && genieSpoke && window.speechSynthesis && window.SpeechSynthesisUtterance) {
-      try { window.speechSynthesis.cancel(); var u = new SpeechSynthesisUtterance(text); u.rate = 1.05; u.pitch = 1.3; window.speechSynthesis.speak(u); } catch (e) {}
-    }
-  }
-  function genieOpenPanel(on) {
-    geniePanel.hidden = !on; $("genie-body").setAttribute("aria-expanded", on ? "true" : "false");
-    if (on) { if (!genieLog.children.length) genieSay("Hi, I’m your EYE3 Genie. Tell me what to do — type it or press 🎤 and say it."); setTimeout(function () { try { genieInput.focus(); } catch (e) {} }, 40); }
-    else { genieListen(false); try { genieInput.blur(); } catch (e) {} }
-  }
-  function genieShow(withPanel) {
-    genieEl.hidden = false; set(GENIE_KEY, "1");
-    try { var pos = JSON.parse(get(GENIE_POS) || "null"); if (pos && pos.x >= 0 && pos.y >= 0) genieMove(pos.x, pos.y); } catch (e) {}
-    if (withPanel) genieOpenPanel(true);
-  }
-  function genieSummon() {
-    if (!genieEl.hidden) { genieOpenPanel(true); return; }
-    if (genieBusy) return;
-    var fx = $("genie-summon");
-    if (reduceMotion) { genieShow(true); return; }
-    genieBusy = true; fx.hidden = false;
-    setTimeout(function () { fx.hidden = true; genieBusy = false; genieShow(true); }, 1850);
-  }
-  function genieDismiss() { genieOpenPanel(false); genieEl.hidden = true; set(GENIE_KEY, "0"); toast("The genie went back into the eye. Click the logo three times to call it again."); }
-  // drag the genie anywhere on the screen
-  function genieMove(x, y) {
-    var w = genieEl.offsetWidth || 100, h = genieEl.offsetHeight || 140;
-    x = Math.max(4, Math.min(window.innerWidth - w - 4, x)); y = Math.max(4, Math.min(window.innerHeight - h - 4, y));
-    genieEl.style.left = x + "px"; genieEl.style.top = y + "px"; genieEl.style.right = "auto"; genieEl.style.bottom = "auto"; genieEl.style.insetInlineEnd = "auto";
-  }
-  (function () {
-    var body = $("genie-body"), drag = null;
-    body.addEventListener("pointerdown", function (e) { var r = genieEl.getBoundingClientRect(); drag = { dx: e.clientX - r.left, dy: e.clientY - r.top, x0: e.clientX, y0: e.clientY, moved: false }; try { body.setPointerCapture(e.pointerId); } catch (er) {} });
-    body.addEventListener("pointermove", function (e) {
-      if (!drag) return;
-      if (!drag.moved && Math.abs(e.clientX - drag.x0) + Math.abs(e.clientY - drag.y0) < 8) return;
-      drag.moved = true; genieMove(e.clientX - drag.dx, e.clientY - drag.dy);
-    });
-    body.addEventListener("pointerup", function () {
-      if (drag && drag.moved) { var r = genieEl.getBoundingClientRect(); set(GENIE_POS, JSON.stringify({ x: Math.round(r.left), y: Math.round(r.top) })); body.dataset.dragged = "1"; }
-      drag = null;
-    });
-    body.addEventListener("click", function () { if (body.dataset.dragged) { delete body.dataset.dragged; return; } genieOpenPanel(geniePanel.hidden); });
-  })();
-  // ---- understanding a command ----
-  function genieClean(t) {
-    return fold(t).replace(/[!?.,;:"“”'’]+/g, " ").replace(/\b(hey|hi|ok|okay|hello)?\s*(genie|eye3|eye 3)\b/g, " ")
-      .replace(/\b(please|can you|could you|would you|i want to|i want|i would like to|for me|let s|lets)\b/g, " ").replace(/\s+/g, " ").trim();
-  }
-  var GENIE_WORDS = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10 };
-  function genieTv(then) {   // make sure Live TV is open and the channel list is ready, then go on
-    if (!$("ov-tv").classList.contains("open")) { closeOverlays(); openTile("tv"); }
-    var tries = 0;
-    (function wait() { if (allChannels.length || ++tries > 40) then(); else setTimeout(wait, 200); })();
-  }
-  function geniePlay(name) {
-    genieTv(function () {
-      var want = fold(name).replace(/\s+/g, " ").trim(), words = want.split(" ").filter(Boolean);
-      var pool = allChannels.filter(function (c) { return !c.adult && !(hideFailedOn() && failedRecently(c.url)); });
-      var exact = pool.filter(function (c) { return fold(c.name).trim() === want; });
-      var hits = exact.length ? exact : pool.filter(function (c) { var f = c._f || (c._f = fold(c.name)); return words.every(function (w) { return f.indexOf(w) >= 0; }); });
-      if (!hits.length) { genieSay("I couldn’t find a channel called “" + name + "”. Try a shorter name."); return; }
-      var pick = hits[0];
-      tvFilter.cat = "All"; tvFilter.group = ""; tvFilter.country = ""; tvFilter.q = name; $("tv-search").value = name;
-      fillSelects(); applyFilter(pick.url);
-      var i = channels.indexOf(pick); if (i < 0) i = 0;
-      chIndex = i; paintChannels(); scrollCh(); playChannel(i);
-      genieSay("Playing " + pick.name + (hits.length > 1 ? " (" + hits.length + " matches — say “next channel” for the others)." : "."));
-    });
-  }
-  function hideFailedOn() { return $("tv-hidefailed").checked; }
-  function genieHelp() {
-    genieSay("I can: play a channel by name or number, next / previous channel, replay a past programme, show the guide or guide grid, record, multi-view, cast, mini window, movies & series, free movies, radio, my media, YouTube, web search, louder / quieter / mute, pause / play, fullscreen, sleep timer, screensaver, IPTV accounts, settings, the time, and go home.");
-  }
-  function genieDo(raw) {
-    var t = genieClean(raw), m;
-    if (!t) { genieHelp(); return; }
-    if (/\b(explicit|adult|18 ?plus|18\+|xxx|porn|sex|nsfw|unlock)\b/.test(t)) { genieSay("That’s not something I can do."); return; }
-    if (/^(help|what can you do|commands|what do you do)/.test(t)) { genieHelp(); return; }
-    if (/^(hi|hello|hey|thanks|thank you|good (morning|evening|night))$/.test(t)) { genieSay(/thank/.test(t) ? "Any time!" : "Hello! What shall we watch?"); return; }
-    if (/^(bye|goodbye|go away|hide|dismiss|sleep genie)$/.test(t)) { genieSay("Bye! Three clicks on the eye bring me back."); setTimeout(genieDismiss, 900); return; }
-    // "play / watch / open X": a feature name opens that feature, anything else is a channel name
-    if ((m = /^(?:play|watch|put on|open|switch to|go to|show me|tune to|start|show)\s+(?:the\s+)?(.+)$/.exec(t))) {
-      var what = m[1];
-      if (!/^(radio|movies?|films?|series|shows?|free (movies?|films?)|youtube|my media|media|usb|photos|settings|guide|guide grid|grid|catch ?up|replay|live tv|tv|television|channels|next( channel)?|previous( channel)?|accounts?|iptv accounts?|multi ?view|mini window|web|vision|camera|eye3 vision|screensaver|shortcuts|home)$/.test(what)) {
-        var num = /^(?:channel\s+)?(\d{1,4}|one|two|three|four|five|six|seven|eight|nine|ten)$/.exec(what);
-        if (num) { genieDo("channel " + num[1]); return; }
-        geniePlay(what.replace(/^channel\s+/, "").replace(/\s+(channel|on tv|live)$/, "").trim() || what); return;
-      }
-      t = what;
-    }
-    if (/^(web|search)$/.test(t)) { closeOverlays(); openTile("web"); genieSay("Web search."); return; }
-    if (/^(what time is it|what s the time|whats the time|time|clock|tell me the time)$/.test(t)) { var d = new Date(); genieSay("It’s " + ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2) + "."); return; }
-    if ((m = /^(?:channel|number|go to channel|switch to channel)\s+(\d{1,4}|one|two|three|four|five|six|seven|eight|nine|ten)$/.exec(t))) {
-      var n = GENIE_WORDS[m[1]] || parseInt(m[1], 10);
-      genieTv(function () { if (!channels[n - 1]) { genieSay("There is no channel " + n + " in this list."); return; } chIndex = n - 1; paintChannels(); scrollCh(); playChannel(chIndex); genieSay("Channel " + n + ": " + channels[chIndex].name + "."); });
-      return;
-    }
-    if (/^(next|channel up|up)( channel)?$/.test(t)) { genieTv(function () { stepList(1); genieSay("Next channel."); }); return; }
-    if (/^(previous|prev|last|back|channel down|down)( channel)?$/.test(t)) { genieTv(function () { stepList(-1); genieSay("Previous channel."); }); return; }
-    if (/\b(replay|catch ?up|rewind|watch again|earlier|missed)\b/.test(t)) { if (!prevCh) { genieSay("Play a channel first, then ask me to replay it."); return; } openCatchup(); genieSay("Here’s what you can replay on " + prevCh.name + "."); return; }
-    if (/\bguide grid|grid\b/.test(t)) { genieTv(function () { openGrid(); genieSay("Guide grid."); }); return; }
-    if (/\b(guide|what s on|whats on|epg|programme|program)\b/.test(t)) { if (!prevCh) { genieSay("Play a channel first, then ask for its guide."); return; } openGuide(); genieSay("The guide for " + prevCh.name + "."); return; }
-    if (/\b(stop recording|record|recording)\b/.test(t)) { if (!prevCh) { genieSay("Play a channel first, then ask me to record it."); return; } recToggle(); genieSay("Done."); return; }
-    if (/\bmulti ?view|multi screen|split screen\b/.test(t)) { genieTv(function () { mvAdd(channels[chIndex]); genieSay("Added to multi-view."); }); return; }
-    if (/\b(mini window|picture in picture|pip)\b/.test(t)) { miniWindow(); genieSay("Mini window."); return; }
-    if (/\bfree (movie|film)s?\b/.test(t)) { closeOverlays(); openVod(); setTimeout(freeOpen, 200); genieSay("Free movies from the Internet Archive."); return; }
-    if (/\b(movie|movies|film|films|series|show|shows|vod)\b/.test(t)) { closeOverlays(); openVod(); genieSay("Movies & series."); return; }
-    if (/\bradio\b/.test(t)) { closeOverlays(); openTile("radio"); genieSay("Radio."); return; }
-    if (/\b(my media|usb|photos|my videos|media)\b/.test(t)) { closeOverlays(); openTile("media"); genieSay("My media."); return; }
-    if (/\byoutube\b/.test(t)) { closeOverlays(); openTile("youtube"); genieSay("YouTube."); return; }
-    if ((m = /^(?:search|search for|google|look up|find on web|web search)\s+(.+)$/.exec(t))) { closeOverlays(); openWeb("Web", "https://html.duckduckgo.com/html/?q=" + encodeURIComponent(m[1]), ""); genieSay("Searching the web for “" + m[1] + "”."); return; }
-    if (/\b(vision|camera|scan|detect|read text|ocr)\b/.test(t)) { genieSay("Opening EYE3 Vision."); setTimeout(function () { openTile("vision"); }, 600); return; }
-    if (/\b(accounts?|xtream|mag|stalker|m3u|add (my )?playlist|iptv)\b/.test(t)) { closeOverlays(); openAccounts(); genieSay("Your IPTV accounts."); return; }
-    if (/\bcast\b/.test(t)) { genieTv(function () { castNow(); genieSay("Looking for a screen to cast to."); }); return; }
-    if (/\b(unmute|sound on)\b/.test(t)) { var els = mediaEls(); if (els[0].muted) setVolume(0, true); genieSay("Sound on."); return; }
-    if (/\b(mute|silence|quiet mode)\b/.test(t)) { var el2 = mediaEls(); if (!el2[0].muted) setVolume(0, true); genieSay("Muted."); return; }
-    if (/\b(louder|volume up|turn it up|increase volume|more volume)\b/.test(t)) { setVolume(0.2); genieSay("Louder."); return; }
-    if (/\b(quieter|softer|volume down|turn it down|lower volume|less volume)\b/.test(t)) { setVolume(-0.2); genieSay("Quieter."); return; }
-    if (/^(pause|stop|resume|continue|play)$/.test(t)) { togglePlay(); genieSay("Okay."); return; }
-    if (/\bfull ?screen\b/.test(t)) { toggleFullscreen(); genieSay("Fullscreen."); return; }
-    if (/\b(sleep|timer|turn off later)\b/.test(t)) { cycleSleep(); var left = sleepLeft(); genieSay(left ? "Sleep timer: " + left + " minutes." : "Sleep timer off."); return; }
-    if (/\b(screensaver|screen saver)\b/.test(t)) { showSaver(); return; }
-    if (/\b(settings|options|preferences)\b/.test(t)) { closeOverlays(); openSettings(); genieSay("Settings."); return; }
-    if (/\b(shortcuts|keys|keyboard)\b/.test(t)) { openShortcuts(); return; }
-    if (/^(home|close|go home|main menu|exit)$/.test(t)) { closeOverlays(); focusIndex = 0; paintFocus(); genieSay("Home."); return; }
-    if (/^(live tv|tv|television|channels)$/.test(t)) { genieTv(function () { genieSay("Live TV. Tell me a channel name to play it."); }); return; }
-    if (t.split(" ").length <= 4) { geniePlay(t); return; }   // a short phrase is most likely a channel name
-    genieSay("I didn’t catch that. Say “help” to hear what I can do.");
-  }
-  function genieRun(text, spoken) {
-    text = String(text || "").replace(/^\s+|\s+$/g, "").slice(0, 160);
-    if (!text) return;
-    genieSpoke = !!spoken;
-    genieSay(text, "me");
-    genieEl.classList.add("thinking");
-    setTimeout(function () { genieEl.classList.remove("thinking"); try { genieDo(text); } catch (e) { genieSay("Something went wrong: " + e.message); } }, 250);
-  }
-  $("genie-form").addEventListener("submit", function (e) { e.preventDefault(); var v = genieInput.value; genieInput.value = ""; genieRun(v, false); });
-  genieInput.addEventListener("keydown", function (e) {
-    e.stopPropagation();   // typing here must not move the home tiles, start the screensaver or change channels
-    if (e.key === "Escape") { e.preventDefault(); genieOpenPanel(false); try { $("genie-body").focus(); } catch (er) {} }
-  });
-  // ---- voice: the browser's speech recognition, started only by the microphone button ----
-  function genieListen(on) {
-    var mic = $("genie-mic");
-    if (!on) { if (genieRec) { try { genieRec.abort(); } catch (e) {} genieRec = null; } mic.classList.remove("on"); genieEl.classList.remove("listening"); return; }
-    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) { genieSay("Voice isn’t available in this browser. Type your command instead (Chrome and Edge support voice)."); return; }
-    if (get(GENIE_VOICE) !== "1") {
-      set(GENIE_VOICE, "1");
-      genieSay("Voice uses your browser’s speech service: in Chrome and Edge your words are sent to Google or Microsoft to be turned into text. Press 🎤 again to talk, or just type.");
-      return;
-    }
-    var rec = new SR(); genieRec = rec;
-    rec.lang = navigator.language || "en-US"; rec.interimResults = false; rec.maxAlternatives = 1;
-    rec.onresult = function (e) { var r = e.results && e.results[0] && e.results[0][0]; if (r) genieRun(r.transcript, true); };
-    rec.onerror = function (e) { if (e.error !== "aborted" && e.error !== "no-speech") genieSay(e.error === "not-allowed" ? "The microphone is blocked. Allow it in the browser’s address bar, then try again." : "I couldn’t hear that (" + e.error + ")."); };
-    rec.onend = function () { if (genieRec === rec) genieRec = null; mic.classList.remove("on"); genieEl.classList.remove("listening"); };
-    try { rec.start(); mic.classList.add("on"); genieEl.classList.add("listening"); genieSay("Listening…"); } catch (e) { genieSay("Voice could not start: " + e.message); }
-  }
-  $("genie-mic").addEventListener("click", function () { genieListen(!genieRec); });
-  document.addEventListener("keydown", function (e) {
-    if ((e.key === "h" || e.key === "H") && !e.ctrlKey && !e.metaKey && !e.altKey && !isTyping() && !overlayOpen()) { e.preventDefault(); genieSummon(); }
-  });
-  if (get(GENIE_KEY) === "1") genieShow(false);
 })();
 </script>
 </body>

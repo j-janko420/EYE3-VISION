@@ -56,8 +56,8 @@ Import the file in **Playlist maker → Import an M3U file**. A big file is save
 ### Catch-up TV: replay past programmes (EYE3 Link 1.9)
 Channels of an Xtream Codes account whose provider keeps an archive show **⟲** in the list. Play one and press **U** (or the **Replay** button): you get its past programmes by day, newest first. Pick one to watch it from the start. Press Enter on any channel to go back to live TV. How many days you can go back depends on your provider (shown in the title). Needs EYE3 Link 1.9 or newer.
 
-### EYE3 Genie (your floating helper)
-Click the eye logo **three times** (or press **H** on the home screen). The eye spins and turns into a small red helper that floats on the screen; drag it anywhere. Click it and type or say what you want: “play BBC News”, “channel 5”, “next channel”, “replay”, “guide”, “record”, “movies”, “radio”, “louder”, “pause”, “fullscreen”, “sleep”, “help”. “Bye” sends it away. It works inside the page and sends nothing anywhere; voice uses your browser’s speech service (in Chrome and Edge, Google or Microsoft turns your words into text), and only when you press 🎤.
+### Geeni (your floating helper)
+Click the eye logo **three times** (or press **H** on the home screen). The eye spins and turns into Geeni, a small red helper that floats on the screen. Click Geeni and type or say what you want: “play BBC News”, “channel 5”, “next channel”, “replay”, “record”, “movies”, “radio”, “louder”, “pause”, “fullscreen”, “sleep”, or ask a question such as “how do I add my Xtream account?” or “why won't it play?”. “Bye” (or three more clicks) sends Geeni away. Geeni works inside the page and sends nothing anywhere; voice uses your browser's speech service (in Chrome and Edge, Google or Microsoft turns your words into text), and only when you press 🎤.
 
 ### Quick search, guide, VLC and more (EYE3 Link 1.6)
 - **Ctrl (or ⌘) + K** opens quick search: type part of a channel name (your own lists come first) or an action. **?** lists every key.
