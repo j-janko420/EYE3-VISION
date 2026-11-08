@@ -423,7 +423,8 @@ const toast = (p) => p.evaluate(() => [...document.querySelectorAll('.toast')].m
     await p.keyboard.press('c'); await p.waitForTimeout(300);
     check('with a picture, Cast opens the browser cast list', await p.evaluate(() => window.__cast === 1));
     await p.keyboard.press('Escape'); await p.waitForTimeout(200);
-    await p.keyboard.press('Control+k'); await p.waitForTimeout(300); await p.keyboard.type('smart tv'); await p.waitForTimeout(300); await p.keyboard.press('Enter'); await p.waitForTimeout(500);
+    await p.keyboard.press('Control+k'); await p.waitForTimeout(300); await p.keyboard.type('smart tv'); await p.waitForTimeout(300); await p.keyboard.press('Enter');
+    await p.waitForFunction(() => document.getElementById('info-title').textContent === 'Smart TV tools' && /Test my connection/.test(document.getElementById('info-body').textContent), null, { timeout: 8000 }).catch(() => {});
     const tl = await p.evaluate(() => ({ title: document.getElementById('info-title').textContent, text: document.getElementById('info-body').textContent }));
     check('Smart TV tools lists codecs, screen and the speed test', tl.title === 'Smart TV tools' && /H\.264/.test(tl.text) && /HEVC/.test(tl.text) && /Test my connection/.test(tl.text) && /HLS/.test(tl.text), tl.text.slice(0, 200));
     check('no page errors in the tools', p.errs.length === 0, p.errs);
