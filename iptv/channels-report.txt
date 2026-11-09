@@ -1,117 +1,117 @@
-EYE3 channel catalogue, 2026-11-02T04:47:03Z
+EYE3 channel catalogue, 2026-11-09T04:47:12Z
 source: https://iptv-org.github.io/iptv/index.m3u + https://raw.githubusercontent.com/Free-TV/IPTV/master/playlist.m3u8
-channels: 8014 (https: 6848)
+channels: 7941 (https: 6672)
 
 by category
-  News             699
-  General          2180
-  Entertainment    599
-  Movies           469
-  Series           333
-  Sports           248
-  Music            616
-  Kids             217
-  Documentary      149
+  News             663
+  General          2240
+  Entertainment    582
+  Movies           450
+  Series           328
+  Sports           249
+  Music            602
+  Kids             216
+  Documentary      163
   Lifestyle        81
-  Culture          123
-  Comedy           127
-  Animation        131
-  Business         55
-  Education        112
-  Science          8
-  Religious        577
-  Travel           29
+  Culture          116
+  Comedy           126
+  Animation        134
+  Business         58
+  Education        114
+  Science          6
+  Religious        539
+  Travel           34
   Cooking          49
-  Outdoor          56
+  Outdoor          55
   Weather          14
-  Family           36
-  Classic          84
-  Legislative      88
+  Family           31
+  Classic          72
+  Legislative      95
   Public           2
-  Relax            6
-  Shop             57
-  Auto             26
-  Other            843
+  Relax            5
+  Shop             55
+  Auto             27
+  Other            835
 
-checked 11296 streams, kept 8014. Why the others were dropped
-    725  not found (404, 410: link is dead)
-    694  no answer in time
-    651  refused / blocked (403, 451: often a country block from the US test server)
-    382  cannot connect (DNS / refused / reset)
-    230  invalid HTTPS certificate
-    178  answered, but not a video playlist
-     87  server error (5xx)
-     82  not found (404, 410: link is dead) [at the variant step]
-     54  other HTTP answer
-     48  refused / blocked (403, 451: often a country block from the US test server) [at the segment step]
-     38  other problem
+checked 11328 streams, kept 7941. Why the others were dropped
+    744  not found (404, 410: link is dead)
+    738  no answer in time
+    578  cannot connect (DNS / refused / reset)
+    548  refused / blocked (403, 451: often a country block from the US test server)
+    233  invalid HTTPS certificate
+    137  answered, but not a video playlist
+     83  not found (404, 410: link is dead) [at the variant step]
+     68  server error (5xx)
+     60  refused / blocked (403, 451: often a country block from the US test server) [at the segment step]
+     47  other HTTP answer
+     39  other problem
      27  not found (404, 410: link is dead) [at the segment step]
      17  playlist has no video segments
-     16  no answer in time [at the variant step]
-     10  no answer in time [at the segment step]
-      9  cannot connect (DNS / refused / reset) [at the variant step]
-      9  cannot connect (DNS / refused / reset) [at the segment step]
-      6  other problem [at the variant step]
+     15  no answer in time [at the variant step]
+     10  cannot connect (DNS / refused / reset) [at the variant step]
+      8  other problem [at the variant step]
+      7  other HTTP answer [at the segment step]
       5  server error (5xx) [at the segment step]
-      5  other HTTP answer [at the segment step]
-      3  refused / blocked (403, 451: often a country block from the US test server) [at the variant step]
+      5  no answer in time [at the segment step]
+      5  cannot connect (DNS / refused / reset) [at the segment step]
+      4  refused / blocked (403, 451: often a country block from the US test server) [at the variant step]
+      3  server error (5xx) [at the variant step]
       3  other HTTP answer [at the variant step]
-      1  server error (5xx) [at the variant step]
-      1  other problem [at the segment step]
+      2  invalid HTTPS certificate [at the segment step]
       1  video segment was empty
 
 countries with the most refused/blocked streams (likely geo-restricted)
-  US   99
-  IN   55
+  US   81
   IT   45
-  RU   37
-  ES   31
-  TR   31
+  ES   39
+  IN   37
+  RU   35
   KZ   25
-  MX   25
-  UK   25
   DE   22
+  MX   19
+  UK   19
+  FR   17
   BR   16
-  TH   15
+  NL   12
 
 by country (top 40)
-  US   1572
-  IN   647
+  US   1515
+  IN   580
   IT   375
-  SE   370
-  DE   348
-  RU   288
-  DO   175
-  CL   169
-  ES   155
-  FR   149
-  ??   148
-  UK   145
-  BR   140
-  AR   134
-  PE   127
-  RO   126
-  PL   122
+  SE   374
+  DE   341
+  RU   306
+  DO   168
+  CL   167
+  PL   165
+  ??   147
+  ES   146
+  BR   139
+  FR   139
+  AR   137
+  UK   136
+  RO   130
+  PE   124
   NL   119
-  TR   110
-  CA   107
-  MX   103
-  IR   101
+  CA   106
+  MX   106
+  TR   106
+  HU   105
   CO   95
-  CN   89
-  HU   89
-  UA   87
-  ID   81
-  GR   80
-  CZ   65
+  IR   93
+  CN   87
+  UA   80
+  ID   76
+  GR   75
+  CZ   67
+  VN   65
   KR   63
-  EC   55
-  VN   54
-  VE   53
-  IQ   51
-  CR   45
+  VE   57
+  PY   51
+  CR   50
+  EC   50
+  TH   49
+  IQ   46
   SA   43
-  TH   43
-  PK   42
-  HN   41
-  PY   41
+  HN   42
+  PK   40
