@@ -10,6 +10,7 @@ const ch = (n, u, i) => ({ n, u, g: '', l: '', i: i || '' });
 const rows = (p, sel) => p.evaluate((s) => [...document.querySelectorAll(s || '#chlist .ch:not(.action)')].map((r) => r.textContent), sel);
 const openTv = async (p) => { await p.evaluate(() => document.querySelector('.tile').click()); await p.waitForTimeout(1500); };
 const pickCat = async (p, prefix) => { await p.selectOption('#tv-cat', { label: await p.evaluate((x) => [...document.querySelectorAll('#tv-cat option')].map((o) => o.textContent).find((t) => t.startsWith(x)), prefix) }); await p.waitForTimeout(400); };
+const geeniReady = (p) => p.waitForFunction(() => { const g = document.getElementById('geeni'), r = g.getBoundingClientRect(); return g.classList.contains('on') && !g.classList.contains('arriving') && r.width > 20 && r.top >= 0 && r.bottom <= innerHeight && !g.getAnimations().some((a) => a.animationName === 'geeniPop' && a.playState === 'running'); }, null, { timeout: 5000 }).catch(() => {});   // Geeni pops in for 0.6 s after the spin: click only once it is full size
 const toast = (p) => p.evaluate(() => [...document.querySelectorAll('.toast')].map((t) => t.textContent).pop());
 
 (async () => {
@@ -483,6 +484,7 @@ const toast = (p) => p.evaluate(() => [...document.querySelectorAll('.toast')].m
     check('three clicks on the eye bring Geeni, floating', await p.evaluate(() => { const g = document.getElementById('geeni'); return g.classList.contains('on') && !g.classList.contains('arriving') && document.getElementById('geeni-summon').hidden && getComputedStyle(g).position === 'fixed' && /geeniFloat/.test(getComputedStyle(g).animationName); }));
     check('it is a small creature with the red eye on its forehead, in the theme colours', await p.evaluate(() => { const g = document.getElementById('geeni'); return !!g.querySelector('svg .g-eye') && g.innerHTML.indexOf('#ff263f') > 0; }));
     check('and the hidden section did not open', !(await p.evaluate(() => document.getElementById('ov-explicit').classList.contains('open'))));
+    await geeniReady(p);
     await p.click('#geeni', { force: true }); await p.waitForTimeout(300);
     const hello = await p.evaluate(() => ({ text: document.getElementById('geeni-log').textContent, chips: document.querySelectorAll('#geeni-chips .chip').length }));
     check('the panel greets and offers quick questions', /I am Geeni/.test(hello.text) && hello.chips === 5, hello);
@@ -551,7 +553,7 @@ const toast = (p) => p.evaluate(() => [...document.querySelectorAll('.toast')].m
     await h.evaluate(() => [...document.querySelectorAll('.tile')].pop().click()); await h.waitForTimeout(500);
     check('Settings on EYE3 Home links to the guide', await h.evaluate(() => !!document.getElementById('set-guide')));
     await h.keyboard.press('Escape'); await h.waitForTimeout(200);
-    await h.click('#brand', { clickCount: 3, delay: 30 }); await h.waitForTimeout(2200);
+    await h.click('#brand', { clickCount: 3, delay: 30 }); await h.waitForTimeout(2200); await geeniReady(h);
     await h.click('#geeni', { force: true }); await h.waitForTimeout(300);
     await h.fill('#geeni-in', 'where can I watch free movies legally'); await h.press('#geeni-in', 'Enter'); await h.waitForTimeout(500);
     check('Geeni points to the guide', await h.evaluate(() => [...document.querySelectorAll('#geeni-log .g-msg.bot .btn')].some((b) => /EYE3 Guide/.test(b.textContent))));
