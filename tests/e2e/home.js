@@ -278,7 +278,7 @@ const toast = (p) => p.evaluate(() => [...document.querySelectorAll('.toast')].m
     check('the agent chip shows that Link is on (the test Link runs with the agent switches)', /Agent on/.test(chip), chip);
     await p.click('#agentchip'); await p.waitForTimeout(600);
     const dlg = await p.evaluate(() => ({ title: document.getElementById('info-title').textContent, text: document.getElementById('info-body').textContent }));
-    check('the chip opens the agent screen with version, switches and updates', dlg.title === 'EYE3 agent' && /EYE3 Link 1\.\d+ is running/.test(dlg.text) && /Fix connection problems by itself: on/.test(dlg.text) && /Updates/.test(dlg.text), dlg);
+    check('the chip opens the agent screen with version, switches and updates', dlg.title === 'EYE3 agent' && /EYE3 Link 1\.\d+(\.\d+)? is running/.test(dlg.text) && /Fix connection problems by itself: on/.test(dlg.text) && /Updates/.test(dlg.text), dlg);
     check('the playlists folder shows the file with its visible channel count only', /folder-test \(1\)/.test(dlg.text) && !/Hidden/.test(dlg.text) && !/XXX/.test(dlg.text), dlg.text.slice(0, 400));
     await p.click('text=Update by itself: off').catch(() => {});
     const flip = await p.evaluate(async () => { const h = await (await fetch('http://127.0.0.1:8765/api/health')).json().catch(() => null); return h && h.auto_update; });
