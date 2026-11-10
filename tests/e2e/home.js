@@ -608,6 +608,41 @@ const toast = (p) => p.evaluate(() => [...document.querySelectorAll('.toast')].m
     await p.close();
   });
 
+  await suite('Midnight: unlocking the hidden section switches the whole app to its second layer', async () => {
+    const p = await open(browser);
+    const look = () => p.evaluate(() => { const cs = getComputedStyle(document.documentElement), m = document.querySelector('.brand .mark'); return { mid: document.documentElement.classList.contains('midnight'), accent: cs.getPropertyValue('--accent').trim(), logo: getComputedStyle(m).color, h1: document.querySelector('.hero h1').textContent, haze: !document.getElementById('mn-haze').hidden }; });
+    const before = await look();
+    check('normal EYE3 look while locked', !before.mid && before.accent === '#ff263f' && before.h1 === 'See beyond' && !before.haze, before);
+    await p.keyboard.press('Shift+X'); await p.waitForTimeout(300); await p.check('#ex-age'); await p.click('#ex-unlock'); await p.waitForTimeout(500);
+    const on = await look();
+    check('unlocking turns on Midnight: its own colours, haze and title', on.mid && on.accent === '#e0218a' && on.h1 === 'Midnight Desires' && on.haze, on);
+    check('the EYE3 logo keeps its crimson look', on.logo === 'rgb(255, 38, 63)', on.logo);
+    await p.keyboard.press('Shift+X'); await p.waitForTimeout(300);
+    check('the hidden dialog offers Midnight settings once unlocked', await p.evaluate(() => !document.getElementById('ex-mn').hidden));
+    await p.click('#ex-mn'); await p.waitForTimeout(400);
+    check('Midnight settings open', await p.evaluate(() => document.getElementById('info-title').textContent === 'Midnight settings'));
+    await p.selectOption('#mn-pal', '1'); await p.waitForTimeout(150);
+    check('a colour choice changes the accent', (await look()).accent === '#ff2d55');
+    await p.fill('#mn-title', 'After Dark'); await p.press('#mn-title', 'Tab'); await p.waitForTimeout(150);
+    check('the home title can be renamed', (await look()).h1 === 'After Dark');
+    const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
+    await p.setInputFiles('#mn-file-bg', { name: 'bg.png', mimeType: 'image/png', buffer: png }); await p.waitForTimeout(700);
+    await p.setInputFiles('#mn-file-emblem', { name: 'logo.png', mimeType: 'image/png', buffer: png }); await p.waitForTimeout(700);
+    const assets = await p.evaluate(() => ({ bg: !document.getElementById('mn-bgimg').hidden && /blob:/.test(document.getElementById('mn-bgimg').style.backgroundImage), emb: !document.getElementById('mn-emblem').hidden && /^blob:/.test(document.getElementById('mn-emblem').src) }));
+    check('your own background and emblem are shown from this browser (blob, not uploaded)', assets.bg && assets.emb, assets);
+    await p.keyboard.press('Escape'); await p.waitForTimeout(200);
+    await p.keyboard.press('q'); await p.waitForTimeout(400);
+    const off = await look();
+    check('Q locks at once and brings the normal world back', !off.mid && off.accent === '#ff263f' && off.h1 === 'See beyond' && !off.haze && await p.evaluate(() => document.getElementById('mn-bgimg').hidden && document.getElementById('mn-emblem').hidden), off);
+    check('settings are kept for next time (look only, no content)', await p.evaluate(() => { const v = JSON.parse(localStorage.getItem('eye3.home.layer2')); return v.pal === 1 && v.title === 'After Dark'; }));
+    await p.keyboard.press('Shift+X'); await p.waitForTimeout(300); await p.check('#ex-age'); await p.click('#ex-unlock'); await p.waitForTimeout(800);
+    check('unlocking again brings back the saved look and files', await p.evaluate(() => document.querySelector('.hero h1').textContent === 'After Dark' && !document.getElementById('mn-bgimg').hidden));
+    await p.reload({ waitUntil: 'domcontentloaded' }); await p.waitForTimeout(900);
+    check('a reload always starts locked, in the normal look', (await look()).mid === false);
+    check('no page errors', p.errs.length === 0, p.errs);
+    await p.close();
+  });
+
   await browser.close();
   done();
 })().catch((e) => { console.error(e); process.exit(1); });
