@@ -278,7 +278,7 @@ const toast = (p) => p.evaluate(() => [...document.querySelectorAll('.toast')].m
     check('the agent chip shows that Link is on (the test Link runs with the agent switches)', /Agent on/.test(chip), chip);
     await p.click('#agentchip'); await p.waitForTimeout(600);
     const dlg = await p.evaluate(() => ({ title: document.getElementById('info-title').textContent, text: document.getElementById('info-body').textContent }));
-    check('the chip opens the agent screen with version, switches and updates', dlg.title === 'EYE3 agent' && /EYE3 Link 1\.\d+ is running/.test(dlg.text) && /Fix connection problems by itself: on/.test(dlg.text) && /Updates/.test(dlg.text), dlg);
+    check('the chip opens the agent screen with version, switches and updates', dlg.title === 'EYE3 agent' && /EYE3 Link 1\.\d+(\.\d+)? is running/.test(dlg.text) && /Fix connection problems by itself: on/.test(dlg.text) && /Updates/.test(dlg.text), dlg);
     check('the playlists folder shows the file with its visible channel count only', /folder-test \(1\)/.test(dlg.text) && !/Hidden/.test(dlg.text) && !/XXX/.test(dlg.text), dlg.text.slice(0, 400));
     await p.click('text=Update by itself: off').catch(() => {});
     const flip = await p.evaluate(async () => { const h = await (await fetch('http://127.0.0.1:8765/api/health')).json().catch(() => null); return h && h.auto_update; });
@@ -556,6 +556,56 @@ const toast = (p) => p.evaluate(() => [...document.querySelectorAll('.toast')].m
     await h.fill('#geeni-in', 'where can I watch free movies legally'); await h.press('#geeni-in', 'Enter'); await h.waitForTimeout(500);
     check('Geeni points to the guide', await h.evaluate(() => [...document.querySelectorAll('#geeni-log .g-msg.bot .btn')].some((b) => /EYE3 Guide/.test(b.textContent))));
     await h.close();
+  });
+
+  await suite('Movies & series: info and subtitles from Cinemeta and OpenSubtitles (button and I)', async () => {
+    const p = await open(browser, { 'eye3.home.accts': [XT] });
+    const asked = [];
+    await p.route('https://v3-cinemeta.strem.io/**', (r) => { const u = r.request().url(); asked.push(u);
+      if (/\/catalog\/series\/top\/search=Long%20Show\.json$/.test(u)) return r.fulfill({ json: { metas: [{ id: 'tt7654321', type: 'series', name: 'Long Show', releaseInfo: '2021-' }] }, headers: { 'access-control-allow-origin': '*' } });
+      if (/\/meta\/series\/tt7654321\.json$/.test(u)) return r.fulfill({ json: { meta: { id: 'tt7654321', name: 'Long Show', description: 'A long story about <b>testing</b>.', imdbRating: '8.1', releaseInfo: '2021-', genres: ['Drama'], poster: 'https://img.example/p.jpg' } }, headers: { 'access-control-allow-origin': '*' } });
+      return r.fulfill({ status: 404, body: '' }); });
+    await p.route('https://opensubtitles-v3.strem.io/**', (r) => { asked.push(r.request().url());
+      return r.fulfill({ json: { subtitles: [{ id: '1', url: 'https://subs.example/en.srt', lang: 'eng' }, { id: '2', url: 'https://subs.example/es.srt', lang: 'spa' }, { id: '3', url: 'https://subs.example/en2.srt', lang: 'eng' }] }, headers: { 'access-control-allow-origin': '*' } }); });
+    await p.route('https://subs.example/**', (r) => r.fulfill({ body: '1\n00:00:01,000 --> 00:00:03,500\nHello there\n', headers: { 'access-control-allow-origin': '*', 'content-type': 'text/plain' } }));
+    await p.route('https://img.example/**', (r) => r.fulfill({ status: 404, body: '' }));
+    await p.evaluate(() => document.querySelector('.tile').click()); await p.waitForTimeout(500);
+    check('the button is hidden before anything plays', await p.evaluate(() => { document.getElementById('tv-vod').click(); return document.getElementById('vod-meta').hidden; }));
+    await p.waitForTimeout(500); await p.click('#vod-series'); await p.waitForTimeout(1500);
+    await p.click('#vod-list .ch >> text=Long Show'); await p.waitForTimeout(1200);
+    await p.click('#vod-list .ch >> text=Second'); await p.waitForTimeout(1200);
+    check('nothing is asked from strem.io until the viewer presses the button', asked.length === 0, asked);
+    check('the Info & subtitles button appears once a title plays', await p.evaluate(() => !document.getElementById('vod-meta').hidden));
+    await p.evaluate(() => document.getElementById('vod-list').blur()); await p.keyboard.press('i');
+    await p.waitForFunction(() => /languages/.test(document.getElementById('vod-info').textContent), null, { timeout: 6000 }).catch(() => {});
+    const info = await p.evaluate(() => ({ text: document.getElementById('vod-info').textContent, html: document.getElementById('vod-info').innerHTML, langs: [...document.querySelectorAll('#vod-info select option')].map((o) => o.textContent) }));
+    check('I shows the title, year, rating, genre and plot', /Long Show/.test(info.text) && /2021/.test(info.text) && /★ 8\.1/.test(info.text) && /Drama/.test(info.text) && /long story/.test(info.text), info.text);
+    check('the plot is shown as text, never as HTML', info.html.indexOf('<b>testing</b>') === -1 && /&lt;b&gt;testing/.test(info.html));
+    check('the episode is looked up by series id, season and episode', asked.some((u) => /\/subtitles\/series\/tt7654321%3A1%3A2\.json$/.test(u)), asked);
+    check('one entry per language, English first', JSON.stringify(info.langs) === JSON.stringify(['eng', 'spa']), info.langs);
+    await p.click('#vod-info button >> text=Show subtitles'); await p.waitForTimeout(800);
+    const tr = await p.evaluate(() => { const t = document.querySelector('#vod-video track[data-eye3]'); return t ? { label: t.label, src: t.src.slice(0, 5) } : null; });
+    check('the subtitles are added to the video as a track', tr && tr.label === 'eng' && tr.src === 'blob:', tr);
+    check('the message confirms it', /Subtitles on \(eng\)/.test(await p.textContent('#vod-info')));
+    await p.click('#vod-info button >> text=Off'); await p.waitForTimeout(200);
+    check('Off removes them', await p.evaluate(() => !document.querySelector('#vod-video track[data-eye3]')));
+    check('no page errors', p.errs.length === 0, p.errs);
+    await p.close();
+  });
+
+  await suite('settings: guide time shift and playlist links with player options', async () => {
+    const p = await open(browser, { 'eye3.home.mychannels': [ch('Piped One', 'https://x.example/p.m3u8|User-Agent=Foo&Referer=https://r.example')] });
+    await p.evaluate(() => [...document.querySelectorAll('.tile')].pop().click()); await p.waitForTimeout(400);
+    await p.click('#set-epgshift'); await p.waitForTimeout(100); await p.click('#set-epgshift'); await p.waitForTimeout(100);
+    check('the guide shift steps by hours and is remembered', /\+2 h/.test(await p.textContent('#set-epgshift')) && await p.evaluate(() => localStorage.getItem('eye3.home.epgshift') === '2'));
+    await p.keyboard.press('Escape'); await p.waitForTimeout(200);
+    fs.writeFileSync('/tmp/eye3_piped.m3u', '﻿#EXTM3U\n#EXTINF:-1 group-title="T",Pipe Channel\n# a comment between\nhttps://x.example/pipe.m3u8|User-Agent=Foo\n');
+    await p.goto(H('&add=playlist'), { waitUntil: 'domcontentloaded' }); await p.waitForTimeout(700);
+    await p.setInputFiles('#mk-import', '/tmp/eye3_piped.m3u'); await p.waitForTimeout(500);
+    const mine = await p.evaluate(() => JSON.parse(localStorage.getItem('eye3.home.mychannels') || '[]').map((c) => c.u));
+    check('an imported link keeps only the address, without the |player options, even after a BOM and a comment', mine.includes('https://x.example/pipe.m3u8'), mine);
+    check('no page errors', p.errs.length === 0, p.errs);
+    await p.close();
   });
 
   await browser.close();

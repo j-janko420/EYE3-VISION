@@ -53,6 +53,12 @@ Import the file in **Playlist maker → Import an M3U file**. A big file is save
 - Live TV keys: **P** previous channel, **X** picture shape, **A** audio track, **T** subtitles, **L** favourite, **/** search (accents and word order do not matter). A frozen stream reconnects by itself.
 - Settings → Help → **Copy support report** makes a text you can paste in the chat. It leaves out logins, passwords and MAC addresses. If a file is too big to attach, see `home/send-files.html` (zip it first; split it into parts under 25 MB if still too big).
 
+### Film info and subtitles
+While a movie, an episode or a free movie plays, press **Info & subtitles** (or **I**): EYE3 shows the poster, year, rating and plot from Stremio's free Cinemeta service and lists subtitle languages from OpenSubtitles. Pick one and press **Show subtitles**; **Off** removes them. Only the title you are watching is sent to those services, and only when you press the button.
+
+### TV guide in the wrong time zone?
+Settings → **Guide time shift** moves the whole guide by whole hours until the programmes match.
+
 ### Catch-up TV: replay past programmes (EYE3 Link 1.9)
 Channels of an Xtream Codes account whose provider keeps an archive show **⟲** in the list. Play one and press **U** (or the **Replay** button): you get its past programmes by day, newest first. Pick one to watch it from the start. Press Enter on any channel to go back to live TV. How many days you can go back depends on your provider (shown in the title). Needs EYE3 Link 1.9 or newer.
 

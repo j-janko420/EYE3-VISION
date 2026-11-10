@@ -1,6 +1,7 @@
-# Netlify: publish only the app files (index.html and the Smart STB portal check), not the rest of the repo.
+# Netlify (free hosting at https://eye3-vision.netlify.app): publish the same files as GitHub Pages
+# (.github/workflows/pages.yml), never the rest of the repo.
 [build]
-  command = "rm -rf _site && mkdir _site && cp index.html _site/ && cp -r portal _site/"
+  command = "rm -rf _site && mkdir _site && cp index.html _site/ && cp -r portal iptv bridge home remote tools _site/ && touch _site/.nojekyll"
   publish = "_site"
 
 [[headers]]
@@ -8,3 +9,8 @@
   [headers.values]
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
+
+[[headers]]
+  for = "/home/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"
