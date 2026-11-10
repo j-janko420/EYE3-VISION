@@ -484,8 +484,7 @@ const toast = (p) => p.evaluate(() => [...document.querySelectorAll('.toast')].m
     check('three clicks on the eye bring Geeni, floating', await p.evaluate(() => { const g = document.getElementById('geeni'); return g.classList.contains('on') && !g.classList.contains('arriving') && document.getElementById('geeni-summon').hidden && getComputedStyle(g).position === 'fixed' && /geeniFloat/.test(getComputedStyle(g).animationName); }));
     check('it is a small creature with the red eye on its forehead, in the theme colours', await p.evaluate(() => { const g = document.getElementById('geeni'); return !!g.querySelector('svg .g-eye') && g.innerHTML.indexOf('#ff263f') > 0; }));
     check('and the hidden section did not open', !(await p.evaluate(() => document.getElementById('ov-explicit').classList.contains('open'))));
-    await geeniReady(p);
-    await p.click('#geeni', { force: true }); await p.waitForTimeout(300);
+    await geeniReady(p); await p.click('#geeni', { force: true }); await p.waitForTimeout(300);
     const hello = await p.evaluate(() => ({ text: document.getElementById('geeni-log').textContent, chips: document.querySelectorAll('#geeni-chips .chip').length }));
     check('the panel greets and offers quick questions', /I am Geeni/.test(hello.text) && hello.chips === 5, hello);
     await ask(p, 'how do I add my xtream account');
@@ -493,7 +492,7 @@ const toast = (p) => p.evaluate(() => [...document.querySelectorAll('.toast')].m
     await p.click('#geeni-log .g-acts .btn >> nth=-1'); await p.waitForTimeout(500);
     check('the button opens that screen and tucks the panel away', await p.evaluate(() => document.getElementById('ov-acct').classList.contains('open') && !document.getElementById('geeni-panel').classList.contains('open')));
     await p.keyboard.press('Escape'); await p.waitForTimeout(300);
-    await p.click('#geeni', { force: true }); await p.waitForTimeout(200);
+    await geeniReady(p); await p.click('#geeni', { force: true }); await p.waitForTimeout(200);
     await ask(p, 'show me adult channels');
     const adult = await lastBot(p);
     check('it never opens or explains how to reach the hidden section', /cannot open that section/.test(adult) && !/double|logo|shift|click/i.test(adult) && await p.evaluate(() => ![...document.querySelectorAll('#geeni-log .g-msg.bot')].pop().querySelector('.btn')), adult);
@@ -504,7 +503,7 @@ const toast = (p) => p.evaluate(() => [...document.querySelectorAll('.toast')].m
     check('"play" finds the channel by name and starts it at once', /Playing Zeta Test News/.test(await lastBot(p)), await lastBot(p));
     await p.waitForTimeout(1500);
     check('the result opens Live TV and starts that channel', await p.evaluate(() => document.getElementById('ov-tv').classList.contains('open') && /Zeta Test News/.test(document.getElementById('chlabel').textContent)), await p.evaluate(() => document.getElementById('chlabel').textContent));
-    await p.click('#geeni', { force: true }); await p.waitForTimeout(200);
+    await geeniReady(p); await p.click('#geeni', { force: true }); await p.waitForTimeout(200);
     await ask(p, 'louder');
     check('short orders are carried out ("louder")', /Louder/.test(await lastBot(p)) && /Volume/.test(await toast(p)), await lastBot(p));
     await ask(p, 'how do I record a channel');
@@ -512,11 +511,11 @@ const toast = (p) => p.evaluate(() => [...document.querySelectorAll('.toast')].m
     await p.keyboard.press('Escape'); await p.waitForTimeout(200);
     check('nothing the viewer asked is stored', await p.evaluate(() => !JSON.stringify(localStorage).includes('xtream account') && !JSON.stringify(localStorage).includes('zeta test')));
     await p.keyboard.press('Escape'); await p.waitForTimeout(300);
-    await p.click('#geeni', { force: true }); await p.waitForTimeout(200); await p.keyboard.press('Escape'); await p.waitForTimeout(200);
+    await geeniReady(p); await p.click('#geeni', { force: true }); await p.waitForTimeout(200); await p.keyboard.press('Escape'); await p.waitForTimeout(200);
     check('Esc closes the panel', await p.evaluate(() => !document.getElementById('geeni-panel').classList.contains('open')));
     await p.reload({ waitUntil: 'domcontentloaded' }); await p.waitForTimeout(900);
     check('Geeni stays for this tab after a reload', await p.evaluate(() => document.getElementById('geeni').classList.contains('on')));
-    await p.click('#geeni', { force: true }); await p.waitForTimeout(200);
+    await geeniReady(p); await p.click('#geeni', { force: true }); await p.waitForTimeout(200);
     await ask(p, 'bye'); await p.waitForTimeout(1200);
     check('"bye" sends Geeni away', await p.evaluate(() => !document.getElementById('geeni').classList.contains('on')));
     await p.keyboard.press('h'); await p.waitForTimeout(2300);
@@ -553,8 +552,7 @@ const toast = (p) => p.evaluate(() => [...document.querySelectorAll('.toast')].m
     await h.evaluate(() => [...document.querySelectorAll('.tile')].pop().click()); await h.waitForTimeout(500);
     check('Settings on EYE3 Home links to the guide', await h.evaluate(() => !!document.getElementById('set-guide')));
     await h.keyboard.press('Escape'); await h.waitForTimeout(200);
-    await h.click('#brand', { clickCount: 3, delay: 30 }); await h.waitForTimeout(2200); await geeniReady(h);
-    await h.click('#geeni', { force: true }); await h.waitForTimeout(300);
+    await h.click('#brand', { clickCount: 3, delay: 30 }); await h.waitForTimeout(2200); await geeniReady(h); await h.click('#geeni', { force: true }); await h.waitForTimeout(300);
     await h.fill('#geeni-in', 'where can I watch free movies legally'); await h.press('#geeni-in', 'Enter'); await h.waitForTimeout(500);
     check('Geeni points to the guide', await h.evaluate(() => [...document.querySelectorAll('#geeni-log .g-msg.bot .btn')].some((b) => /EYE3 Guide/.test(b.textContent))));
     await h.close();
