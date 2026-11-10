@@ -699,6 +699,8 @@ class LinkTests(unittest.TestCase):
         self.assertEqual(get(self.port, "/api/hello", {"Origin": "https://evil.example"})[0], 403)
         self.assertEqual(get(self.port, "/api/hello")[0], 403)
         self.assertEqual(get(self.port, "/api/hello", {"Origin": "http://localhost:8080"})[0], 200)
+        self.assertEqual(get(self.port, "/api/hello", {"Origin": "https://eye3-vision.netlify.app"})[0], 200)   # the free Netlify copy
+        self.assertEqual(get(self.port, "/api/hello", {"Origin": "https://other-site.netlify.app"})[0], 403)  # but not any Netlify site
 
     def test_api_and_stream_refuse_strangers(self):
         self.assertEqual(get(self.port, "/api/m3u?url=" + up.quote(self.up_url + "/pl.m3u"), {"Origin": "https://evil.example"})[0], 403)
