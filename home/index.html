@@ -169,6 +169,16 @@
   .screen .idle { color: var(--muted); font-size: clamp(14px, 1.3vw, 20px); text-align: center; padding: 20px; }
   .screen .label { position: absolute; inset-inline-start: 16px; bottom: 16px; padding: 8px 16px; border: 1px solid var(--accent); border-radius: 5px; background: rgba(8, 2, 3, .88); font-size: clamp(13px, 1.1vw, 18px); font-weight: 650; }
   .screen .label.err { border-color: #ffb020; color: #ffd27a; }
+  .vod-info { position: absolute; inset-inline-start: 12px; top: 12px; z-index: 3; display: flex; gap: 12px; width: min(520px, calc(100% - 24px)); max-height: calc(100% - 24px); overflow-y: auto; padding: 12px; border: 1px solid var(--accent); border-radius: 8px; background: rgba(8, 2, 3, .92); font-size: clamp(12px, .95vw, 15px); }
+  .vod-info[hidden] { display: none; }
+  .vod-info img { flex: none; width: 92px; height: 138px; object-fit: cover; border-radius: 5px; background: #140609; }
+  .vod-info .vi-body { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .vod-info h3 { margin: 0; font-size: 1.15em; }
+  .vod-info .vi-meta { color: var(--soft, #ff7a8a); }
+  .vod-info .vi-plot { margin: 0; color: var(--muted, #b9a9ac); display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; }
+  .vod-info .vi-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .vod-info .btn, .vod-info select { padding: 5px 10px; font-size: .95em; }
+  .vod-info .vi-x { position: absolute; inset-inline-end: 8px; top: 6px; border: 0; background: none; color: var(--ink); font-size: 18px; cursor: pointer; }
 
   .pane { flex: 1; display: flex; flex-direction: column; gap: 16px; min-height: 0; }
   .pane iframe { flex: 1; width: 100%; border: 1px solid rgba(255, 35, 60, .4); border-radius: 8px; background: #fff; }
@@ -507,6 +517,7 @@
     <button class="btn" id="vod-free" type="button" title="Public-domain films from the Internet Archive. No account needed.">Free movies</button>
     <select class="btn" id="vod-cat" aria-label="Category"></select>
     <input class="field tv-search" id="vod-search" type="search" placeholder="Search titles  ( / )" autocomplete="off" spellcheck="false" aria-label="Search titles">
+    <button class="btn" id="vod-meta" type="button" hidden title="Poster, plot, rating and subtitles for this title (I). Looked up from Stremio's free Cinemeta and OpenSubtitles services only when you press it.">Info &amp; subtitles</button>
     <button class="btn" id="vod-vlc" type="button" hidden title="Save this title as a file you can open in VLC (for mkv, H.265 and other formats a browser cannot play)">Open in VLC</button>
     <span class="chip" id="vod-count">0 titles</span>
     <span class="hintkeys">↑↓ title · Enter play · <b>←</b> back to series · <b>/</b> search</span>
@@ -517,6 +528,7 @@
       <video id="vod-video" controls playsinline></video>
       <div class="idle" id="vod-idle">Pick a title and press Enter.</div>
       <div class="label" id="vod-label" style="display:none"></div>
+      <div class="vod-info" id="vod-info" hidden></div>
     </div>
   </div>
 </section>
@@ -1172,7 +1184,7 @@
         var lg = /tvg-logo="([^"]*)"/i.exec(line), ti = /tvg-id="([^"]*)"/i.exec(line);
         info = { name: c > -1 ? line.slice(c + 1).replace(/^\s+/, "") : "Channel", sub: g ? g[1] : "", logo: lg ? lg[1] : "", tvgid: ti ? ti[1] : "" };
       } else if (line.charAt(0) !== "#" && /^(https?):/i.test(line)) {
-        var item = info || { name: line, sub: "" }; item.url = line; item.country = ""; item.q = 0;
+        var item = info || { name: line, sub: "" }; item.url = line.split("|")[0]; item.country = ""; item.q = 0;
         item.grp = item.sub; item.sub = "";
         item.adult = ADULT_RX.test(item.grp + " " + item.name);
         out.push(item);
@@ -1211,10 +1223,14 @@
     if (xml && (c.tvg || c.name)) return { key: xml + "|" + (c.tvg || c.name) + "|" + n, path: "/api/xmltv", params: withUa(a || {}, { url: xml, id: c.tvg || "", name: c.name, n: String(n) }) };
     return null;
   }
+  // Settings → Guide time shift: some providers send their guide in the wrong time zone; move every programme by whole hours
+  var EPG_SHIFT_KEY = "eye3.home.epgshift";
+  function epgShift() { var h = parseInt(get(EPG_SHIFT_KEY) || "0", 10); return h >= -12 && h <= 12 ? h : 0; }
+  function shifted(items) { var sec = epgShift() * 3600; return sec ? items.map(function (it) { return Object.assign({}, it, { s: it.s + sec, e: it.e + sec }); }) : items; }
   function epgItems(c, n) {
     var src = epgSource(c, n); if (!src) return Promise.resolve(null);
-    var hit = epgCache[src.key]; if (hit && Date.now() - hit.t < 120000) return Promise.resolve(hit.items);
-    return linkGet(src.path, src.params).then(function (d) { epgCache[src.key] = { t: Date.now(), items: d.items || [] }; return epgCache[src.key].items; });
+    var hit = epgCache[src.key]; if (hit && Date.now() - hit.t < 120000) return Promise.resolve(shifted(hit.items));
+    return linkGet(src.path, src.params).then(function (d) { epgCache[src.key] = { t: Date.now(), items: d.items || [] }; return shifted(epgCache[src.key].items); });
   }
   function epgFor(c, title, token) {
     clearTimeout(epgTimer);
@@ -2082,7 +2098,8 @@
   }
   function vodPick(it) {
     var a = vodAcct(); if (!a) return;
-    if (vod.kind === "movie") { vodPlay({ id: it.id, e: it.e }, it.n + (it.y ? " (" + it.y + ")" : "")); return; }
+    if (vod.kind === "movie") { vod.meta = { type: "movie", name: it.n, year: it.y || "", adult: !!it.x }; vodPlay({ id: it.id, e: it.e }, it.n + (it.y ? " (" + it.y + ")" : "")); return; }
+    vod.seriesMeta = { type: "series", name: it.n, year: it.y || "", adult: !!it.x };
     vod.busy = "Loading episodes…"; vodRender();
     linkGet("/api/vod/series", vodCreds(a, { id: it.id })).then(function (d) {
       vod.busy = ""; vod.mode = "episodes"; vod.seasons = d.seasons || []; vod.seriesName = it.n;
@@ -2101,7 +2118,8 @@
         vodLabel(title + " — can't play this file here." + (/^(mkv|avi|ts|flv|wmv)$/.test(d.ext) ? " A ." + d.ext + " file often needs VLC: press Open in VLC." : " Is EYE3 Link still running?"), true);
       };
       resumeAttach(v, a.id + "|" + vod.kind + "|" + ep.id, title);
-      vod.cur = { url: d.url, title: title }; $("vod-vlc").hidden = false;
+      var m = vod.kind === "series" && vod.seriesMeta ? Object.assign({}, vod.seriesMeta, epNumbers(ep)) : vod.meta;
+      vod.cur = { url: d.url, title: title, meta: m }; $("vod-vlc").hidden = false; metaReset();
       clearTimeout(vod.nextTimer);
       if (vod.kind === "series" && vod.flat) {
         var endedBase = v.onended;
@@ -2130,6 +2148,83 @@
   }
   $("tv-vod").addEventListener("click", function () { closeOverlays(); openVod(); });
   $("vod-close").addEventListener("click", closeOverlays);
+  // ---- film info and subtitles (button "Info & subtitles", key I): Stremio's free Cinemeta and OpenSubtitles add-ons ----
+  // Asked only when the viewer presses the button; sends the title (and year) to strem.io. Never for adult titles.
+  var CINEMETA = "https://v3-cinemeta.strem.io", OPENSUBS = "https://opensubtitles-v3.strem.io";
+  var LANG3 = { en: "eng", es: "spa", fr: "fre", de: "ger", it: "ita", pt: "por", ar: "ara", hi: "hin", ml: "mal", ta: "tam", ru: "rus", tr: "tur", nl: "dut", pl: "pol" };
+  function epNumbers(ep) {
+    var out = { season: 0, episode: parseInt(ep.num, 10) || 0 };
+    (vod.seasons || []).forEach(function (se) { se.episodes.forEach(function (e) { if (e.id === ep.id) out.season = parseInt(se.season, 10) || 0; }); });
+    return out;
+  }
+  function cleanTitle(n) {
+    return String(n || "").replace(/^\s*[A-Z]{2,3}\s*[|:\-]\s*/, "").replace(/[\[(][^\])]*[\])]/g, " ")
+      .replace(/\b(4k|uhd|fhd|hd|sd|1080p|720p|2160p|hevc|x26[45]|multi|vostfr|dubbed|subbed)\b/gi, " ").replace(/\b(19|20)\d\d\b\s*$/, "").replace(/\s+/g, " ").trim();
+  }
+  function metaReset() { var box = $("vod-info"); box.hidden = true; while (box.firstChild) box.removeChild(box.firstChild); dropSubs(); $("vod-meta").hidden = !(vod.cur && vod.cur.meta && !vod.cur.meta.adult); }
+  function getJson(url) { return fetch(url).then(function (r) { if (!r.ok) throw new Error("answered " + r.status); return r.json(); }); }
+  function metaFind(m) {
+    var q = cleanTitle(m.name); if (!q) return Promise.reject(new Error("no title to look up"));
+    return getJson(CINEMETA + "/catalog/" + m.type + "/top/search=" + encodeURIComponent(q) + ".json").then(function (d) {
+      var list = (d && d.metas) || []; if (!list.length) throw new Error("not found");
+      var year = String(m.year || "").slice(0, 4);
+      var hit = list.filter(function (x) { return year && String(x.releaseInfo || x.year || "").indexOf(year) === 0; })[0] || list[0];
+      if (!/^tt\d+$/.test(hit.id || "")) throw new Error("not found");
+      return getJson(CINEMETA + "/meta/" + m.type + "/" + hit.id + ".json").then(function (r) { return (r && r.meta) || hit; }, function () { return hit; });
+    });
+  }
+  function dropSubs() { var v = $("vod-video"); [].slice.call(v.querySelectorAll("track[data-eye3]")).forEach(function (t) { if (t.src.indexOf("blob:") === 0) URL.revokeObjectURL(t.src); t.parentNode.removeChild(t); }); }
+  function srtToVtt(text) { return "WEBVTT\n\n" + String(text).replace(/\r/g, "").replace(/^\uFEFF/, "").replace(/(\d\d:\d\d:\d\d),(\d\d\d)/g, "$1.$2"); }
+  function subText(url) {
+    return fetch(url).then(function (r) { if (!r.ok) throw new Error("answered " + r.status); return r.text(); })["catch"](function () {
+      // some subtitle hosts refuse browsers: EYE3 Link on this computer can fetch it instead
+      return linkHello().then(function (h) { return fetch(LINK_BASE + "/stream?" + new URLSearchParams({ u: url, t: h.token })); }).then(function (r) { if (!r.ok) throw new Error("answered " + r.status); return r.text(); });
+    });
+  }
+  function loadSub(s, msg) {
+    msg.textContent = "Loading subtitles…";
+    subText(s.url).then(function (t) {
+      dropSubs();
+      var vtt = /^\s*WEBVTT/.test(t) ? t : srtToVtt(t);
+      var tr = document.createElement("track"); tr.kind = "subtitles"; tr.label = s.lang; tr.srclang = String(s.lang).slice(0, 2); tr.setAttribute("data-eye3", "1");
+      tr.src = URL.createObjectURL(new Blob([vtt], { type: "text/vtt" }));
+      var v = $("vod-video"); v.appendChild(tr);
+      setTimeout(function () { for (var i = 0; i < v.textTracks.length; i++) v.textTracks[i].mode = v.textTracks[i].label === s.lang ? "showing" : "disabled"; }, 50);
+      msg.textContent = "Subtitles on (" + s.lang + ").";
+    })["catch"](function (e) { msg.textContent = "Could not load these subtitles (" + e.message + "). Try another, or start EYE3 Link."; });
+  }
+  function openMeta() {
+    var m = vod.cur && vod.cur.meta, box = $("vod-info");
+    if (!m || m.adult) return;
+    if (!box.hidden) { box.hidden = true; return; }
+    while (box.firstChild) box.removeChild(box.firstChild);
+    var x = make("button", "vi-x", "×"); x.type = "button"; x.setAttribute("aria-label", "Close"); x.addEventListener("click", function () { box.hidden = true; }); box.appendChild(x);
+    var body = make("div", "vi-body"); body.appendChild(make("p", "vi-plot", "Looking up “" + cleanTitle(m.name) + "”…")); box.appendChild(body); box.hidden = false;
+    metaFind(m).then(function (meta) {
+      while (body.firstChild) body.removeChild(body.firstChild);
+      if (/^https:\/\//.test(meta.poster || "")) { var img = make("img"); img.alt = ""; img.src = meta.poster; img.onerror = function () { img.remove(); }; box.insertBefore(img, body); }
+      body.appendChild(nt(make("h3", "", meta.name || m.name)));
+      var bits = [meta.releaseInfo || meta.year, meta.imdbRating ? "★ " + meta.imdbRating : "", meta.runtime, (meta.genres || meta.genre || []).slice(0, 3).join(", ")].filter(Boolean);
+      if (bits.length) body.appendChild(make("div", "vi-meta", bits.join(" · ")));
+      if (meta.description) body.appendChild(make("p", "vi-plot", meta.description));
+      var row = make("div", "vi-row"), msg = make("span", "", "Finding subtitles…"); row.appendChild(msg); body.appendChild(row);
+      var subId = m.type === "series" ? meta.id + ":" + (m.season || 1) + ":" + (m.episode || 1) : meta.id;
+      getJson(OPENSUBS + "/subtitles/" + m.type + "/" + encodeURIComponent(subId) + ".json").then(function (d) {
+        var seen = {}, subs = ((d && d.subtitles) || []).filter(function (s) { if (!s || !/^https:\/\//.test(s.url || "") || seen[s.lang]) return false; seen[s.lang] = 1; return true; });
+        if (!subs.length) { msg.textContent = "No subtitles found."; return; }
+        var want = LANG3[String(navigator.language || "en").slice(0, 2)] || "eng";
+        subs.sort(function (a, b) { return (b.lang === want) - (a.lang === want) || (b.lang === "eng") - (a.lang === "eng") || String(a.lang).localeCompare(String(b.lang)); });
+        var sel = make("select", "btn"); sel.setAttribute("aria-label", "Subtitle language");
+        subs.forEach(function (s, i) { var o = make("option", "", s.lang); o.value = String(i); sel.appendChild(o); });
+        var go = make("button", "btn", "Show subtitles"); go.type = "button"; go.addEventListener("click", function () { loadSub(subs[+sel.value], msg); });
+        var off = make("button", "btn", "Off"); off.type = "button"; off.addEventListener("click", function () { dropSubs(); msg.textContent = "Subtitles off."; });
+        msg.textContent = subs.length + (subs.length === 1 ? " language" : " languages") + ":";
+        row.appendChild(sel); row.appendChild(go); row.appendChild(off);
+      })["catch"](function () { msg.textContent = "Subtitles are not available right now."; });
+    })["catch"](function (e) { while (body.firstChild) body.removeChild(body.firstChild); body.appendChild(make("p", "vi-plot", "No information found for “" + cleanTitle(m.name) + "” (" + e.message + ").")); });
+  }
+  $("vod-meta").addEventListener("click", openMeta);
+
   $("vod-vlc").addEventListener("click", function () { if (vod.cur) downloadM3u(vod.cur.title, vod.cur.url); });
   $("vod-accts").addEventListener("click", function () { closeOverlays(); openAccounts(); });
   $("vod-acct").addEventListener("change", function () { vod.acct = this.value; vod.cat = "All"; vod.q = ""; $("vod-search").value = ""; this.blur(); vodLoad(); });
@@ -2198,7 +2293,7 @@
       v.onerror = function () { vodLabel(title + " — can't play this file here. Try another movie.", true); };
       resumeAttach(v, "free|" + it.id, title);
       v.src = "https://archive.org/download/" + encodeURIComponent(it.id) + "/" + f.name.split("/").map(encodeURIComponent).join("/");
-      vod.cur = { url: v.src, title: title }; $("vod-vlc").hidden = false;
+      vod.cur = { url: v.src, title: title, meta: { type: "movie", name: it.n, year: it.y || "" } }; $("vod-vlc").hidden = false; metaReset();
       var p = v.play(); if (p && p["catch"]) p["catch"](function () {});
     })["catch"](function (err) { vodLabel(title + " — " + (err && err.message || "could not load") + ".", true); });
   }
@@ -2721,6 +2816,10 @@
     inst.type = "button"; inst.addEventListener("click", function () { if (!window.__installApp || !window.__installApp()) window.alert(tr("To install: in your browser menu choose \"Install app\" or \"Add to Home screen\". On iPhone Safari: Share then Add to Home Screen.")); });
     var setup = make("button", "btn", "Turn a spare device into an EYE3 box");
     setup.type = "button"; setup.addEventListener("click", function () { location.href = "setup.html"; });
+    var es = make("button", "btn", ""); es.type = "button"; es.id = "set-epgshift";
+    var paintEs = function () { var h = epgShift(); es.textContent = "Guide time shift: " + (h > 0 ? "+" : "") + h + " h"; };
+    paintEs();
+    es.addEventListener("click", function () { var steps = [0, 1, 2, 3, 4, 5, 6, -6, -5, -4, -3, -2, -1], at = steps.indexOf(epgShift()), h = steps[(at + 1) % steps.length]; set(EPG_SHIFT_KEY, String(h)); epgCache = {}; paintEs(); toast("TV guide moved by " + (h > 0 ? "+" : "") + h + " hours"); });
     var gd = make("button", "btn", "EYE3 Guide: free places to watch, listen and download");
     gd.type = "button"; gd.id = "set-guide"; gd.addEventListener("click", function () { location.href = "guide.html"; });
     var sv = make("button", "btn", "");
@@ -2760,7 +2859,7 @@
     hp.type = "button"; hp.addEventListener("click", openHelp);
     var sy = make("button", "btn", syncCode ? "Sync phone and laptop: on" : "Sync phone and laptop");
     sy.type = "button"; sy.addEventListener("click", function () { openSyncInfo(); });
-    var kv = make("div", "kv"); kv.appendChild(fs); kv.appendChild(ac); kv.appendChild(ag); kv.appendChild(pr); kv.appendChild(rc2); kv.appendChild(tl); kv.appendChild(wg); kv.appendChild(ts); kv.appendChild(hp); kv.appendChild(gd); kv.appendChild(gl); kv.appendChild(rc); kv.appendChild(sy); kv.appendChild(sl); kv.appendChild(sv); kv.appendChild(pl); kv.appendChild(inst); kv.appendChild(setup); kv.appendChild(ph);
+    var kv = make("div", "kv"); kv.appendChild(fs); kv.appendChild(ac); kv.appendChild(ag); kv.appendChild(pr); kv.appendChild(rc2); kv.appendChild(tl); kv.appendChild(wg); kv.appendChild(ts); kv.appendChild(hp); kv.appendChild(es); kv.appendChild(gd); kv.appendChild(gl); kv.appendChild(rc); kv.appendChild(sy); kv.appendChild(sl); kv.appendChild(sv); kv.appendChild(pl); kv.appendChild(inst); kv.appendChild(setup); kv.appendChild(ph);
     rowsHtml(body, [
       para("EYE3 Home runs in this browser and shows on the TV over HDMI. For the best look, press F or use the button below to go fullscreen."),
       kv,
@@ -2787,7 +2886,7 @@
     $("info-title").textContent = "Keyboard shortcuts";
     var rows = [["Everywhere", null], ["Ctrl / ⌘ + K", "Quick search: any channel or action"], ["?", "This list"], ["F", "Fullscreen"], ["S", "Screensaver"], ["Z", "Sleep timer"], ["Esc / Backspace", "Back"], ["Shift + X", "Hidden section"],
       ["Live TV", null], ["↑ ↓", "Channel"], ["← →", "Category"], ["0–9", "Channel number"], ["Enter", "Play"], ["P", "Previous channel"], ["L", "Favourite"], ["/", "Search"], ["G", "TV guide of this channel"], ["U", "Catch-up: replay a past programme"],
-      ["X", "Picture shape"], ["A", "Audio track"], ["T", "Subtitles"], ["V", "Save the stream for VLC"], ["D", "Guide grid"], ["M", "Add to multi-view"], ["C", "Cast"], ["O", "Mini window"], ["R", "Record the channel that is playing"], ["Movies & series", null], ["↑ ↓ Enter", "Choose and play"], ["←", "Back to the series list"]];
+      ["X", "Picture shape"], ["A", "Audio track"], ["T", "Subtitles"], ["V", "Save the stream for VLC"], ["D", "Guide grid"], ["M", "Add to multi-view"], ["C", "Cast"], ["O", "Mini window"], ["R", "Record the channel that is playing"], ["Movies & series", null], ["↑ ↓ Enter", "Choose and play"], ["I", "Info & subtitles of the title that plays"], ["←", "Back to the series list"]];
     var wrap = make("div", "keys");
     rows.forEach(function (r) { if (r[1] === null) wrap.appendChild(make("h3", "", r[0])); else { wrap.appendChild(make("kbd", "", r[0])); wrap.appendChild(make("span", "", r[1])); } });
     rowsHtml($("info-body"), [wrap]); openOverlay("ov-info");
@@ -3526,6 +3625,7 @@
       var vrows = function () { return [].slice.call($("vod-list").querySelectorAll(".ch:not(.action)")); };
       if (e.key === "/") { e.preventDefault(); try { $("vod-search").focus(); } catch (er) {} }
       else if (e.key === "ArrowLeft" && vod.mode === "episodes") { e.preventDefault(); vodBack(); }
+      else if ((e.key === "i" || e.key === "I") && !$("vod-meta").hidden) { e.preventDefault(); openMeta(); }
       else if (e.key === "ArrowDown" || e.key === "ArrowUp") {
         var rows = vrows(); if (!rows.length) return;
         var at = rows.indexOf(document.activeElement); e.preventDefault();
