@@ -35,7 +35,7 @@ const toast = (p) => p.evaluate(() => [...document.querySelectorAll('.toast')].m
   });
 
   await suite('the colours stay red and black on every page (no blue left over)', async () => {
-    const files = ['index.html', 'home/index.html', 'home/setup.html', 'home/send-files.html', 'remote/index.html', 'portal/c/index.html', 'portal/check/index.html', 'bridge/index.html'];
+    const files = ['index.html', 'home/index.html', 'home/setup.html', 'home/send-files.html', 'home/guide.html', 'remote/index.html', 'portal/c/index.html', 'portal/check/index.html', 'bridge/index.html'];
     const hsl = (r, g, b) => { r /= 255; g /= 255; b /= 255; const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, d = mx - mn; if (!d) return [0, 0, l]; const s = d / (1 - Math.abs(2 * l - 1)); let h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; h = (h * 60 + 360) % 360; return [h, s, l]; };
     for (const f of files) {
       const text = fs.readFileSync(require('path').join(__dirname, '..', '..', f), 'utf8');
@@ -525,6 +525,37 @@ const toast = (p) => p.evaluate(() => [...document.querySelectorAll('.toast')].m
     await p.click('#brand', { clickCount: 2, delay: 30 }); await p.waitForTimeout(900);
     check('a double-click still opens the hidden section (after a short wait)', await p.evaluate(() => document.getElementById('ov-explicit').classList.contains('open')));
     check('no page errors with Geeni', p.errs.length === 0, p.errs);
+  });
+
+  await suite('EYE3 Guide: sections, search, starred picks, lights, phone layout', async () => {
+    const G = HOME.replace(/home\/.*$/, 'home/guide.html');
+    const p = await open(browser, {}, { url: G });
+    const m = await p.evaluate(() => ({ cats: document.querySelectorAll('section.cat').length, items: document.querySelectorAll('.item').length, side: document.querySelectorAll('nav.side a').length, ext: [...document.querySelectorAll('.item')].filter((a) => /^http/.test(a.getAttribute('href'))).map((a) => a.getAttribute('href')), lights: getComputedStyle(document.querySelector('.lights i')).animationName }));
+    check('it has its sections in the sidebar and dozens of entries', m.cats >= 8 && m.side === m.cats && m.items >= 50, m);
+    check('every outside link is https and opens in a new tab safely', m.ext.every((h) => /^https:\/\//.test(h)) && await p.evaluate(() => [...document.querySelectorAll('.item[target="_blank"]')].every((a) => /noopener/.test(a.rel))));
+    check('the lights drift behind the page', /drift1/.test(m.lights), m.lights);
+    await p.fill('#q', 'vlc player'); await p.waitForTimeout(200);
+    const vis = await p.evaluate(() => [...document.querySelectorAll('.item')].filter((i) => !i.hidden && i.offsetParent).map((i) => i.querySelector('.t').textContent));
+    check('search narrows the list (VLC)', vis.length >= 1 && vis.length < 5 && vis.some((t) => /VLC/.test(t)), vis);
+    await p.fill('#q', 'zzzz nothing'); await p.waitForTimeout(200);
+    check('no match says so', await p.evaluate(() => !document.getElementById('empty').hidden));
+    await p.fill('#q', ''); await p.check('#staronly'); await p.waitForTimeout(200);
+    check('starred only shows the ⭐ picks', await p.evaluate(() => { const v = [...document.querySelectorAll('.item')].filter((i) => !i.hidden); return v.length > 5 && v.every((i) => i.dataset.star === '1'); }));
+    check('it lists no pirate or adult sources', await p.evaluate(() => !/torrent|crack|warez|repack|pirat|xxx|porn/i.test(document.querySelector('main').textContent + [...document.querySelectorAll('.item')].map((i) => i.href).join(' '))));
+    check('no page errors on the guide', p.errs.length === 0, p.errs);
+    await p.close();
+    const q = await open(browser, {}, { url: G, ctx: { viewport: { width: 390, height: 844 } } });
+    check('on a phone it does not scroll sideways', await q.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+    await q.close();
+    const h = await open(browser);
+    await h.evaluate(() => [...document.querySelectorAll('.tile')].pop().click()); await h.waitForTimeout(500);
+    check('Settings on EYE3 Home links to the guide', await h.evaluate(() => !!document.getElementById('set-guide')));
+    await h.keyboard.press('Escape'); await h.waitForTimeout(200);
+    await h.click('#brand', { clickCount: 3, delay: 30 }); await h.waitForTimeout(2200);
+    await h.click('#geeni', { force: true }); await h.waitForTimeout(300);
+    await h.fill('#geeni-in', 'where can I watch free movies legally'); await h.press('#geeni-in', 'Enter'); await h.waitForTimeout(500);
+    check('Geeni points to the guide', await h.evaluate(() => [...document.querySelectorAll('#geeni-log .g-msg.bot .btn')].some((b) => /EYE3 Guide/.test(b.textContent))));
+    await h.close();
   });
 
   await browser.close();
