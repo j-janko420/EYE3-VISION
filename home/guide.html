@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#050101">
+<meta name="description" content="EYE3 Guide: free and legal places to watch, listen, read, learn and download, plus everything about EYE3 Home, in one searchable page.">
+<title>EYE3 Guide</title>
+<style>
+  :root { color-scheme: dark; --bg: #050101; --panel: rgba(20, 5, 8, .78); --line: rgba(255, 38, 63, .22); --accent: #ff263f; --soft: #ff7a8a; --ink: #fff5f6; --muted: #b9a9ac; font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 84px; }
+  body { margin: 0; min-height: 100vh; background: var(--bg); color: var(--ink); line-height: 1.55; overflow-x: hidden; }
+  ::selection { background: var(--accent); color: #fff; }
+  a { color: var(--soft); }
+  /* the lights: two drifting glows and a slow scan line behind everything */
+  .lights { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+  .lights i { position: absolute; width: 60vmax; height: 60vmax; border-radius: 50%; filter: blur(60px); opacity: .5; }
+  .lights i:nth-child(1) { top: -25vmax; left: -15vmax; background: radial-gradient(circle, rgba(255, 38, 63, .55), transparent 65%); animation: drift1 26s ease-in-out infinite alternate; }
+  .lights i:nth-child(2) { bottom: -30vmax; right: -20vmax; background: radial-gradient(circle, rgba(255, 122, 138, .35), transparent 65%); animation: drift2 32s ease-in-out infinite alternate; }
+  .lights b { position: absolute; left: 0; right: 0; height: 2px; top: 0; background: linear-gradient(90deg, transparent, rgba(255, 38, 63, .55), transparent); box-shadow: 0 0 18px rgba(255, 38, 63, .7); animation: scan 9s linear infinite; }
+  @keyframes drift1 { to { transform: translate(18vmax, 14vmax) scale(1.15); } }
+  @keyframes drift2 { to { transform: translate(-16vmax, -12vmax) scale(.9); } }
+  @keyframes scan { from { transform: translateY(-10vh); } to { transform: translateY(110vh); } }
+  /* top bar */
+  header { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 14px; padding: 12px clamp(14px, 3vw, 32px); border-bottom: 1px solid var(--line); background: rgba(5, 1, 1, .82); backdrop-filter: blur(10px); }
+  .brand { display: flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; font-weight: 800; letter-spacing: .14em; white-space: nowrap; }
+  .brand svg { width: 34px; height: 34px; color: var(--accent); filter: drop-shadow(0 0 8px rgba(255, 38, 63, .9)); animation: pulse 3s ease-in-out infinite; }
+  .brand b { color: var(--accent); text-shadow: 0 0 14px rgba(255, 38, 63, .8); }
+  @keyframes pulse { 50% { filter: drop-shadow(0 0 16px rgba(255, 38, 63, 1)); } }
+  .search { flex: 1; max-width: 520px; margin-inline-start: auto; position: relative; }
+  .search input { width: 100%; padding: 10px 14px 10px 38px; border: 1px solid var(--line); border-radius: 999px; background: rgba(20, 5, 8, .9); color: var(--ink); font: inherit; font-size: 15px; outline: none; transition: border-color .2s, box-shadow .2s; }
+  .search input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(255, 38, 63, .25), 0 0 24px rgba(255, 38, 63, .35); }
+  .search span { position: absolute; inset-inline-start: 14px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+  .home-link { color: var(--soft); text-decoration: none; font-weight: 650; white-space: nowrap; }
+  /* layout */
+  .layout { position: relative; z-index: 1; display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: clamp(16px, 3vw, 40px); width: min(1240px, 100%); margin: 0 auto; padding: 24px clamp(14px, 3vw, 32px) 80px; }
+  nav.side { position: sticky; top: 84px; align-self: start; max-height: calc(100vh - 100px); overflow-y: auto; padding-inline-end: 6px; }
+  nav.side p { margin: 0 0 10px; color: var(--muted); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; }
+  nav.side a { display: flex; align-items: center; gap: 10px; padding: 8px 12px; margin-bottom: 2px; border-radius: 8px; border-inline-start: 2px solid transparent; color: var(--ink); text-decoration: none; font-size: 15px; transition: background .2s, border-color .2s; }
+  nav.side a:hover, nav.side a.on { background: rgba(255, 38, 63, .12); border-inline-start-color: var(--accent); }
+  nav.side a small { margin-inline-start: auto; color: var(--muted); }
+  .chk { display: flex; align-items: center; gap: 8px; margin: 16px 12px 0; color: var(--muted); font-size: 14px; cursor: pointer; }
+  .chk input { accent-color: var(--accent); width: 16px; height: 16px; }
+  /* hero */
+  .hero { margin: 0 0 28px; padding: clamp(20px, 3vw, 34px); border: 1px solid var(--line); border-radius: 18px; background: linear-gradient(135deg, rgba(255, 38, 63, .16), rgba(20, 5, 8, .7) 55%); position: relative; overflow: hidden; }
+  .hero::after { content: ""; position: absolute; inset: -1px; border-radius: 18px; padding: 1px; background: linear-gradient(90deg, transparent, var(--accent), transparent); background-size: 200% 100%; animation: edge 6s linear infinite; -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; pointer-events: none; }
+  @keyframes edge { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+  .hero h1 { margin: 0 0 6px; font-size: clamp(26px, 4vw, 44px); letter-spacing: -.02em; }
+  .hero h1 b { color: var(--accent); text-shadow: 0 0 22px rgba(255, 38, 63, .7); }
+  .hero p { margin: 0; max-width: 72ch; color: var(--muted); }
+  .notes { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+  .notes span { padding: 4px 12px; border: 1px solid var(--line); border-radius: 999px; font-size: 13px; color: var(--ink); background: rgba(5, 1, 1, .5); }
+  /* sections and entries */
+  section.cat { margin: 0 0 34px; }
+  section.cat h2 { display: flex; align-items: center; gap: 10px; margin: 0 0 4px; font-size: clamp(20px, 2.2vw, 26px); }
+  section.cat h2 i { font-style: normal; filter: drop-shadow(0 0 8px rgba(255, 38, 63, .6)); }
+  section.cat > p { margin: 0 0 14px; color: var(--muted); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+  .item { position: relative; display: block; padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); color: var(--ink); text-decoration: none; transition: transform .2s, border-color .2s, box-shadow .2s; }
+  .item:hover, .item:focus-visible { transform: translateY(-2px); border-color: var(--accent); box-shadow: 0 0 0 1px rgba(255, 38, 63, .4), 0 10px 30px rgba(255, 38, 63, .22); outline: none; }
+  .item .t { display: flex; align-items: center; gap: 8px; font-weight: 700; }
+  .item .t .star { color: var(--accent); text-shadow: 0 0 10px rgba(255, 38, 63, .9); }
+  .item .d { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+  .item .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .item .tags span { padding: 1px 8px; border-radius: 999px; background: rgba(255, 38, 63, .14); color: var(--soft); font-size: 12px; }
+  .item.starred { border-color: rgba(255, 38, 63, .5); }
+  .empty { padding: 30px; border: 1px dashed var(--line); border-radius: 12px; color: var(--muted); text-align: center; }
+  footer { position: relative; z-index: 1; padding: 20px clamp(14px, 3vw, 32px) 40px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; text-align: center; }
+  /* phones and tablets: the sidebar turns into a row of chips under the bar */
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: minmax(0, 1fr); }
+    nav.side { position: static; max-height: none; display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; }
+    nav.side p, .chk { display: none; }
+    nav.side a { flex: none; border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; font-size: 14px; }
+    nav.side a small { display: none; }
+    header { flex-wrap: wrap; }
+    .search { order: 3; flex-basis: 100%; max-width: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+<div class="lights" aria-hidden="true"><i></i><i></i><b></b></div>
+<header>
+  <a class="brand" href="./" aria-label="Back to EYE3 Home">
+    <svg viewBox="0 0 160 160" aria-hidden="true"><path d="M80 7 153 80 80 153 7 80Z" fill="none" stroke="currentColor" stroke-width="5"/><path d="M13 80Q80 18 147 80Q80 142 13 80Z" fill="#020001" stroke="currentColor" stroke-width="6"/><circle cx="80" cy="80" r="24" fill="currentColor"/><ellipse cx="80" cy="80" rx="8" ry="18" fill="#020001"/></svg>
+    <span translate="no"><b>EYE3</b> GUIDE</span>
+  </a>
+  <label class="search"><span aria-hidden="true">⌕</span><input id="q" type="search" placeholder="Search the guide: movies, radio, VLC, setup…" aria-label="Search the guide" autocomplete="off"></label>
+  <a class="home-link" href="./">← EYE3 Home</a>
+</header>
+
+<div class="layout">
+  <nav class="side" id="side" aria-label="Sections"><p>Sections</p></nav>
+  <main>
+    <div class="hero">
+      <h1>See beyond, <b>for free.</b></h1>
+      <p>One place for everything EYE3: free and legal places to watch, listen, read, learn and download from anywhere in the world, plus every EYE3 feature and how to set up your TV. ⭐ marks our first picks.</p>
+      <div class="notes"><span>✓ Free and legal only</span><span>🌍 Worldwide, unless a note says a country</span><span>🔒 No sign-up needed unless marked</span></div>
+    </div>
+    <div id="cats"></div>
+    <div class="empty" id="empty" hidden>Nothing matches. Try another word, or ask Geeni on the EYE3 Home screen.</div>
+  </main>
+</div>
+<footer>EYE3 Guide · by i3 Design · links go to the services' own sites; availability can change by country. EYE3 lists no pirated or adult sources.</footer>
+
+<script>
+(function () {
+  "use strict";
+  // [name, url, note, tags, starred]. Free and legal sources only: never add pirated, cracked or adult sites.
+  var CATS = [
+    { id: "eye3", ico: "👁", name: "EYE3 itself", sub: "Your screen, your way: the apps and pages of EYE3.", items: [
+      ["EYE3 Home", "./", "The TV home screen: Live TV, radio, movies, your media, YouTube, web and Geeni.", ["TV", "Laptop", "Phone"], 1],
+      ["Phone remote", "../remote/", "Control EYE3 Home from your phone with a code.", ["Phone"], 1],
+      ["EYE3 Vision", "../index.html", "AI image tools on your device: objects, text, compare, library.", ["Camera", "On-device"], 0],
+      ["Set up a TV box", "setup.html", "Turn a laptop, mini-PC, Raspberry Pi or Android projector into an always-on EYE3 box.", ["Setup"], 1],
+      ["EYE3 Link and the install kit", "https://github.com/j-janko420/EYE3-VISION/releases/tag/eye3-link-latest", "The small helper that reads your own IPTV accounts, records and replays. Windows, Mac, Linux.", ["Download", "IPTV"], 1],
+      ["Send big files", "send-files.html", "How to share files that are too big for a chat.", ["Help"], 0]
+    ] },
+    { id: "watch", ico: "📺", name: "Watch free", sub: "Free films, series and live TV from the rights holders, paid for by ads or by your library.", items: [
+      ["EYE3 free channels", "./?splash=0", "Thousands of free public live channels, checked every week. Open Live TV.", ["Live TV", "Worldwide"], 1],
+      ["Internet Archive · Feature Films", "https://archive.org/details/feature_films", "Classic public-domain films. Also inside EYE3: Live TV → Movies & series → Free movies.", ["Movies", "Worldwide"], 1],
+      ["Pluto TV", "https://pluto.tv/", "Free live channels and films with ads.", ["Live TV", "Movies", "Many countries"], 1],
+      ["Tubi", "https://tubitv.com/", "Large free film and series library with ads.", ["Movies", "Series", "Many countries"], 1],
+      ["Plex (free films and live TV)", "https://watch.plex.tv/", "Free films and live channels with ads; account optional.", ["Movies", "Live TV", "Many countries"], 0],
+      ["Samsung TV Plus", "https://www.samsungtvplus.com/", "Free live channels in the browser and on many TVs.", ["Live TV", "Many countries"], 0],
+      ["Rakuten TV (free)", "https://www.rakuten.tv/", "Free films and channels with ads.", ["Movies", "Europe"], 0],
+      ["Kanopy", "https://www.kanopy.com/", "Films and documentaries free with a library card or university login.", ["Movies", "Library card"], 0],
+      ["YouTube", "https://www.youtube.com/", "Also opens big-screen style from the YouTube tile on EYE3 Home.", ["Video", "Worldwide"], 0],
+      ["iptv-org", "https://github.com/iptv-org/iptv", "The open list of public free channels that EYE3's catalogue starts from.", ["Live TV", "Open source"], 0]
+    ] },
+    { id: "iptv", ico: "🔑", name: "Your own IPTV", sub: "Use the subscriptions you already pay for. EYE3 itself is free.", items: [
+      ["Add an M3U, Xtream or MAG account", "./?add=xtream", "Opens IPTV accounts. Details stay on your computer only.", ["Accounts"], 1],
+      ["Import a playlist or PDF", "./?add=playlist", "The Playlist maker: import, edit and export .m3u lists.", ["Playlist"], 1],
+      ["Movies & series of your account", "./?add=movies", "Xtream movies and series with resume and next episode.", ["VOD"], 0],
+      ["Catch-up TV", "./?splash=0", "Play a channel marked ⟲ and press U to replay past programmes (EYE3 Link 1.9+).", ["Replay"], 1],
+      ["Record a channel", "./?splash=0", "Press R while a channel plays; files go to the EYE3 Link folder.", ["Record"], 0],
+      ["TV guide (EPG)", "./?splash=0", "G for the channel's guide, D for the guide grid.", ["Guide"], 0]
+    ] },
+    { id: "players", ico: "🎛", name: "IPTV players and tools", sub: "Other free players for your own playlists and accounts, and the open lists behind them.", items: [
+      ["IPTVnator", "https://github.com/4gray/iptvnator", "Free open-source IPTV player for Windows, Mac and Linux. M3U, Xtream and guide support.", ["Player", "Open source"], 1],
+      ["Open TV", "https://github.com/Fredolx/open-tv", "Free open-source IPTV player, light and fast.", ["Player", "Open source"], 0],
+      ["TiviMate", "https://tivimate.com/", "Popular IPTV player for Android TV and Fire TV (Premium is paid).", ["Player", "Android TV"], 1],
+      ["Jellyfin", "https://jellyfin.org/", "Free media server for your own films and series, with apps for many Smart TVs.", ["Media server", "Open source"], 1],
+      ["Awesome IPTV", "https://github.com/iptv-org/awesome-iptv", "iptv-org's list of IPTV resources, players and tools.", ["List", "Open source"], 0]
+    ] },
+    { id: "listen", ico: "📻", name: "Listen", sub: "Radio, music and audiobooks.", items: [
+      ["EYE3 Radio", "./?splash=0", "Thousands of stations by genre and country, from the Radio tile.", ["Radio", "Worldwide"], 1],
+      ["Radio Garden", "https://radio.garden/", "Spin the globe and listen to live radio anywhere.", ["Radio", "Worldwide"], 1],
+      ["Radio Browser", "https://www.radio-browser.info/", "The open station directory EYE3 Radio uses.", ["Radio", "Open data"], 0],
+      ["Free Music Archive", "https://freemusicarchive.org/", "Free-to-download music under open licences.", ["Music"], 0],
+      ["Jamendo", "https://www.jamendo.com/", "Independent music, free to stream.", ["Music"], 0],
+      ["LibriVox", "https://librivox.org/", "Free public-domain audiobooks read by volunteers.", ["Audiobooks"], 1]
+    ] },
+    { id: "read", ico: "📚", name: "Read and learn", sub: "Books, courses and knowledge.", items: [
+      ["Project Gutenberg", "https://www.gutenberg.org/", "Over 70,000 free public-domain e-books.", ["Books"], 1],
+      ["Open Library", "https://openlibrary.org/", "Borrow e-books for free from the Internet Archive.", ["Books", "Account"], 0],
+      ["Khan Academy", "https://www.khanacademy.org/", "Free courses for every age, many languages.", ["Learning"], 1],
+      ["MIT OpenCourseWare", "https://ocw.mit.edu/", "Free university course material.", ["Learning"], 0],
+      ["Wikipedia", "https://www.wikipedia.org/", "The free encyclopedia, in 300+ languages.", ["Knowledge"], 0]
+    ] },
+    { id: "apps", ico: "🧰", name: "Apps and downloads", sub: "Free, open-source programs from their official sites.", items: [
+      ["VLC media player", "https://www.videolan.org/vlc/", "Plays almost anything, including .mkv and H.265. EYE3 key V opens a channel in VLC.", ["Player", "All systems"], 1],
+      ["Kodi", "https://kodi.tv/", "Media centre for TVs and boxes.", ["Player", "TV box"], 1],
+      ["mpv", "https://mpv.io/", "Light, fast video player.", ["Player"], 0],
+      ["HandBrake", "https://handbrake.fr/", "Convert videos to formats your TV plays.", ["Video"], 0],
+      ["OBS Studio", "https://obsproject.com/", "Record or stream your screen.", ["Video"], 0],
+      ["LibreOffice", "https://www.libreoffice.org/", "Free office suite.", ["Office"], 0],
+      ["GIMP", "https://www.gimp.org/", "Free photo editor.", ["Images"], 0],
+      ["Blender", "https://www.blender.org/", "Free 3D, animation and video editing.", ["3D"], 0],
+      ["7-Zip", "https://www.7-zip.org/", "Open and make zip and 7z files.", ["Files", "Windows"], 0],
+      ["Raspberry Pi Imager", "https://www.raspberrypi.com/software/", "Put an operating system on an SD card for a Pi TV box.", ["TV box", "Setup"], 1],
+      ["LibreELEC", "https://libreelec.tv/", "A small system that turns a Pi or mini-PC into a Kodi box.", ["TV box"], 0]
+    ] },
+    { id: "games", ico: "🎮", name: "Games (free and legal)", sub: "Free-to-play and giveaway games from the stores themselves.", items: [
+      ["Epic Games: free games", "https://store.epicgames.com/free-games", "A new free game to keep every week.", ["PC", "Account"], 1],
+      ["itch.io free games", "https://itch.io/games/free", "Thousands of free indie games.", ["PC", "Browser"], 1],
+      ["GOG", "https://www.gog.com/", "DRM-free store with regular free games.", ["PC", "Account"], 0],
+      ["Steam free to play", "https://store.steampowered.com/genre/Free%20to%20Play/", "Free-to-play games on Steam.", ["PC", "Account"], 0]
+    ] },
+    { id: "tv", ico: "🖥", name: "TV and projector setup", sub: "Get EYE3 on the big screen.", items: [
+      ["Laptop on HDMI", "setup.html", "Plug a laptop into the TV, open EYE3 Home, press F for fullscreen.", ["HDMI"], 1],
+      ["Android projector or TV", "setup.html", "Open EYE3 Home in its browser; add it to the home screen.", ["Android"], 1],
+      ["Always-on box (kiosk)", "setup.html", "Run the install kit with the kiosk option: EYE3 opens by itself at every start.", ["Box"], 0],
+      ["HDMI-CEC / EasyLink", "setup.html", "Turn on HDMI-CEC (Philips: EasyLink) so the TV switches to the box by itself.", ["TV settings"], 0],
+      ["Check what your TV can play", "../portal/check/", "Open on the TV's own browser and photograph the result for help.", ["Check"], 0]
+    ] },
+    { id: "geeni", ico: "✨", name: "Geeni and shortcuts", sub: "Your floating helper on EYE3 Home.", items: [
+      ["Call Geeni", "./?splash=0", "Click the eye logo three times or press H. Say or type “play CNN”, “louder”, “replay”…", ["Assistant"], 1],
+      ["Keyboard and remote keys", "./?splash=0", "Press ? on EYE3 Home for every key.", ["Keys"], 0],
+      ["Quick search", "./?splash=0", "Ctrl+K (⌘K on Mac) finds channels and actions.", ["Keys"], 0]
+    ] },
+    { id: "safe", ico: "🛡", name: "Stay safe", sub: "Good tools for a cleaner, safer internet.", items: [
+      ["uBlock Origin", "https://ublockorigin.com/", "Blocks ads and trackers in your browser.", ["Browser"], 1],
+      ["Bitwarden", "https://bitwarden.com/", "Free password manager.", ["Passwords"], 1],
+      ["VirusTotal", "https://www.virustotal.com/", "Check a file or link before you open it.", ["Security"], 0],
+      ["Have I Been Pwned", "https://haveibeenpwned.com/", "See if your email was in a data breach.", ["Security"], 0]
+    ] }
+  ];
+
+  function $(id) { return document.getElementById(id); }
+  function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
+  function fold(t) { var x = String(t).toLowerCase(); try { x = x.normalize("NFD").replace(/[̀-ͯ]/g, ""); } catch (e) {} return x; }
+
+  var side = $("side"), cats = $("cats"), starOnly = false;
+  var star = el("label", "chk"), box = el("input"); box.type = "checkbox"; box.id = "staronly";
+  star.appendChild(box); star.appendChild(document.createTextNode("⭐ Starred only"));
+  CATS.forEach(function (c) {
+    var a = el("a"); a.href = "#" + c.id; a.dataset.id = c.id;
+    a.appendChild(el("span", "", c.ico)); a.appendChild(el("span", "", c.name)); a.appendChild(el("small", "", String(c.items.length)));
+    side.appendChild(a);
+    var s = el("section", "cat"); s.id = c.id;
+    var h = el("h2"); h.appendChild(el("i", "", c.ico)); h.appendChild(document.createTextNode(c.name)); s.appendChild(h);
+    s.appendChild(el("p", "", c.sub));
+    var g = el("div", "grid");
+    c.items.forEach(function (it) {
+      var external = /^https?:/.test(it[1]);
+      var a2 = el("a", "item" + (it[4] ? " starred" : "")); a2.href = it[1];
+      if (external) { a2.target = "_blank"; a2.rel = "noopener noreferrer"; }
+      var t = el("div", "t"); if (it[4]) t.appendChild(el("span", "star", "⭐")); t.appendChild(el("span", "", it[0])); if (external) t.appendChild(el("span", "", "↗"));
+      a2.appendChild(t); a2.appendChild(el("p", "d", it[2]));
+      var tg = el("div", "tags"); it[3].forEach(function (x) { tg.appendChild(el("span", "", x)); }); a2.appendChild(tg);
+      a2.dataset.text = fold(it[0] + " " + it[2] + " " + it[3].join(" ") + " " + c.name);
+      a2.dataset.star = it[4] ? "1" : "";
+      g.appendChild(a2);
+    });
+    s.appendChild(g); cats.appendChild(s);
+  });
+  side.appendChild(star);
+
+  function filter() {
+    var words = fold($("q").value).split(/\s+/).filter(Boolean), shown = 0;
+    [].forEach.call(document.querySelectorAll("section.cat"), function (s) {
+      var n = 0;
+      [].forEach.call(s.querySelectorAll(".item"), function (it) {
+        var ok = (!starOnly || it.dataset.star) && words.every(function (w) { return it.dataset.text.indexOf(w) > -1; });
+        it.hidden = !ok; if (ok) n++;
+      });
+      s.hidden = !n; shown += n;
+      var link = side.querySelector('a[data-id="' + s.id + '"] small'); if (link) link.textContent = String(n);
+    });
+    $("empty").hidden = shown > 0;
+  }
+  $("q").addEventListener("input", filter);
+  box.addEventListener("change", function () { starOnly = box.checked; filter(); });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "/" && document.activeElement !== $("q")) { e.preventDefault(); $("q").focus(); }
+    else if (e.key === "Escape" && document.activeElement === $("q")) { $("q").value = ""; filter(); $("q").blur(); }
+  });
+  // light up the section that is on screen
+  if ("IntersectionObserver" in window) {
+    var io = new IntersectionObserver(function (es) { es.forEach(function (en) { if (en.isIntersecting) [].forEach.call(side.querySelectorAll("a"), function (a) { a.classList.toggle("on", a.dataset.id === en.target.id); }); }); }, { rootMargin: "-30% 0px -60% 0px" });
+    [].forEach.call(document.querySelectorAll("section.cat"), function (s) { io.observe(s); });
+  }
+  var q = /[?&]q=([^&]*)/.exec(location.search);
+  if (q) { try { $("q").value = decodeURIComponent(q[1].replace(/\+/g, " ")).slice(0, 60); } catch (e) {} filter(); }
+})();
+</script>
+</body>
+</html>

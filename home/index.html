@@ -2721,6 +2721,8 @@
     inst.type = "button"; inst.addEventListener("click", function () { if (!window.__installApp || !window.__installApp()) window.alert(tr("To install: in your browser menu choose \"Install app\" or \"Add to Home screen\". On iPhone Safari: Share then Add to Home Screen.")); });
     var setup = make("button", "btn", "Turn a spare device into an EYE3 box");
     setup.type = "button"; setup.addEventListener("click", function () { location.href = "setup.html"; });
+    var gd = make("button", "btn", "EYE3 Guide: free places to watch, listen and download");
+    gd.type = "button"; gd.id = "set-guide"; gd.addEventListener("click", function () { location.href = "guide.html"; });
     var sv = make("button", "btn", "");
     sv.type = "button";
     var paintSv = function () { var m = saverMinutes(); sv.textContent = "Screensaver: " + (m ? "after " + m + " min" : "off"); };
@@ -2758,7 +2760,7 @@
     hp.type = "button"; hp.addEventListener("click", openHelp);
     var sy = make("button", "btn", syncCode ? "Sync phone and laptop: on" : "Sync phone and laptop");
     sy.type = "button"; sy.addEventListener("click", function () { openSyncInfo(); });
-    var kv = make("div", "kv"); kv.appendChild(fs); kv.appendChild(ac); kv.appendChild(ag); kv.appendChild(pr); kv.appendChild(rc2); kv.appendChild(tl); kv.appendChild(wg); kv.appendChild(ts); kv.appendChild(hp); kv.appendChild(gl); kv.appendChild(rc); kv.appendChild(sy); kv.appendChild(sl); kv.appendChild(sv); kv.appendChild(pl); kv.appendChild(inst); kv.appendChild(setup); kv.appendChild(ph);
+    var kv = make("div", "kv"); kv.appendChild(fs); kv.appendChild(ac); kv.appendChild(ag); kv.appendChild(pr); kv.appendChild(rc2); kv.appendChild(tl); kv.appendChild(wg); kv.appendChild(ts); kv.appendChild(hp); kv.appendChild(gd); kv.appendChild(gl); kv.appendChild(rc); kv.appendChild(sy); kv.appendChild(sl); kv.appendChild(sv); kv.appendChild(pl); kv.appendChild(inst); kv.appendChild(setup); kv.appendChild(ph);
     rowsHtml(body, [
       para("EYE3 Home runs in this browser and shows on the TV over HDMI. For the best look, press F or use the button below to go fullscreen."),
       kv,
@@ -3352,6 +3354,7 @@
     });
   }
   var GEENI_TOPICS = [
+    [/eye3 guide|free (sites|apps|movies sites|places)|where (can|to) (i )?(watch|download|listen)|resources|useful (sites|links|apps)|download (apps|software)|legal/, "The EYE3 Guide lists free and legal places to watch, listen, read and download, with search and our ⭐ picks.", [["Open the EYE3 Guide", function () { location.href = "guide.html"; }]]],
     [/hello|\bhi\b|\bhey\b|who are you|your name|what can you do|\bhelp\b/, "I am Geeni. I can explain EYE3, find and play a channel, check why something does not play, and open any screen for you.", []],
     [/add.*(account|xtream|m3u|mag|login|subscription|provider|portal)|xtream|stalker|\bmag\b|iptv account/, "Open IPTV accounts and choose M3U link, Xtream Codes login or MAG portal. It is saved on this computer only. It needs EYE3 Link, a small program that runs on your computer.", [["Open IPTV accounts", function () { openAccounts(); }]]],
     [/import|playlist|\bm3u\b|\bpdf\b|\bfile\b|my own list/, "The Playlist maker imports an .m3u file, a pasted list or a PDF, and exports a list for other players. Nothing is uploaded.", [["Open Playlist maker", function () { openMaker(); }]]],
