@@ -401,33 +401,35 @@
   .g-form { display: flex; gap: 8px; padding: 10px 14px 14px; border-top: 1px solid rgba(255, 30, 55, .2); }
   .g-form .field { padding: 10px 12px; font-size: 14px; }
   .g-form .btn { padding: 8px 14px; }
-  /* ---- Midnight: the second layer, switched on while the hidden 18+ section is unlocked ----
+  /* ---- World of Unknown (internally "midnight"): the second layer, on while the hidden section is unlocked ----
      Its own colours, background and hero; the EYE3 logo keeps its crimson look. No images ship with it:
      backgrounds and the emblem are files the viewer picks, kept in this browser only. */
   html.midnight {
     --bg: #0a0108; --ink: #fff3f9; --muted: #c4a7b8; --line: rgba(255, 220, 240, .1);
-    --edge: rgba(var(--mn-rgb, 224, 33, 138), .3); --panel: linear-gradient(145deg, rgba(30, 6, 24, .94), rgba(9, 2, 8, .96));
-    --accent: var(--mn-accent, #e0218a); --accent-2: #7a0b4f; --glow: rgba(var(--mn-rgb, 224, 33, 138), .36); --orange-soft: #ff8cc6;
+    --edge: rgba(var(--mn-rgb, 54, 240, 160), .3); --panel: linear-gradient(145deg, rgba(30, 6, 24, .94), rgba(9, 2, 8, .96));
+    --accent: var(--mn-accent, #36f0a0); --accent-2: #7a0b4f; --glow: rgba(var(--mn-rgb, 54, 240, 160), .36); --orange-soft: #ff8cc6;
   }
   html.midnight body {
     background-image:
       linear-gradient(180deg, rgba(10, 1, 8, .5), rgba(10, 1, 8, .85)),
-      radial-gradient(ellipse at 15% -10%, rgba(var(--mn-rgb, 224, 33, 138), .28), transparent 40%),
+      radial-gradient(ellipse at 15% -10%, rgba(var(--mn-rgb, 54, 240, 160), .28), transparent 40%),
       radial-gradient(ellipse at 100% 35%, rgba(122, 11, 79, .3), transparent 40%),
-      radial-gradient(ellipse at 50% 120%, rgba(var(--mn-rgb, 224, 33, 138), .18), transparent 50%);
+      radial-gradient(ellipse at 50% 120%, rgba(var(--mn-rgb, 54, 240, 160), .18), transparent 50%);
   }
   html.midnight .brand .mark, html.midnight .brand .wordmark b { color: #ff263f; }
   html.midnight .brand .mark { filter: drop-shadow(0 0 10px rgba(255, 0, 35, .7)); }
   .mn-bg { position: fixed; inset: 0; z-index: -1; width: 100%; height: 100%; object-fit: cover; background-size: cover; background-position: center; opacity: var(--mn-dim, .45); pointer-events: none; }
   .mn-bg[hidden] { display: none; }
-  .mn-haze { position: fixed; inset: -20%; z-index: -1; pointer-events: none; background: radial-gradient(circle at 30% 40%, rgba(var(--mn-rgb, 224, 33, 138), .16), transparent 35%), radial-gradient(circle at 70% 60%, rgba(122, 11, 79, .18), transparent 40%); animation: mnHaze 24s ease-in-out infinite alternate; }
+  .mn-haze { position: fixed; inset: -20%; z-index: -1; pointer-events: none; background: radial-gradient(circle at 30% 40%, rgba(var(--mn-rgb, 54, 240, 160), .16), transparent 35%), radial-gradient(circle at 70% 60%, rgba(122, 11, 79, .18), transparent 40%); animation: mnHaze 24s ease-in-out infinite alternate; }
   .mn-haze[hidden] { display: none; }
   @keyframes mnHaze { to { transform: translate(6%, -4%) rotate(8deg) scale(1.08); } }
-  .mn-emblem { position: absolute; inset-inline-end: 6%; top: 50%; width: min(32%, 300px); max-height: 80%; transform: translateY(-50%); object-fit: contain; filter: drop-shadow(0 0 30px rgba(var(--mn-rgb, 224, 33, 138), .6)); }
+  .mn-emblem { position: absolute; inset-inline-end: 6%; top: 50%; width: min(32%, 300px); max-height: 80%; transform: translateY(-50%); object-fit: contain; filter: drop-shadow(0 0 30px rgba(var(--mn-rgb, 54, 240, 160), .6)); }
   .mn-emblem[hidden] { display: none; }
   html.midnight .hero-art .orb, html.midnight .hero-art .sat { filter: hue-rotate(-30deg) saturate(1.2); }
   html.midnight .hero-art.has-emblem .orb, html.midnight .hero-art.has-emblem .sat { display: none; }
-  html.midnight .kicker .live { background: var(--accent); }
+  html.midnight .kicker .live { background: var(--accent); color: #050101; }
+  .act.mn-enter[hidden] { display: none; }
+  html.midnight .act.mn-enter { border-color: var(--accent); box-shadow: 0 0 22px var(--glow); }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
 </head>
@@ -473,6 +475,7 @@
       <div class="hero-actions">
         <button class="act primary" type="button" data-go="tv" tabindex="-1">▶ Watch Live TV</button>
         <button class="act" type="button" data-go="radio" tabindex="-1">📻 Radio</button>
+        <button class="act mn-enter" type="button" id="mn-enter" tabindex="-1" hidden>◈ Enter the Unknown</button>
       </div>
     </div>
   </section>
@@ -670,7 +673,7 @@
     <div class="toolbar">
       <button class="btn on" type="submit" id="ex-unlock">Unlock</button>
       <button class="btn" type="button" id="ex-lock" hidden>Lock now</button>
-      <button class="btn" type="button" id="ex-mn" hidden>Midnight settings</button>
+      <button class="btn" type="button" id="ex-mn" hidden>World of Unknown settings</button>
       <button class="btn" type="button" id="ex-removepin" hidden>Remove PIN</button>
     </div>
     <p class="acct-note" id="ex-msg"></p>
@@ -1817,6 +1820,7 @@
     if (!explicitUnlocked) return;
     explicitUnlocked = false;
     if (tvFilter.cat === EXPLICIT) { tvFilter.cat = "All"; tvFilter.group = ""; }
+    if (free.genre.indexOf("u:") === 0) { free.genre = ""; free.items = []; free.total = 0; free.token++; }
     stopPlayback(); refreshLists(); applyLayer();
     if (!quiet) toast("Explicit section locked");
   }
@@ -1826,7 +1830,7 @@
     if (!$("ex-age").checked) return exMsg("Please confirm you are 18 or older.", "bad");
     if (Date.now() < pinBlockedUntil) return exMsg("Too many wrong tries. Wait half a minute.", "bad");
     var pin = $("ex-pin").value, info = pinInfo();
-    var done = function () { explicitUnlocked = true; pinFails = 0; refreshLists(); closeOverlays(); applyLayer(); toast("Midnight is on. Press Q to lock it at once."); };
+    var done = function () { explicitUnlocked = true; pinFails = 0; refreshLists(); closeOverlays(); applyLayer(); toast("The World of Unknown is open. Press Q to lock it at once."); };
     if (info) {
       sha(info.s + ":" + pin).then(function (h) {
         if (h === info.h) done();
@@ -2276,9 +2280,26 @@
   var FREE_GENRES = [["", "All free movies"], ["comedy", "Comedy"], ["drama", "Drama"], ["sci-fi", "Sci-fi"], ["horror", "Horror"], ["western", "Western"], ["film noir", "Film noir"], ["animation", "Animation"], ["documentary", "Documentary"], ["silent", "Silent films"], ["crime", "Crime"], ["romance", "Romance"], ["war", "War"]];
   var free = { q: "", genre: "", page: 1, items: [], total: 0, busy: "", note: "", timer: null, token: 0 };
   var FREE_ROWS = 60;
+  // World of Unknown channels: themed, public-domain Internet Archive collections, listed only while the layer is open.
+  // Each one needs a matching subject (no blind fallback) and drops adult, news, vlog and podcast items.
+  var FREE_DENY = ["adult", "erotic", "xxx", "porn", "pornographic", "sexploitation", "nudist", "nudity", "hardcore", "explicit", "news", "vlog", "youtube", "podcast", "commercial", "advertising"];
+  var UNKNOWN_CHANNELS = [
+    { id: "shock", name: "Shock Theater", desc: "Classic horror: monsters, vampires, haunted houses.", coll: ["feature_films"], subj: ["horror", "monster", "monsters", "vampire", "vampires", "zombie", "zombies", "ghost", "ghosts", "haunted", "werewolf", "mummy"] },
+    { id: "scifi", name: "Sci-Fi Theater", desc: "Flying saucers, invaders and lost worlds.", coll: ["feature_films"], subj: ["science fiction", "sci-fi", "scifi", "aliens", "alien", "outer space", "flying saucers", "space travel", "robots"] },
+    { id: "noir", name: "Noir Nights", desc: "Film noir, mysteries and detectives.", coll: ["feature_films"], subj: ["film noir", "noir", "mystery", "detective", "suspense", "thriller"] },
+    { id: "unexplained", name: "The Unexplained", desc: "UFOs, the paranormal and strange phenomena on film.", coll: ["prelinger", "FedFlix", "opensource_movies", "feature_films"], subj: ["ufo", "ufos", "unidentified flying objects", "flying saucers", "paranormal", "supernatural", "unexplained", "occult", "psychic", "extraterrestrial", "bigfoot", "sea monster"], deny: ["training film", "music video", "gameplay"] },
+    { id: "otr", name: "OTR Theater", desc: "Old-time radio drama: Suspense, Inner Sanctum, X Minus One, The Shadow.", coll: ["oldtimeradio"], audio: true, subj: ["suspense", "inner sanctum", "x minus one", "dimension x", "the shadow", "lights out", "escape", "horror", "science fiction", "mystery", "radio drama", "old time radio"], deny: ["modern podcast", "npr"] }
+  ];
+  function unknownChannel(g) { if (!explicitUnlocked || String(g || "").indexOf("u:") !== 0) return null; var id = g.slice(2); return UNKNOWN_CHANNELS.filter(function (c) { return c.id === id; })[0] || null; }
+  function iaList(a) { return a.map(function (t) { return /\s/.test(t) ? "\"" + t + "\"" : t; }).join(" OR "); }
   function freeQuery() {
-    var q = "collection:(feature_films) AND mediatype:(movies) AND -subject:(adult OR erotic OR xxx OR porn)";
-    if (free.genre) q += " AND subject:(\"" + free.genre + "\")";
+    var uc = unknownChannel(free.genre), q;
+    if (uc) {
+      q = "collection:(" + uc.coll.join(" OR ") + ") AND mediatype:(" + (uc.audio ? "audio" : "movies") + ") AND subject:(" + iaList(uc.subj) + ") AND -subject:(" + iaList(FREE_DENY.concat(uc.deny || [])) + ")";
+    } else {
+      q = "collection:(feature_films) AND mediatype:(movies) AND -subject:(adult OR erotic OR xxx OR porn)";
+      if (free.genre) q += " AND subject:(\"" + free.genre + "\")";
+    }
     var t = free.q.replace(/[^\w\s'-]/g, " ").replace(/\s+/g, " ").trim();
     if (t) q += " AND title:(" + t + ")";
     return q;
@@ -2295,12 +2316,12 @@
       var rs = d && d.response || {}, docs = rs.docs || [];
       docs.forEach(function (x) {
         var title = freeText(x.title), id = freeText(x.identifier);
-        if (!id || !title || ADULT_RX.test(title)) return;          // adult titles are never listed from this source
+        if (!id || !title || ADULT_RX.test(title) || /\b(trailer|podcast|vlog|nudist)\b/i.test(title)) return;   // adult titles are never listed from this source
         free.items.push({ id: id, n: title, y: /^\d{4}/.test(freeText(x.year)) ? freeText(x.year).slice(0, 4) : "" });
       });
       free.total = rs.numFound || free.items.length; free.busy = "";
       if (docs.length < FREE_ROWS) free.total = free.items.length;   // last page (titles we hide are not counted)
-      if (!free.items.length) free.note = "No free movies match. Try another genre or search.";
+      if (!free.items.length) free.note = unknownChannel(free.genre) ? "Nothing on this channel right now. Try another channel." : "No free movies match. Try another genre or search.";
       vodRender();
     })["catch"](function (err) {
       if (my !== free.token) return;
@@ -2308,7 +2329,11 @@
     });
   }
   // pick a file a browser can play: the Archive's standard h.264 copy first, then any mp4/webm/ogv, avoiding trailers and huge files
-  function freePick(files) {
+  function freePick(files, audio) {
+    if (audio) {   // an old-time radio item holds many episodes: tune in to one of them at random
+      var eps = (files || []).filter(function (f) { return /\.(mp3|ogg)$/i.test(f.name || "") && !/(_64kb|sample)/i.test(f.name); });
+      return eps.length ? eps[Math.floor(Math.random() * eps.length)] : null;
+    }
     var ok = (files || []).filter(function (f) { return /\.(mp4|m4v|webm|ogv)$/i.test(f.name || "") && !/(trailer|sample|thumb)/i.test(f.name); });
     var rank = function (f) { return /^(h\.264|mpeg4)/i.test(f.format || "") ? 0 : /\.mp4$/i.test(f.name) ? 1 : 2; };
     var size = function (f) { return parseInt(f.size, 10) || 0; };
@@ -2316,28 +2341,44 @@
     return ok[0] || null;
   }
   function freePlay(it) {
-    var title = it.n + (it.y ? " (" + it.y + ")" : "");
-    $("vod-idle").style.display = "none"; vodLabel(title + " — finding the video…", false);
+    var uc = unknownChannel(free.genre), title = (uc ? "◈ " + uc.name + " · " : "") + it.n + (it.y ? " (" + it.y + ")" : "");
+    $("vod-idle").style.display = "none"; vodLabel(title + " — " + (uc && uc.audio ? "tuning in…" : "finding the video…"), false);
     fetch("https://archive.org/metadata/" + encodeURIComponent(it.id)).then(function (r) { if (!r.ok) throw new Error("answered " + r.status); return r.json(); }).then(function (d) {
-      var f = freePick(d && d.files);
-      if (!f) throw new Error("has no video file a browser can play");
+      var f = freePick(d && d.files, uc && uc.audio);
+      if (!f) throw new Error(uc && uc.audio ? "has no episode a browser can play" : "has no video file a browser can play");
+      if (uc && uc.audio) title += " — " + f.name.replace(/^.*\//, "").replace(/\.\w+$/, "").replace(/_/g, " ");
       var v = $("vod-video");
       v.onerror = function () { vodLabel(title + " — can't play this file here. Try another movie.", true); };
-      resumeAttach(v, "free|" + it.id, title);
+      resumeAttach(v, "free|" + it.id + (uc && uc.audio ? "|" + f.name : ""), title);
+      if (uc) { var endBase = v.onended; v.onended = function () { if (endBase) endBase(); freeNext(it); }; }   // a channel keeps playing
       v.src = "https://archive.org/download/" + encodeURIComponent(it.id) + "/" + f.name.split("/").map(encodeURIComponent).join("/");
       vod.cur = { url: v.src, title: title, meta: { type: "movie", name: it.n, year: it.y || "" } }; $("vod-vlc").hidden = false; metaReset();
       var p = v.play(); if (p && p["catch"]) p["catch"](function () {});
     })["catch"](function (err) { vodLabel(title + " — " + (err && err.message || "could not load") + ".", true); });
   }
+  function freeNext(it) {
+    var uc = unknownChannel(free.genre); if (!uc || !$("ov-vod").classList.contains("open") || vod.kind !== "free" || !free.items.length) return;
+    var i = free.items.indexOf(it), nx = free.items[(i + 1) % free.items.length];
+    if (nx) freePlay(nx);
+  }
+  function freeTuneIn() { if (free.items.length) freePlay(free.items[Math.floor(Math.random() * free.items.length)]); }
   function freeFill() {
     var sel = $("vod-cat");
     while (sel.firstChild) sel.removeChild(sel.firstChild);
+    if (free.genre.indexOf("u:") === 0 && !explicitUnlocked) free.genre = "";
+    if (explicitUnlocked) {
+      var og = document.createElement("optgroup"); og.label = "◈ World of Unknown";
+      UNKNOWN_CHANNELS.forEach(function (c) { var o = make("option", "", "◈ " + c.name + (c.audio ? " (radio)" : "")); o.value = "u:" + c.id; og.appendChild(o); });
+      sel.appendChild(og);
+    }
     FREE_GENRES.forEach(function (g) { var o = make("option", "", g[1]); o.value = g[0]; sel.appendChild(o); });
     sel.value = free.genre;
   }
   function freeRender() {
     var list = $("vod-list"); while (list.firstChild) list.removeChild(list.firstChild);
-    var note = function (t, fn) { var r = make("div", "ch action", t); if (fn) { r.tabIndex = 0; r.addEventListener("click", fn); } list.appendChild(r); return r; };
+    var note = function (t, fn) { var r = make("div", "ch action", t); if (fn) { r.tabIndex = 0; r.addEventListener("click", fn); r.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); fn(); } }); } list.appendChild(r); return r; };
+    var uc = unknownChannel(free.genre);
+    if (uc) { note("◈ " + uc.name + " — " + uc.desc); if (free.items.length) note("▶ Tune in (plays on, title after title)", freeTuneIn).id = "u-tune"; }
     free.items.forEach(function (it) {
       var row = make("div", "ch"); row.tabIndex = 0;
       row.appendChild(nt(make("span", "", it.n)));
@@ -2350,8 +2391,8 @@
     if (free.busy) note(free.busy);
     else if (free.note) note(free.note, function () { freeFetch(true); });
     else if (free.items.length < free.total) note("Load more (" + free.items.length + " of " + free.total + ")", function () { free.page++; freeFetch(false); });
-    note("Public-domain films from the Internet Archive (archive.org). Free, no account.");
-    $("vod-count").textContent = free.total + " free movie" + (free.total === 1 ? "" : "s");
+    note(uc && uc.audio ? "Public-domain old-time radio from the Internet Archive (archive.org). Free, no account." : "Public-domain films from the Internet Archive (archive.org). Free, no account.");
+    $("vod-count").textContent = uc ? free.total + " on " + uc.name : free.total + " free movie" + (free.total === 1 ? "" : "s");
   }
   function freeOpen() {
     vod.kind = "free"; vod.mode = "titles";
@@ -3602,13 +3643,16 @@
   });
 
 
-  // ---- Midnight: the second layer of the app while the hidden section is unlocked ----
+  // ---- World of Unknown (internally "midnight"): the second layer of the app while the hidden section is unlocked ----
   // Look (colours, background picture or video, emblem, dim), hero text and its own settings. Pictures are
   // the viewer's files in this browser's IndexedDB ("eye3-layer2"), never uploaded and never in the repo.
   var L2_KEY = "eye3.home.layer2", L2_DB = "eye3-layer2";
-  var MN_PALETTES = [["Rose", "#e0218a", "224, 33, 138"], ["Crimson", "#ff2d55", "255, 45, 85"], ["Amber", "#ffb020", "255, 176, 32"], ["Orchid", "#c13bd8", "193, 59, 216"]];
-  var l2 = { pal: 0, dim: 45, lockHidden: true, title: "Midnight Desires", sub: "Your private screen." };
-  try { var l2s = JSON.parse(get(L2_KEY) || "null"); if (l2s && typeof l2s === "object") Object.keys(l2).forEach(function (k) { if (typeof l2s[k] === typeof l2[k]) l2[k] = l2s[k]; }); } catch (e) {}
+  var MN_PALETTES = [["Rose", "#e0218a", "224, 33, 138"], ["Crimson", "#ff2d55", "255, 45, 85"], ["Amber", "#ffb020", "255, 176, 32"], ["Orchid", "#c13bd8", "193, 59, 216"], ["Spectre", "#36f0a0", "54, 240, 160"]];
+  var L2_TITLE = "World of Unknown", L2_SUB = "Mysteries, monsters and the unexplained.";
+  var l2 = { pal: 4, dim: 45, lockHidden: true, title: L2_TITLE, sub: L2_SUB, v: 2 };
+  try { var l2s = JSON.parse(get(L2_KEY) || "null"); if (l2s && typeof l2s === "object") Object.keys(l2).forEach(function (k) { if (typeof l2s[k] === typeof l2[k]) l2[k] = l2s[k]; });
+    if (l2s && l2s.v !== 2) { if (l2.title === "Midnight Desires") l2.title = L2_TITLE; if (l2.sub === "Your private screen.") l2.sub = L2_SUB; if (l2s.pal === 0) l2.pal = 4; l2.v = 2; }   // the old Midnight defaults become the new world
+  } catch (e) {}
   function l2Save() { set(L2_KEY, JSON.stringify(l2)); }
   var heroDefault = null, l2Urls = {};
   function l2Db() {
@@ -3641,7 +3685,8 @@
     var h1 = document.querySelector(".hero h1"), kick = document.querySelector(".kicker span:last-child"), greet = $("greet");
     if (!heroDefault) heroDefault = { h1: h1.textContent, kick: kick.textContent, greet: greet.textContent };
     h1.textContent = on ? l2.title : heroDefault.h1; nt(h1);
-    kick.textContent = on ? "18+ · Private · locks with Q" : heroDefault.kick;
+    kick.textContent = on ? "The Unknown · Private · locks with Q" : heroDefault.kick;
+    $("mn-enter").hidden = !on;
     if (on) greet.textContent = l2.sub; else greet.textContent = heroDefault.greet;
     $("mn-haze").hidden = !on;
     var img = $("mn-bgimg"), vid = $("mn-bgvid"), emb = $("mn-emblem");
@@ -3656,8 +3701,9 @@
   }
   function openMidnight() {
     if (!explicitUnlocked) return;
-    $("info-title").textContent = "Midnight settings";
-    var nodes = [para("This look appears only while the hidden section is unlocked. Pictures and videos you pick stay in this browser; nothing is uploaded. The EYE3 logo stays as it is.")];
+    $("info-title").textContent = "World of Unknown settings";
+    var nodes = [para("This world appears only while the hidden section is unlocked. Pictures and videos you pick stay in this browser; nothing is uploaded. The EYE3 logo stays as it is.")];
+    var go = make("button", "btn", "◈ Enter the Unknown (W)"); go.type = "button"; go.id = "mn-go"; go.addEventListener("click", openUnknown); nodes.push(go);
     var row = function (label, el) { var r = make("div", "opt"); r.appendChild(make("span", "", label)); r.appendChild(el); return r; };
     var pal = make("select", "btn"); pal.id = "mn-pal";
     MN_PALETTES.forEach(function (p, i) { var o = make("option", "", p[0]); o.value = String(i); pal.appendChild(o); }); pal.value = String(l2.pal);
@@ -3667,7 +3713,7 @@
     dim.addEventListener("input", function () { l2.dim = +dim.value; l2Save(); applyLayer(); });
     nodes.push(row("Background strength", dim));
     var title = make("input", "field"); title.id = "mn-title"; title.maxLength = 40; title.value = l2.title; title.setAttribute("aria-label", "Title on the home screen");
-    title.addEventListener("change", function () { l2.title = title.value.replace(/^\s+|\s+$/g, "").slice(0, 40) || "Midnight Desires"; l2Save(); applyLayer(); });
+    title.addEventListener("change", function () { l2.title = title.value.replace(/^\s+|\s+$/g, "").slice(0, 40) || L2_TITLE; l2Save(); applyLayer(); });
     nodes.push(row("Home title", title));
     var pick = function (key, label, accept) {
       var wrap = make("div", "opt"), inp = make("input"); inp.type = "file"; inp.accept = accept; inp.id = "mn-file-" + key; inp.hidden = true;
@@ -3683,7 +3729,7 @@
       wrap.appendChild(b); wrap.appendChild(rm); wrap.appendChild(inp); return wrap;
     };
     nodes.push(pick("bg", "Background picture or video", "image/*,video/*"));
-    nodes.push(pick("emblem", "Midnight emblem (your logo)", "image/*"));
+    nodes.push(pick("emblem", "Emblem (your logo)", "image/*"));
     var lh = make("label", "opt"), cb = make("input"); cb.type = "checkbox"; cb.id = "mn-lockhidden"; cb.checked = l2.lockHidden;
     cb.addEventListener("change", function () { l2.lockHidden = cb.checked; l2Save(); });
     lh.appendChild(cb); lh.appendChild(document.createTextNode("Lock when I switch to another tab or window")); nodes.push(lh);
@@ -3698,9 +3744,18 @@
     rowsHtml($("info-body"), nodes); openOverlay("ov-info");
   }
   $("ex-mn").addEventListener("click", function () { closeOverlays(); openMidnight(); });
+  // the World of Unknown's own channels: public-domain horror, sci-fi, noir, the unexplained and old-time radio
+  function openUnknown() {
+    if (!explicitUnlocked) return;
+    closeOverlays();
+    if (!unknownChannel(free.genre)) { free.genre = "u:" + UNKNOWN_CHANNELS[0].id; free.items = []; free.total = 0; free.busy = ""; }
+    vod.kind = "free"; openVod();
+  }
+  $("mn-enter").addEventListener("click", openUnknown);
   document.addEventListener("keydown", function (e) {   // Q locks Midnight at once
     if (!explicitUnlocked || isTyping() || e.ctrlKey || e.metaKey || e.altKey) return;
     if (e.key === "q" || e.key === "Q") { e.preventDefault(); e.stopImmediatePropagation(); closeOverlays(); lockExplicit(); focusIndex = 0; paintFocus(); }
+    else if ((e.key === "w" || e.key === "W") && !overlayOpen() && !e.shiftKey) { e.preventDefault(); e.stopImmediatePropagation(); openUnknown(); }
   }, true);
   document.addEventListener("visibilitychange", function () { if (document.hidden && explicitUnlocked && l2.lockHidden) { lockExplicit(true); closeOverlays(); } });
   function isBack(e) { return e.key === "Escape" || e.key === "GoBack" || e.keyCode === 10009 || e.keyCode === 461 || e.key === "Backspace" && !isTyping(); }
