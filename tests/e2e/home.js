@@ -608,21 +608,24 @@ const toast = (p) => p.evaluate(() => [...document.querySelectorAll('.toast')].m
     await p.close();
   });
 
-  await suite('Midnight: unlocking the hidden section switches the whole app to its second layer', async () => {
+  await suite('World of Unknown: unlocking the hidden section switches the whole app to its second layer', async () => {
     const p = await open(browser);
     const look = () => p.evaluate(() => { const cs = getComputedStyle(document.documentElement), m = document.querySelector('.brand .mark'); return { mid: document.documentElement.classList.contains('midnight'), accent: cs.getPropertyValue('--accent').trim(), logo: getComputedStyle(m).color, h1: document.querySelector('.hero h1').textContent, haze: !document.getElementById('mn-haze').hidden }; });
     const before = await look();
     check('normal EYE3 look while locked', !before.mid && before.accent === '#ff263f' && before.h1 === 'See beyond' && !before.haze, before);
     await p.keyboard.press('Shift+X'); await p.waitForTimeout(300); await p.check('#ex-age'); await p.click('#ex-unlock'); await p.waitForTimeout(500);
     const on = await look();
-    check('unlocking turns on Midnight: its own colours, haze and title', on.mid && on.accent === '#e0218a' && on.h1 === 'Midnight Desires' && on.haze, on);
+    check('unlocking opens the World of Unknown: its own colours, haze, title and entry button', on.mid && ['#ff263f', '#c8102e', '#ff3b1f'].includes(on.accent) && on.h1 === 'World of Unknown' && on.haze && await p.evaluate(() => !document.getElementById('mn-enter').hidden), on);
+    const hour = await p.evaluate(() => ({ t: document.documentElement.getAttribute('data-mn-theme'), h: String(new Date().getHours()), scene: document.getElementById('mn-scene').className, n: document.getElementById('mn-scene').children.length, kick: document.querySelector('.kicker span:last-child').textContent }));
+    check('the theme follows the hour and draws its own scene (no pictures shipped)', hour.t === hour.h && /sc-\w+/.test(hour.scene) && hour.n > 0 && /The Unknown · .+ · locks with Q/.test(hour.kick), hour);
     check('the EYE3 logo keeps its crimson look', on.logo === 'rgb(255, 38, 63)', on.logo);
     await p.keyboard.press('Shift+X'); await p.waitForTimeout(300);
-    check('the hidden dialog offers Midnight settings once unlocked', await p.evaluate(() => !document.getElementById('ex-mn').hidden));
+    check('the hidden dialog offers World of Unknown settings once unlocked', await p.evaluate(() => !document.getElementById('ex-mn').hidden));
     await p.click('#ex-mn'); await p.waitForTimeout(400);
-    check('Midnight settings open', await p.evaluate(() => document.getElementById('info-title').textContent === 'Midnight settings'));
-    await p.selectOption('#mn-pal', '1'); await p.waitForTimeout(150);
-    check('a colour choice changes the accent', (await look()).accent === '#ff2d55');
+    check('World of Unknown settings open', await p.evaluate(() => document.getElementById('info-title').textContent === 'World of Unknown settings'));
+    check('24 themes plus the hourly change are offered', await p.evaluate(() => document.querySelectorAll('#mn-pal option').length === 25 && document.getElementById('mn-pal').value === 'auto'));
+    await p.selectOption('#mn-pal', '9'); await p.waitForTimeout(150);
+    check('a fixed theme changes the accent and the scene', (await look()).accent === '#c8102e' && await p.evaluate(() => document.documentElement.getAttribute('data-mn-theme') === '9' && document.getElementById('mn-scene').className.includes('sc-koi')));
     await p.fill('#mn-title', 'After Dark'); await p.press('#mn-title', 'Tab'); await p.waitForTimeout(150);
     check('the home title can be renamed', (await look()).h1 === 'After Dark');
     const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
@@ -630,15 +633,59 @@ const toast = (p) => p.evaluate(() => [...document.querySelectorAll('.toast')].m
     await p.setInputFiles('#mn-file-emblem', { name: 'logo.png', mimeType: 'image/png', buffer: png }); await p.waitForTimeout(700);
     const assets = await p.evaluate(() => ({ bg: !document.getElementById('mn-bgimg').hidden && /blob:/.test(document.getElementById('mn-bgimg').style.backgroundImage), emb: !document.getElementById('mn-emblem').hidden && /^blob:/.test(document.getElementById('mn-emblem').src) }));
     check('your own background and emblem are shown from this browser (blob, not uploaded)', assets.bg && assets.emb, assets);
+    await p.setInputFiles('#mn-file-hours', [{ name: 'a.png', mimeType: 'image/png', buffer: png }, { name: 'b.png', mimeType: 'image/png', buffer: png }]); await p.waitForTimeout(900);
+    check('pictures for each hour are kept in this browser and one is shown', await p.evaluate(() => JSON.parse(localStorage.getItem('eye3.home.layer2')).hours === 2 && /blob:/.test(document.getElementById('mn-bgimg').style.backgroundImage) && document.getElementById('mn-hours-n').textContent === '2 saved'));
     await p.keyboard.press('Escape'); await p.waitForTimeout(200);
     await p.keyboard.press('q'); await p.waitForTimeout(400);
     const off = await look();
-    check('Q locks at once and brings the normal world back', !off.mid && off.accent === '#ff263f' && off.h1 === 'See beyond' && !off.haze && await p.evaluate(() => document.getElementById('mn-bgimg').hidden && document.getElementById('mn-emblem').hidden), off);
-    check('settings are kept for next time (look only, no content)', await p.evaluate(() => { const v = JSON.parse(localStorage.getItem('eye3.home.layer2')); return v.pal === 1 && v.title === 'After Dark'; }));
+    check('Q locks at once and brings the normal world back', await p.evaluate(() => document.getElementById('mn-scene').hidden && !document.documentElement.hasAttribute('data-mn-theme')) && !off.mid && off.accent === '#ff263f' && off.h1 === 'See beyond' && !off.haze && await p.evaluate(() => document.getElementById('mn-enter').hidden) && await p.evaluate(() => document.getElementById('mn-bgimg').hidden && document.getElementById('mn-emblem').hidden), off);
+    check('settings are kept for next time (look only, no content)', await p.evaluate(() => { const v = JSON.parse(localStorage.getItem('eye3.home.layer2')); return v.theme === '9' && v.title === 'After Dark'; }));
     await p.keyboard.press('Shift+X'); await p.waitForTimeout(300); await p.check('#ex-age'); await p.click('#ex-unlock'); await p.waitForTimeout(800);
     check('unlocking again brings back the saved look and files', await p.evaluate(() => document.querySelector('.hero h1').textContent === 'After Dark' && !document.getElementById('mn-bgimg').hidden));
     await p.reload({ waitUntil: 'domcontentloaded' }); await p.waitForTimeout(900);
     check('a reload always starts locked, in the normal look', (await look()).mid === false);
+    check('no page errors', p.errs.length === 0, p.errs);
+    await p.close();
+  });
+
+  await suite('World of Unknown: its own channels of public-domain films and old-time radio', async () => {
+    const p = await open(browser);
+    const queries = [];
+    await p.route('https://archive.org/**', (r) => {
+      const u = r.request().url(), h = { 'access-control-allow-origin': '*' };
+      if (u.includes('/advancedsearch.php')) {
+        const q = new URL(u).searchParams.get('q'); queries.push(q);
+        const docs = q.includes('oldtimeradio') ? [{ identifier: 'otr-suspense', title: 'Suspense' }] : [{ identifier: 'night-a', title: 'Night of Terror', year: '1933' }, { identifier: 'night-b', title: 'Strange Visitor', year: '1950' }, { identifier: 'bad', title: 'Adult Nights' }];
+        return r.fulfill({ status: 200, headers: h, contentType: 'application/json', body: JSON.stringify({ response: { numFound: docs.length, docs } }) });
+      }
+      if (u.includes('/metadata/otr-suspense')) return r.fulfill({ status: 200, headers: h, contentType: 'application/json', body: JSON.stringify({ files: [{ name: 'Suspense_49-01-06_The_Wrong_Way.mp3', format: 'VBR MP3' }] }) });
+      if (u.includes('/metadata/')) return r.fulfill({ status: 200, headers: h, contentType: 'application/json', body: JSON.stringify({ files: [{ name: 'film.mp4', format: 'h.264', size: '1000' }] }) });
+      return r.fulfill({ status: 404, headers: h, body: '' });
+    });
+    check('locked: no way into the Unknown is shown', await p.evaluate(() => document.getElementById('mn-enter').hidden));
+    await p.keyboard.press('Shift+X'); await p.waitForTimeout(300); await p.check('#ex-age'); await p.click('#ex-unlock'); await p.waitForTimeout(500);
+    await p.click('#mn-enter'); await p.waitForTimeout(800);
+    const st = await p.evaluate(() => ({ open: document.getElementById('ov-vod').classList.contains('open'), val: document.getElementById('vod-cat').value, grp: [...document.querySelectorAll('#vod-cat optgroup option')].map((o) => o.textContent), rows: [...document.querySelectorAll('#vod-list .ch')].map((r) => r.textContent), count: document.getElementById('vod-count').textContent }));
+    check('Enter the Unknown opens its first channel, Shock Theater', st.open && st.val === 'u:shock' && /Shock Theater/.test(st.count), st);
+    check('five Unknown channels are offered (no NASA)', st.grp.length === 5 && !st.grp.some((g) => /nasa/i.test(g)) && st.grp.some((g) => /OTR Theater/.test(g)), st.grp);
+    check('adult titles never appear on a channel', !st.rows.some((r) => /Adult/.test(r)) && st.rows.some((r) => /Night of Terror/.test(r)), st.rows);
+    const q0 = queries[queries.length - 1];
+    check('the query needs a theme subject and drops adult, news and podcast items', /subject:\(horror OR/.test(q0) && /-subject:\(adult OR/.test(q0) && /sexploitation/.test(q0) && /podcast/.test(q0), q0);
+    await p.click('#u-tune'); await p.waitForTimeout(600);
+    const src1 = await p.evaluate(() => document.getElementById('vod-video').getAttribute('src') || '');
+    check('Tune in plays a film from archive.org', /^https:\/\/archive\.org\/download\/night-[ab]\/film\.mp4$/.test(src1), src1);
+    await p.evaluate(() => { const v = document.getElementById('vod-video'); v.onended && v.onended(); }); await p.waitForTimeout(600);
+    const src2 = await p.evaluate(() => document.getElementById('vod-video').getAttribute('src') || '');
+    check('the channel plays on to the next title when one ends', src2 && src2 !== src1, [src1, src2]);
+    await p.selectOption('#vod-cat', 'u:otr'); await p.waitForTimeout(800);
+    check('OTR Theater asks for audio from the oldtimeradio collection', /collection:\(oldtimeradio\) AND mediatype:\(audio\)/.test(queries[queries.length - 1]), queries[queries.length - 1]);
+    await p.click('#u-tune'); await p.waitForTimeout(600);
+    check('an old-time radio episode plays', /Suspense_49-01-06_The_Wrong_Way\.mp3$/.test(await p.evaluate(() => document.getElementById('vod-video').getAttribute('src') || '')));
+    await p.keyboard.press('Escape'); await p.waitForTimeout(200); await p.keyboard.press('q'); await p.waitForTimeout(400);
+    const after = await p.evaluate(() => ({ enter: document.getElementById('mn-enter').hidden }));
+    check('locking hides the way in again', after.enter, after);
+    await p.keyboard.press('w'); await p.waitForTimeout(300);
+    check('W does nothing while locked', await p.evaluate(() => !document.getElementById('ov-vod').classList.contains('open')));
     check('no page errors', p.errs.length === 0, p.errs);
     await p.close();
   });
