@@ -648,6 +648,35 @@ const toast = (p) => p.evaluate(() => [...document.querySelectorAll('.toast')].m
     await p.close();
   });
 
+  await suite('World of Unknown: the PIN lockout survives a reload, and leaving the page locks', async () => {
+    const p = await open(browser);
+    const mid = () => p.evaluate(() => document.documentElement.classList.contains('midnight'));
+    // set a PIN while unlocking
+    await p.keyboard.press('Shift+X'); await p.waitForTimeout(300);
+    await p.check('#ex-age'); await p.fill('#ex-pin', '1234'); await p.click('#ex-unlock'); await p.waitForTimeout(500);
+    check('a PIN can be set while unlocking', await mid());
+    await p.keyboard.press('q'); await p.waitForTimeout(300);
+    check('Q locks it again', !(await mid()));
+    // five wrong tries set a lockout (the dialog stays open, so keep clicking Unlock)
+    await p.keyboard.press('Shift+X'); await p.waitForTimeout(300); await p.check('#ex-age');
+    for (let i = 0; i < 5; i++) { await p.fill('#ex-pin', '0000'); await p.click('#ex-unlock'); await p.waitForTimeout(250); }
+    check('five wrong PINs save a lockout', await p.evaluate(() => { try { return JSON.parse(localStorage.getItem('eye3.home.pinlock')).u > Date.now(); } catch (e) { return false; } }));
+    // the lockout is still in force after a reload, so even the right PIN is refused
+    await p.reload({ waitUntil: 'domcontentloaded' }); await p.waitForTimeout(800);
+    await p.keyboard.press('Shift+X'); await p.waitForTimeout(300); await p.check('#ex-age'); await p.fill('#ex-pin', '1234'); await p.click('#ex-unlock'); await p.waitForTimeout(400);
+    check('after a reload the lockout still blocks the correct PIN', !(await mid()) && /wrong tries/i.test(await p.textContent('#ex-msg')));
+    await p.close();
+
+    // leaving the page (pagehide) locks an open World, so the back/forward cache cannot restore it unlocked
+    const q = await open(browser);
+    await q.keyboard.press('Shift+X'); await q.waitForTimeout(300); await q.check('#ex-age'); await q.click('#ex-unlock'); await q.waitForTimeout(500);
+    check('it is unlocked', await q.evaluate(() => document.documentElement.classList.contains('midnight')));
+    await q.evaluate(() => window.dispatchEvent(new Event('pagehide'))); await q.waitForTimeout(300);
+    check('pagehide locks it', !(await q.evaluate(() => document.documentElement.classList.contains('midnight'))));
+    check('no page errors', q.errs.length === 0, q.errs);
+    await q.close();
+  });
+
   await suite('World of Unknown: private connection through the viewer\'s own proxies, strict mode and no trace', async () => {
     const p = await open(browser);
     const calls = [];

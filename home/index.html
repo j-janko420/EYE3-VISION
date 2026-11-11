@@ -1829,7 +1829,9 @@
   }
 
   // ---- Explicit section: hidden behind a double-click on the eye logo (or Shift+X). Own accounts/playlists only. ----
-  var PIN_KEY = "eye3.home.pin", pinFails = 0, pinBlockedUntil = 0;
+  var PIN_KEY = "eye3.home.pin", PINLOCK_KEY = "eye3.home.pinlock", pinFails = 0, pinBlockedUntil = 0;
+  try { var pl0 = JSON.parse(get(PINLOCK_KEY) || "null"); if (pl0 && typeof pl0 === "object") { pinFails = +pl0.f || 0; pinBlockedUntil = +pl0.u || 0; } } catch (e) {}
+  function pinLockSave() { try { set(PINLOCK_KEY, JSON.stringify({ f: pinFails, u: pinBlockedUntil })); } catch (e) {} }
   function pinInfo() { try { return JSON.parse(get(PIN_KEY) || "null"); } catch (e) { return null; } }
   function sha(text) {
     return crypto.subtle.digest("SHA-256", new TextEncoder().encode(text)).then(function (b) {
@@ -1867,11 +1869,11 @@
     if (!$("ex-age").checked) return exMsg("Please confirm you are 18 or older.", "bad");
     if (Date.now() < pinBlockedUntil) return exMsg("Too many wrong tries. Wait half a minute.", "bad");
     var pin = $("ex-pin").value, info = pinInfo();
-    var done = function () { explicitUnlocked = true; pinFails = 0; refreshLists(); closeOverlays(); applyLayer(); toast("The World of Unknown is open. Press Q to lock it at once."); };
+    var done = function () { explicitUnlocked = true; pinFails = 0; pinBlockedUntil = 0; pinLockSave(); refreshLists(); closeOverlays(); applyLayer(); toast("The World of Unknown is open. Press Q to lock it at once."); };
     if (info) {
       sha(info.s + ":" + pin).then(function (h) {
         if (h === info.h) done();
-        else { pinFails++; if (pinFails >= 5) { pinBlockedUntil = Date.now() + 30000; pinFails = 0; } exMsg("Wrong PIN.", "bad"); }
+        else { pinFails++; if (pinFails >= 5) { pinBlockedUntil = Date.now() + 30000; pinFails = 0; } pinLockSave(); exMsg("Wrong PIN.", "bad"); }
       });
     } else if (pin) {
       if (!/^\d{4,8}$/.test(pin)) return exMsg("A PIN is 4 to 8 digits.", "bad");
@@ -3928,7 +3930,9 @@
     if (e.key === "q" || e.key === "Q") { e.preventDefault(); e.stopImmediatePropagation(); closeOverlays(); lockExplicit(); focusIndex = 0; paintFocus(); }
     else if ((e.key === "w" || e.key === "W") && !overlayOpen() && !e.shiftKey) { e.preventDefault(); e.stopImmediatePropagation(); openUnknown(); }
   }, true);
-  document.addEventListener("visibilitychange", function () { if (document.hidden && explicitUnlocked && l2.lockHidden) { lockExplicit(true); closeOverlays(); } });
+  function lockOnLeave() { if (explicitUnlocked && l2.lockHidden) { lockExplicit(true); closeOverlays(); } }
+  document.addEventListener("visibilitychange", function () { if (document.hidden) lockOnLeave(); });
+  window.addEventListener("pagehide", lockOnLeave);   // also lock before the page is frozen into the back/forward cache
   function isBack(e) { return e.key === "Escape" || e.key === "GoBack" || e.keyCode === 10009 || e.keyCode === 461 || e.key === "Backspace" && !isTyping(); }
   function isTyping() { var a = document.activeElement; return a && (a.tagName === "INPUT" || a.tagName === "TEXTAREA"); }
   document.addEventListener("keydown", function (e) {
