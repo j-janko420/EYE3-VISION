@@ -131,3 +131,8 @@ Limits: your own links, lists and accounts only; encrypted streams cannot be rec
 - Port busy: `python3 eye3-link.py --port 8766` (EYE3 Home looks for 8765, so keep the default if you can).
 - Using your own copy of EYE3 Home on another address: `python3 eye3-link.py --origin https://your.address`.
 - Tests: `python3 tools/test_eye3_link.py`.
+
+
+## Private connection for the World of Unknown (EYE3 Link 1.10)
+
+In the hidden World of Unknown, Settings → Private connection lets you list proxies you already have (for example a VPN app's "HTTP proxy" mode at `http://127.0.0.1:PORT`, or a proxy you pay for). EYE3 Link tests each one (country and speed), can pick the fastest, and switches to it while the World is open; locking switches back. **Strict** means nothing plays unless it goes through that connection. **Leave no trace** keeps the World's titles out of Recently watched and Continue watching. EYE3 does not include a VPN or any proxies; use a service you trust and follow its terms and your local laws.

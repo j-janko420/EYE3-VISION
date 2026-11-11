@@ -648,6 +648,45 @@ const toast = (p) => p.evaluate(() => [...document.querySelectorAll('.toast')].m
     await p.close();
   });
 
+  await suite('World of Unknown: private connection through the viewer\'s own proxies, strict mode and no trace', async () => {
+    const p = await open(browser);
+    const calls = [];
+    await p.route((u) => /^http:\/\/127\.0\.0\.1:8765\/(api\/proxy|api\/where|stream)/.test(u.href), (r) => {
+      const u = new URL(r.request().url()), h = { 'access-control-allow-origin': '*' }; calls.push(u.pathname + '?' + u.searchParams.toString());
+      const j = (o) => r.fulfill({ status: 200, headers: h, contentType: 'application/json', body: JSON.stringify(o) });
+      if (u.pathname === '/api/proxy/test') return j(u.searchParams.get('u').includes(':1111') ? { ok: true, country: 'DE', ms: 240 } : u.searchParams.get('u').includes(':2222') ? { ok: true, country: 'NL', ms: 90 } : { ok: false, why: 'refused' });
+      if (u.pathname === '/api/where') return j({ country: 'AE', viaProxy: false });
+      if (u.pathname === '/api/proxy/set') return j({ ok: true, proxy: u.searchParams.get('u') !== 'base', host: '127.0.0.1', strict: u.searchParams.get('strict') === '1', base: false });
+      const t = u.searchParams.get('u') || '';
+      if (t.includes('advancedsearch')) return j({ response: { numFound: 1, docs: [{ identifier: 'night-a', title: 'Night of Terror', year: '1933' }] } });
+      if (t.includes('/metadata/')) return j({ files: [{ name: 'film.mp4', format: 'h.264', size: '1000' }] });
+      return r.fulfill({ status: 200, headers: h, contentType: 'video/mp4', body: '' });
+    });
+    await p.keyboard.press('Shift+X'); await p.waitForTimeout(300); await p.check('#ex-age'); await p.click('#ex-unlock'); await p.waitForTimeout(500);
+    await p.keyboard.press('Shift+X'); await p.waitForTimeout(300); await p.click('#ex-mn'); await p.waitForTimeout(400);
+    await p.click('#mn-net-where'); await p.waitForTimeout(600);
+    check('Where do I appear? asks EYE3 Link for the country (for a whole-computer VPN app)', /You appear in AE/.test(await p.evaluate(() => document.getElementById('mn-net-where-r').textContent)));
+    check('the World settings offer a private connection, direct by default', await p.evaluate(() => !!document.getElementById('mn-net-add') && document.getElementById('mn-net-direct').classList.contains('primary')));
+    await p.fill('#mn-net-url', 'not a proxy'); await p.click('#mn-net-add'); await p.waitForTimeout(200);
+    check('a wrong address is refused', await p.evaluate(() => !document.getElementById('mn-net-0')));
+    for (const [n, u] of [['Slow', 'http://127.0.0.1:1111'], ['Fast', 'http://user:pw@127.0.0.1:2222'], ['Dead', 'http://127.0.0.1:3333']]) { await p.fill('#mn-net-name', n); await p.fill('#mn-net-url', u); await p.click('#mn-net-add'); await p.waitForTimeout(150); }
+    await p.click('#mn-net-best'); await p.waitForTimeout(900);
+    const st = await p.evaluate(() => ({ rows: [...document.querySelectorAll('[id^=mn-net-]')].filter((e) => /^mn-net-\d$/.test(e.id)).map((e) => e.textContent), kick: document.querySelector('.kicker span:last-child').textContent, saved: JSON.parse(localStorage.getItem('eye3.home.l2net')) }));
+    check('Use the fastest tests every proxy and picks the quickest that answers', st.saved.pick === 1 && /In use/.test(st.rows[1]) && /NL · 90 ms/.test(st.rows[1]) && /DE · 240 ms/.test(st.rows[0]) && /✗/.test(st.rows[2]), st.rows);
+    check('EYE3 Link was told to switch, in strict mode, and the home screen says private', calls.some((c) => c.startsWith('/api/proxy/set?u=http%3A%2F%2Fuser%3Apw%40127.0.0.1%3A2222&strict=1')) && /🔒 private/.test(st.kick), [calls, st.kick]);
+    check('the proxy login is not shown on screen', !st.rows.join(' ').includes('pw@'));
+    await p.keyboard.press('Escape'); await p.waitForTimeout(200);
+    await p.click('#mn-enter'); await p.waitForTimeout(900);
+    await p.click('#u-tune'); await p.waitForTimeout(800);
+    const src = await p.evaluate(() => document.getElementById('vod-video').getAttribute('src') || '');
+    check('strict: the Unknown channels are searched and played through EYE3 Link, never directly', /^http:\/\/127\.0\.0\.1:8765\/stream\?u=https%3A%2F%2Farchive\.org%2Fdownload%2Fnight-a/.test(src) && calls.some((c) => c.includes('advancedsearch')), src);
+    check('leave no trace: nothing goes into Continue watching or Recently watched', await p.evaluate(() => { document.getElementById('vod-video').dispatchEvent(new Event('timeupdate')); const r = localStorage.getItem('eye3.home.resume'); return !r || !r.includes('night-a'); }));
+    await p.keyboard.press('Escape'); await p.waitForTimeout(200); await p.keyboard.press('q'); await p.waitForTimeout(600);
+    check('locking switches EYE3 Link back to how it was started', calls[calls.length - 1].startsWith('/api/proxy/set?u=base'), calls.slice(-2));
+    check('no page errors', p.errs.length === 0, p.errs);
+    await p.close();
+  });
+
   await suite('World of Unknown: its own channels of public-domain films and old-time radio', async () => {
     const p = await open(browser);
     const queries = [];

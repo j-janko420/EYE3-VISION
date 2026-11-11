@@ -27,7 +27,7 @@ import urllib.parse as up
 import urllib.request as ur
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.9.1"
+VERSION = "1.10.0"
 ALLOWED_ORIGINS = ["https://j-janko420.github.io", "https://eye3-vision.netlify.app"]          # more: EYE3_ORIGINS=https://a,https://b
 LOCAL_ORIGIN = re.compile(r"^http://(localhost|127\.0\.0\.1)(:\d+)?$")
 BAD = re.compile(r"adult|xxx|18\+|porn|erotic|\bsex|playboy|hustler|brazzers|dorcel|penthouse|redlight", re.I)
@@ -103,6 +103,8 @@ def _getaddrinfo(host, port, *args, **kw):
         return _real_getaddrinfo(host, port, *args, **kw)
     except socket.gaierror:
         if not isinstance(host, str) or not host or is_ip(host) or host.lower() == "localhost":
+            raise
+        if STATE.get("strict"):   # strict private connection: never ask a DNS service outside the viewer's proxy
             raise
         if not STATE.get("dns"):
             if not STATE.get("auto_fix"):
@@ -482,6 +484,51 @@ def probe_stream(url):
         return {"ok": True, "why": ""} if chunk else {"ok": False, "why": "empty video"}
     except Exception as exc:
         return {"ok": False, "why": classify(exc), "stage": stage}
+
+
+# ---------------------------------------------------- private connection (the viewer's OWN proxies)
+# Home can switch, at run time, between proxies the viewer already has (a VPN app's HTTP proxy mode, a proxy they pay for).
+# EYE3 includes no VPN and no proxies. Addresses live only in memory here and are never logged or saved.
+PROXY_RX = re.compile(r"^https?://(?:[^\s/@:]+(?::[^\s/@]*)?@)?[A-Za-z0-9.\-]+(?::\d{1,5})?$")
+
+
+def proxy_check(url):
+    url = (url or "").strip()
+    if not PROXY_RX.match(url):
+        raise LinkError("A proxy looks like http://127.0.0.1:8080 or http://user:pass@host:port (HTTP proxies only).")
+    host = up.urlparse(url)
+    if host.hostname in ("127.0.0.1", "localhost") and host.port == STATE.get("port"):
+        raise LinkError("That is EYE3 Link itself, not a proxy.")
+    return url
+
+
+def proxy_view():
+    p = STATE["proxy"]
+    host = up.urlparse(p).hostname or "" if p else ""
+    return {"ok": True, "proxy": bool(p), "host": host, "strict": bool(STATE.get("strict")), "base": bool(STATE.get("base_proxy"))}
+
+
+def proxy_set(url, strict):
+    """Route everything through url ('' or 'base' = back to how Link was started). strict = never connect without it."""
+    STATE["proxy"] = STATE.get("base_proxy", "") if url in ("", "base", "off") else proxy_check(url)
+    STATE["strict"] = bool(strict) and bool(STATE["proxy"])
+    return proxy_view()
+
+
+def proxy_test(url):
+    """Which country does this proxy come out in, and how fast does it answer? (asked only when the viewer presses Test)"""
+    url = proxy_check(url)
+    req = ur.Request(STATE.get("where_url") or "https://ipinfo.io/country", headers={"User-Agent": UA_PLAYER})
+    t0 = time.time()
+    try:
+        opener = ur.build_opener(ur.ProxyHandler({"http": url, "https": url}), ur.HTTPSHandler(context=ssl_context()))
+        with opener.open(req, timeout=10) as r:
+            code = r.read(64).decode("utf-8", "replace").strip().upper()
+    except Exception as exc:
+        return {"ok": False, "why": classify(exc)}
+    if not re.fullmatch(r"[A-Z]{2}", code):
+        return {"ok": False, "why": "no country"}
+    return {"ok": True, "country": code, "ms": int((time.time() - t0) * 1000)}
 
 
 def where_am_i():
@@ -1091,8 +1138,8 @@ class Handler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
 
     def log_message(self, fmt, *args):
-        if STATE.get("verbose"):
-            sys.stderr.write("%s - %s\n" % (self.address_string(), fmt % args))
+        if STATE.get("verbose"):   # addresses can hold logins: never written out
+            sys.stderr.write("%s - %s\n" % (self.address_string(), re.sub(r"([?&](?:u|url|pass|user|server|portal|mac)=)[^&\s\"]*", r"\1…", fmt % args)))
 
     # -- helpers
     def origin(self):
@@ -1218,6 +1265,12 @@ class Handler(BaseHTTPRequestHandler):
             return self.send_json(200, probe_stream(one("u")))
         if path == "/api/where":
             return self.send_json(200, where_am_i())
+        if path == "/api/proxy":
+            return self.send_json(200, proxy_view())
+        if path == "/api/proxy/set":
+            return self.send_json(200, proxy_set(one("u"), one("strict") == "1"))
+        if path == "/api/proxy/test":
+            return self.send_json(200, proxy_test(one("u")))
         if path == "/api/m3u":
             return self.send_json(200, channels_from_m3u(one("url")))
         if path == "/api/xtream":
@@ -1519,7 +1572,7 @@ def main():
     if a.dns and a.dns not in DOH and not re.match(r"^https://[^/\s]+/\S*$", a.dns):
         print("--dns must be cloudflare, google or an https:// DNS-over-HTTPS address.")
         return 1
-    STATE.update(port=a.port, insecure=a.insecure, verbose=a.verbose, proxy=a.proxy, auto_fix=a.auto_fix, auto_update=a.auto_update,
+    STATE.update(port=a.port, insecure=a.insecure, verbose=a.verbose, proxy=a.proxy, base_proxy=a.proxy, strict=False, auto_fix=a.auto_fix, auto_update=a.auto_update,
                  playlists=play_dir if os.path.isdir(play_dir) else "", recordings=rec_folder, started=time.time(), conf_path=conf_path if os.path.exists(conf_path) else "")
     if a.dns:
         install_dns(a.dns)

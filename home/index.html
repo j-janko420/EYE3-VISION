@@ -348,7 +348,9 @@
   #recchip { border-color: var(--accent); color: #fff; background: rgba(255, 38, 63, .22); }
   .rows .btn.big { padding: 16px 20px; font-size: clamp(15px, 1.3vw, 20px); text-align: start; }
   .rows .big-actions { display: grid; gap: 12px; }
-  .rows .opt { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
+  .rows .opt { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 6px 0; }
+  .rows .opt .field { min-width: 0; flex: 1 1 160px; }
+  .rows .opt .mn-net-res { color: var(--muted); }
   .rows .opt input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--accent); }
   .rows .opt input[type="range"] { accent-color: var(--accent); }
   /* Geeni: three clicks on the eye logo spin the eye in 3D, then it turns into a small floating helper */
@@ -1275,7 +1277,7 @@
   try { recent = (JSON.parse(get(RECENT_KEY) || "[]") || []).filter(function (x) { return typeof x === "string"; }).slice(0, 30); } catch (e) { recent = []; }
   function rkey(c) { return c.cat + "|" + c.name; }
   function noteRecent(c) {
-    if (c.adult) return;                               // adult channels leave no trace in this list
+    if (c.adult || noTrace()) return;                  // adult channels, and anything in the World of Unknown, leave no trace here
     var k = rkey(c), first = !recent.length; recent = recent.filter(function (x) { return x !== k; }); recent.unshift(k); recent = recent.slice(0, 30);
     set(RECENT_KEY, JSON.stringify(recent));
     if (first) fillSelects();                          // the category appears as soon as there is something in it
@@ -1404,6 +1406,9 @@
   }
   // an http:// stream cannot play on an https page; EYE3 Link (if it runs) fetches it instead
   function playable(url) {
+    if (strictPrivate() && /^https?:\/\//i.test(url) && url.indexOf(LINK_BASE) !== 0)
+      return linkHello().then(function (h) { return LINK_BASE + "/stream?" + new URLSearchParams({ u: url, t: h.token }).toString(); },
+        function () { throw new Error("Strict private connection is on and EYE3 Link is not running, so nothing plays (nothing leaks)."); });
     if (location.protocol !== "https:" || !/^http:\/\//i.test(url) || url.indexOf(LINK_BASE) === 0) return Promise.resolve(url);
     return linkHello().then(function (h) { return LINK_BASE + "/stream?" + new URLSearchParams({ u: url, t: h.token }).toString(); },
       function () { throw new Error("This stream is http:// and this page is https://, so it needs EYE3 Link. Start EYE3 Link, or use the playlist's https:// streams."); });
@@ -2047,6 +2052,7 @@
   var RESUME_KEY = "eye3.home.resume", resume = {};
   try { resume = JSON.parse(get(RESUME_KEY) || "{}") || {}; } catch (e) { resume = {}; }
   function resumeSave() {
+    if (noTrace()) return;                             // kept in memory only while the World of Unknown is open
     var keys = Object.keys(resume);
     if (keys.length > 200) keys.sort(function (a, b) { return resume[a].t - resume[b].t; }).slice(0, keys.length - 200).forEach(function (k) { delete resume[k]; });
     set(RESUME_KEY, JSON.stringify(resume));
@@ -2346,7 +2352,7 @@
     free.busy = "Loading free movies from the Internet Archive…"; free.note = ""; vodRender();
     var url = "https://archive.org/advancedsearch.php?" + new URLSearchParams({ q: freeQuery(), rows: String(FREE_ROWS), page: String(free.page), output: "json" }).toString() +
       "&fl[]=identifier&fl[]=title&fl[]=year&sort[]=downloads+desc";
-    return fetch(url).then(function (r) { if (!r.ok) throw new Error("The Internet Archive answered " + r.status + "."); return r.json(); }).then(function (d) {
+    return netFetch(url).then(function (r) { if (!r.ok) throw new Error("The Internet Archive answered " + r.status + "."); return r.json(); }).then(function (d) {
       if (my !== free.token) return;
       var rs = d && d.response || {}, docs = rs.docs || [];
       docs.forEach(function (x) {
@@ -2378,7 +2384,7 @@
   function freePlay(it) {
     var uc = unknownChannel(free.genre), title = (uc ? "◈ " + uc.name + " · " : "") + it.n + (it.y ? " (" + it.y + ")" : "");
     $("vod-idle").style.display = "none"; vodLabel(title + " — " + (uc && uc.audio ? "tuning in…" : "finding the video…"), false);
-    fetch("https://archive.org/metadata/" + encodeURIComponent(it.id)).then(function (r) { if (!r.ok) throw new Error("answered " + r.status); return r.json(); }).then(function (d) {
+    netFetch("https://archive.org/metadata/" + encodeURIComponent(it.id)).then(function (r) { if (!r.ok) throw new Error("answered " + r.status); return r.json(); }).then(function (d) {
       var f = freePick(d && d.files, uc && uc.audio);
       if (!f) throw new Error(uc && uc.audio ? "has no episode a browser can play" : "has no video file a browser can play");
       if (uc && uc.audio) title += " — " + f.name.replace(/^.*\//, "").replace(/\.\w+$/, "").replace(/_/g, " ");
@@ -2386,9 +2392,12 @@
       v.onerror = function () { vodLabel(title + " — can't play this file here. Try another movie.", true); };
       resumeAttach(v, "free|" + it.id + (uc && uc.audio ? "|" + f.name : ""), title);
       if (uc) { var endBase = v.onended; v.onended = function () { if (endBase) endBase(); freeNext(it); }; }   // a channel keeps playing
-      v.src = "https://archive.org/download/" + encodeURIComponent(it.id) + "/" + f.name.split("/").map(encodeURIComponent).join("/");
-      vod.cur = { url: v.src, title: title, meta: { type: "movie", name: it.n, year: it.y || "" } }; $("vod-vlc").hidden = false; metaReset();
+      var direct = "https://archive.org/download/" + encodeURIComponent(it.id) + "/" + f.name.split("/").map(encodeURIComponent).join("/");
+      return playable(direct).then(function (real) {
+      v.src = real;
+      vod.cur = { url: direct, title: title, meta: { type: "movie", name: it.n, year: it.y || "" } }; $("vod-vlc").hidden = false; metaReset();
       var p = v.play(); if (p && p["catch"]) p["catch"](function () {});
+      });
     })["catch"](function (err) { vodLabel(title + " — " + (err && err.message || "could not load") + ".", true); });
   }
   function freeNext(it) {
@@ -3749,7 +3758,8 @@
     var h1 = document.querySelector(".hero h1"), kick = document.querySelector(".kicker span:last-child"), greet = $("greet");
     if (!heroDefault) heroDefault = { h1: h1.textContent, kick: kick.textContent, greet: greet.textContent };
     h1.textContent = on ? l2.title : heroDefault.h1; nt(h1);
-    kick.textContent = on ? "The Unknown · " + th.name + " · locks with Q" : heroDefault.kick;
+    kick.textContent = on ? "The Unknown · " + th.name + (netOn ? " · 🔒 private" : "") + " · locks with Q" : heroDefault.kick;
+    if (on !== netWanted) { netWanted = on; netApply(on); }
     $("mn-enter").hidden = !on;
     if (on) greet.textContent = l2.sub; else greet.textContent = heroDefault.greet;
     $("mn-haze").hidden = !on;
@@ -3763,6 +3773,88 @@
       else { img.style.backgroundImage = 'url("' + b.url + '")'; img.hidden = false; }
     });
     l2Url("emblem").then(function (e) { if (!e || e.video || !explicitUnlocked) return; emb.src = e.url; emb.hidden = false; $("hero-art").classList.add("has-emblem"); });
+  }
+  // ---- Private connection: the viewer's OWN proxies (a VPN app's HTTP proxy mode, a proxy they pay for) ----
+  // EYE3 includes no VPN and no proxies. The list lives only in this browser (eye3.home.l2net) and is never synced.
+  // While the World is open, EYE3 Link switches to the chosen one; locking switches Link back to how it was started.
+  var NET_KEY = "eye3.home.l2net", net = { list: [], pick: -1, strict: true, trace: true }, netRes = {}, netOn = false, netWanted = false;
+  try {
+    var ns = JSON.parse(get(NET_KEY) || "null");
+    if (ns && typeof ns === "object") {
+      net.list = (Array.isArray(ns.list) ? ns.list : []).filter(function (x) { return x && typeof x.n === "string" && typeof x.u === "string" && /^https?:\/\/\S+$/i.test(x.u); }).slice(0, 20).map(function (x) { return { n: x.n.slice(0, 30), u: x.u.slice(0, 300) }; });
+      net.pick = typeof ns.pick === "number" && ns.pick >= 0 && ns.pick < net.list.length ? ns.pick : -1;
+      if (typeof ns.strict === "boolean") net.strict = ns.strict;
+      if (typeof ns.trace === "boolean") net.trace = ns.trace;
+    }
+  } catch (e) {}
+  function netSave() { set(NET_KEY, JSON.stringify(net)); }
+  function netHost(u) { try { var x = new URL(u); return x.hostname + (x.port ? ":" + x.port : ""); } catch (e) { return "?"; } }
+  function strictPrivate() { return explicitUnlocked && net.strict && net.pick >= 0; }
+  function noTrace() { return explicitUnlocked && net.trace; }
+  function netFetch(url) { return strictPrivate() ? playable(url).then(function (u) { return fetch(u); }) : fetch(url); }
+  function netApply(on) {
+    var it = on && net.pick >= 0 ? net.list[net.pick] : null;
+    if (it) return linkGet("/api/proxy/set", { u: it.u, strict: net.strict ? "1" : "" }).then(function () { netOn = true; applyLayer(); return true; },
+      function (e) { netOn = false; applyLayer(); toast("Private connection is not on: " + e.message + (net.strict ? " Strict mode blocks playback until it is." : "")); return false; });
+    if (netOn) { netOn = false; return linkGet("/api/proxy/set", { u: "base" }).then(function () { applyLayer(); return true; }, function () { return false; }); }
+    return Promise.resolve(true);
+  }
+  function netTest(i) {
+    var it = net.list[i]; netRes[i] = { busy: true };
+    return linkGet("/api/proxy/test", { u: it.u }).then(function (d) { netRes[i] = d; }, function (e) { netRes[i] = { ok: false, why: e.message }; });
+  }
+  function netTestAll() { var p = Promise.resolve(); net.list.forEach(function (_, i) { p = p.then(function () { return netTest(i); }); }); return p; }
+  function netSection(nodes) {
+    nodes.push(make("h3", "", "Private connection"));
+    nodes.push(para("Route this world through a VPN or proxy you already have (a VPN app's HTTP proxy mode, or a proxy you pay for). EYE3 includes no VPN and no proxies. EYE3 Link must be running on this computer; addresses stay in this browser and in Link's memory only."));
+    var redraw = function () { var y = $("info-body").scrollTop; openMidnight(); $("info-body").scrollTop = y; };
+    net.list.forEach(function (it, i) {
+      var r = make("div", "opt" + (net.pick === i ? " on" : "")); r.id = "mn-net-" + i;
+      var use = make("button", "btn" + (net.pick === i ? " primary" : ""), net.pick === i ? "● In use" : "Use"); use.type = "button";
+      use.addEventListener("click", function () { net.pick = i; netSave(); netApply(true).then(redraw); });
+      r.appendChild(use); r.appendChild(nt(make("span", "", it.n + " · " + netHost(it.u))));
+      var res = netRes[i], rs = make("small", "", !res ? "" : res.busy ? "testing…" : res.ok ? res.country + " · " + res.ms + " ms" : "✗ " + (res.why || "no answer")); rs.className = "mn-net-res"; r.appendChild(rs);
+      var t = make("button", "btn", "Test"); t.type = "button"; t.addEventListener("click", function () { netTest(i).then(redraw); redraw(); });
+      var x = make("button", "btn", "Remove"); x.type = "button";
+      x.addEventListener("click", function () { net.list.splice(i, 1); if (net.pick === i) { net.pick = -1; netApply(false); } else if (net.pick > i) net.pick--; netRes = {}; netSave(); redraw(); });
+      r.appendChild(t); r.appendChild(x); nodes.push(r);
+    });
+    var add = make("div", "opt"), nm = make("input", "field"), ad = make("input", "field"), ab = make("button", "btn", "Add");
+    nm.id = "mn-net-name"; nm.placeholder = "Name (e.g. My VPN)"; nm.maxLength = 30; ad.id = "mn-net-url"; ad.placeholder = "http://127.0.0.1:40000"; ad.maxLength = 300; ab.type = "button"; ab.id = "mn-net-add";
+    nm.setAttribute("aria-label", "Proxy name"); ad.setAttribute("aria-label", "Proxy address");
+    ab.addEventListener("click", function () {
+      var u = ad.value.trim();
+      if (!/^https?:\/\/(?:[^\s\/@:]+(?::[^\s\/@]*)?@)?[A-Za-z0-9.\-]+(?::\d{1,5})?$/.test(u)) { toast("A proxy looks like http://127.0.0.1:8080 (HTTP proxies only)"); return; }
+      if (net.list.length >= 20) { toast("Up to 20 proxies"); return; }
+      net.list.push({ n: nm.value.trim().slice(0, 30) || netHost(u), u: u }); netSave(); redraw();
+    });
+    add.appendChild(nm); add.appendChild(ad); add.appendChild(ab); nodes.push(add);
+    var kv = make("div", "kv");
+    var ta = make("button", "btn", "Test all"); ta.type = "button"; ta.id = "mn-net-test"; ta.disabled = !net.list.length;
+    ta.addEventListener("click", function () { netTestAll().then(redraw); });
+    var best = make("button", "btn", "Use the fastest"); best.type = "button"; best.id = "mn-net-best"; best.disabled = !net.list.length;
+    best.addEventListener("click", function () {
+      netTestAll().then(function () {
+        var b = -1; net.list.forEach(function (_, i) { var r = netRes[i]; if (r && r.ok && (b < 0 || r.ms < netRes[b].ms)) b = i; });
+        if (b < 0) { toast("None of your proxies answered"); return redraw(); }
+        net.pick = b; netSave(); return netApply(true).then(function () { toast("Using " + net.list[b].n + " (" + netRes[b].country + ", " + netRes[b].ms + " ms)"); redraw(); });
+      });
+    });
+    var dir = make("button", "btn" + (net.pick < 0 ? " primary" : ""), "Direct (no proxy)"); dir.type = "button"; dir.id = "mn-net-direct";
+    dir.addEventListener("click", function () { net.pick = -1; netSave(); netApply(false).then(redraw); });
+    kv.appendChild(ta); kv.appendChild(best); kv.appendChild(dir); nodes.push(kv);
+    var chk = function (id, label, key, after) {
+      var l = make("label", "opt"), c = make("input"); c.type = "checkbox"; c.id = id; c.checked = net[key];
+      c.addEventListener("change", function () { net[key] = c.checked; netSave(); if (after) after(); });
+      l.appendChild(c); l.appendChild(document.createTextNode(label)); return l;
+    };
+    nodes.push(chk("mn-net-strict", "Strict: never play without the private connection (all streams and the Unknown channels go through it, or nothing plays)", "strict", function () { if (net.pick >= 0) netApply(true); }));
+    nodes.push(chk("mn-net-trace", "Leave no trace: nothing goes into Recently watched or Continue watching while this world is open", "trace"));
+    var wh = make("div", "opt"), wb = make("button", "btn", "Where do I appear?"), wr = make("span", "", ""); wb.type = "button"; wb.id = "mn-net-where"; wr.id = "mn-net-where-r";
+    wb.addEventListener("click", function () { wr.textContent = "checking…"; linkGet("/api/where", {}).then(function (d) { wr.textContent = "You appear in " + d.country + (d.viaProxy ? " (through your proxy)" : " (your VPN app or your own line)"); }, function (e) { wr.textContent = e.message; }); });
+    wh.appendChild(wb); wh.appendChild(wr); nodes.push(wh);
+    nodes.push(para("Using a VPN app for the whole computer (for example Proton VPN)? Turn it on, leave this on Direct, and press Where do I appear? to check."));
+    nodes.push(para(netOn ? "Now: private, through " + net.list[net.pick].n + "." : net.pick >= 0 ? "Chosen, but not on yet (is EYE3 Link running?)." : "Now: direct, no proxy."));
   }
   function openMidnight() {
     if (!explicitUnlocked) return;
@@ -3820,6 +3912,7 @@
     addLink.addEventListener("click", function () { closeOverlays(); openAccounts(); });
     var kv = make("div", "kv"); kv.appendChild(addList); kv.appendChild(addLink); nodes.push(kv);
     nodes.push(para("Channels come only from your own playlists and accounts; groups named for adults go to the Explicit (18+) category. EYE3 provides and hosts no adult content."));
+    netSection(nodes);
     var lock = make("button", "btn", "Lock now (Q)"); lock.type = "button"; lock.addEventListener("click", function () { lockExplicit(); closeOverlays(); });
     nodes.push(lock);
     rowsHtml($("info-body"), nodes); openOverlay("ov-info");

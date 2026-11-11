@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Offline tests for eye3-link.py: mock IPTV servers (M3U, Xtream, Stalker, HLS) on localhost. Run: python3 tools/test_eye3_link.py"""
-import http.client, importlib.util, json, os, threading, time, unittest
+import http.client, importlib.util, json, os, socket, threading, time, unittest
 import urllib.parse as up
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
@@ -907,6 +907,56 @@ class ProxyTests(unittest.TestCase):
             link.STATE["proxy"] = ""
             mock.shutdown()
             proxy.shutdown()
+
+    def test_home_can_switch_test_and_drop_the_viewers_own_proxy_at_run_time(self):
+        mock = serve(Mock)
+        proxy = serve(ProxyHandler)
+        ProxyHandler.target_port = mock.server_port
+        ProxyHandler.hits.clear()
+        srv = serve(link.Handler)
+        link.STATE.update(port=srv.server_port, proxy="", base_proxy="", strict=False, where_url="http://where.test:%d/where" % mock.server_port)
+        o = {"Origin": "https://j-janko420.github.io"}
+        call = lambda path, **q: get(srv.server_port, path + "?" + up.urlencode(q), o)
+        purl = "http://user:secret@127.0.0.1:%d" % proxy.server_port
+        try:
+            # test a proxy without switching to it: country and speed, through that proxy only
+            code, _, body = call("/api/proxy/test", u=purl)
+            t = json.loads(body)
+            self.assertEqual((code, t["ok"], t["country"]), (200, True, "AE"))
+            self.assertGreaterEqual(t["ms"], 0)
+            self.assertEqual(len(ProxyHandler.hits), 1)
+            self.assertEqual(link.STATE["proxy"], "")
+            # a dead proxy says why, and nothing changes
+            self.assertFalse(json.loads(call("/api/proxy/test", u="http://127.0.0.1:9")[2])["ok"])
+            # switch to it in strict mode: everything now goes through it, and the view never shows the login
+            v = json.loads(call("/api/proxy/set", u=purl, strict="1")[2])
+            self.assertEqual(v, {"ok": True, "proxy": True, "host": "127.0.0.1", "strict": True, "base": False})
+            self.assertNotIn(b"secret", call("/api/proxy")[2])
+            link.fetch("http://provider.test:%d/pl.m3u" % mock.server_port)
+            self.assertEqual(len(ProxyHandler.hits), 2)
+            # back to how Link was started
+            v = json.loads(call("/api/proxy/set", u="base")[2])
+            self.assertEqual((v["proxy"], v["strict"]), (False, False))
+            # bad addresses, SOCKS and Link itself are refused; other sites cannot switch it
+            for bad in ("socks5://127.0.0.1:1080", "http://a b:1", "http://127.0.0.1:%d" % srv.server_port, "ftp://x"):
+                self.assertIn(call("/api/proxy/set", u=bad)[0], (400, 502), bad)
+                self.assertEqual(link.STATE["proxy"], "")
+            self.assertEqual(get(srv.server_port, "/api/proxy/set?u=" + up.quote(purl), {"Origin": "https://evil.example"})[0], 403)
+            self.assertEqual(link.STATE["proxy"], "")
+        finally:
+            link.STATE.update(proxy="", base_proxy="", strict=False, where_url="")
+            srv.shutdown()
+            mock.shutdown()
+            proxy.shutdown()
+
+    def test_strict_mode_never_asks_an_outside_dns_service(self):
+        link.STATE.update(strict=True, dns="", auto_fix=True)
+        try:
+            with self.assertRaises(socket.gaierror):
+                link._getaddrinfo("no-such-host.invalid", 80)
+            self.assertEqual(link.STATE["dns"], "")
+        finally:
+            link.STATE.update(strict=False, auto_fix=False, dns="")
 
     def test_without_a_proxy_nothing_is_routed_and_ping_says_so(self):
         link.STATE["proxy"] = ""
