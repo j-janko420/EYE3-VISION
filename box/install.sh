@@ -126,5 +126,5 @@ fi
 
 say ""
 say "Done. EYE3 Link runs by itself at every start and updates itself."
-say "Open EYE3 Home in your normal browser: https://j-janko420.github.io/EYE3-VISION/home/?splash=0&box=1"
+say "Open EYE3 Home in your normal browser: https://eye3-vision.netlify.app/home/?splash=0&box=1"
 say "Your own playlists go into: $DEST/playlists"

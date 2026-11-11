@@ -103,7 +103,7 @@ Settings → Sync phone and laptop (`openSyncInfo`, code in `eye3.home.sync`, st
 - Pin CDN versions exactly; never use `@latest`.
 - Render untrusted text (file names, EXIF, OCR) with `textContent`, never `innerHTML`.
 - A failed engine load must degrade to an inline message, not break the page.
-- Deploys via `.github/workflows/pages.yml` on push to `main`.
+- The app's address is **https://eye3-vision.netlify.app/** (the repository is private; links in pages, docs, the Box kit and the TV portal point there, never to github.io). `.github/workflows/pages.yml` still runs on push to `main`, but GitHub Pages does not serve a private repository on a free plan.
 - Free second host: the Netlify project `eye3-vision` (https://eye3-vision.netlify.app). `netlify.toml` stages the same folders as `pages.yml`; keep the two lists in step. Only that exact Netlify address is allowed by EYE3 Link, never `*.netlify.app`. Production is public; deploy previews need a Netlify team login.
 
 ## Skills

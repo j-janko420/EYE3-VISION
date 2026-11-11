@@ -4,7 +4,7 @@
 #   eye3-start.sh            run EYE3 Link (and keep it running)
 #   eye3-start.sh --browser  open EYE3 Home fullscreen (kiosk) on this screen
 DIR=$(cd "$(dirname "$0")" && pwd)
-URL="${EYE3_HOME_URL:-https://j-janko420.github.io/EYE3-VISION/home/?splash=0&box=1}"
+URL="${EYE3_HOME_URL:-https://eye3-vision.netlify.app/home/?splash=0&box=1}"
 cd "$DIR" || exit 1
 export EYE3_MANAGED=1
 
