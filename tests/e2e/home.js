@@ -615,9 +615,9 @@ const toast = (p) => p.evaluate(() => [...document.querySelectorAll('.toast')].m
     check('normal EYE3 look while locked', !before.mid && before.accent === '#ff263f' && before.h1 === 'See beyond' && !before.haze, before);
     await p.keyboard.press('Shift+X'); await p.waitForTimeout(300); await p.check('#ex-age'); await p.click('#ex-unlock'); await p.waitForTimeout(500);
     const on = await look();
-    check('unlocking opens the World of Unknown: its own colours, haze, title and entry button', on.mid && ['#ff263f', '#c8102e', '#ff3b1f'].includes(on.accent) && on.h1 === 'World of Unknown' && on.haze && await p.evaluate(() => !document.getElementById('mn-enter').hidden), on);
+    check('unlocking opens the World of Unknown: its own colours, haze and title, and no visible entry button', on.mid && ['#ff263f', '#c8102e', '#ff3b1f'].includes(on.accent) && on.h1 === 'World of Unknown' && on.haze && await p.evaluate(() => !document.getElementById('mn-enter')), on);
     const hour = await p.evaluate(() => ({ t: document.documentElement.getAttribute('data-mn-theme'), h: String(new Date().getHours()), scene: document.getElementById('mn-scene').className, n: document.getElementById('mn-scene').children.length, kick: document.querySelector('.kicker span:last-child').textContent }));
-    check('the theme follows the hour and draws its own scene (no pictures shipped)', hour.t === hour.h && /sc-\w+/.test(hour.scene) && hour.n > 0 && /The Unknown · .+ · locks with Q/.test(hour.kick), hour);
+    check('the theme follows the hour and draws its own scene (no pictures shipped)', hour.t === hour.h && /sc-\w+/.test(hour.scene) && hour.n > 0 && /The Unknown · .+ · double-click the eye to enter · Q locks/.test(hour.kick), hour);
     check('the EYE3 logo keeps its crimson look', on.logo === 'rgb(255, 38, 63)', on.logo);
     await p.keyboard.press('Shift+X'); await p.waitForTimeout(300);
     check('the hidden dialog offers World of Unknown settings once unlocked', await p.evaluate(() => !document.getElementById('ex-mn').hidden));
@@ -638,7 +638,7 @@ const toast = (p) => p.evaluate(() => [...document.querySelectorAll('.toast')].m
     await p.keyboard.press('Escape'); await p.waitForTimeout(200);
     await p.keyboard.press('q'); await p.waitForTimeout(400);
     const off = await look();
-    check('Q locks at once and brings the normal world back', await p.evaluate(() => document.getElementById('mn-scene').hidden && !document.documentElement.hasAttribute('data-mn-theme')) && !off.mid && off.accent === '#ff263f' && off.h1 === 'See beyond' && !off.haze && await p.evaluate(() => document.getElementById('mn-enter').hidden) && await p.evaluate(() => document.getElementById('mn-bgimg').hidden && document.getElementById('mn-emblem').hidden), off);
+    check('Q locks at once and brings the normal world back', await p.evaluate(() => document.getElementById('mn-scene').hidden && !document.documentElement.hasAttribute('data-mn-theme')) && !off.mid && off.accent === '#ff263f' && off.h1 === 'See beyond' && !off.haze &&  await p.evaluate(() => document.getElementById('mn-bgimg').hidden && document.getElementById('mn-emblem').hidden), off);
     check('settings are kept for next time (look only, no content)', await p.evaluate(() => { const v = JSON.parse(localStorage.getItem('eye3.home.layer2')); return v.theme === '9' && v.title === 'After Dark'; }));
     await p.keyboard.press('Shift+X'); await p.waitForTimeout(300); await p.check('#ex-age'); await p.click('#ex-unlock'); await p.waitForTimeout(800);
     check('unlocking again brings back the saved look and files', await p.evaluate(() => document.querySelector('.hero h1').textContent === 'After Dark' && !document.getElementById('mn-bgimg').hidden));
@@ -676,7 +676,7 @@ const toast = (p) => p.evaluate(() => [...document.querySelectorAll('.toast')].m
     check('EYE3 Link was told to switch, in strict mode, and the home screen says private', calls.some((c) => c.startsWith('/api/proxy/set?u=http%3A%2F%2Fuser%3Apw%40127.0.0.1%3A2222&strict=1')) && /🔒 private/.test(st.kick), [calls, st.kick]);
     check('the proxy login is not shown on screen', !st.rows.join(' ').includes('pw@'));
     await p.keyboard.press('Escape'); await p.waitForTimeout(200);
-    await p.click('#mn-enter'); await p.waitForTimeout(900);
+    await p.dblclick('#brand'); await p.waitForTimeout(1100);
     await p.click('#u-tune'); await p.waitForTimeout(800);
     const src = await p.evaluate(() => document.getElementById('vod-video').getAttribute('src') || '');
     check('strict: the Unknown channels are searched and played through EYE3 Link, never directly', /^http:\/\/127\.0\.0\.1:8765\/stream\?u=https%3A%2F%2Farchive\.org%2Fdownload%2Fnight-a/.test(src) && calls.some((c) => c.includes('advancedsearch')), src);
@@ -701,11 +701,11 @@ const toast = (p) => p.evaluate(() => [...document.querySelectorAll('.toast')].m
       if (u.includes('/metadata/')) return r.fulfill({ status: 200, headers: h, contentType: 'application/json', body: JSON.stringify({ files: [{ name: 'film.mp4', format: 'h.264', size: '1000' }] }) });
       return r.fulfill({ status: 404, headers: h, body: '' });
     });
-    check('locked: no way into the Unknown is shown', await p.evaluate(() => document.getElementById('mn-enter').hidden));
+    check('no visible way into the Unknown exists', await p.evaluate(() => !document.getElementById('mn-enter')));
     await p.keyboard.press('Shift+X'); await p.waitForTimeout(300); await p.check('#ex-age'); await p.click('#ex-unlock'); await p.waitForTimeout(500);
-    await p.click('#mn-enter'); await p.waitForTimeout(800);
+    await p.dblclick('#brand'); await p.waitForTimeout(1100);
     const st = await p.evaluate(() => ({ open: document.getElementById('ov-vod').classList.contains('open'), val: document.getElementById('vod-cat').value, grp: [...document.querySelectorAll('#vod-cat optgroup option')].map((o) => o.textContent), rows: [...document.querySelectorAll('#vod-list .ch')].map((r) => r.textContent), count: document.getElementById('vod-count').textContent }));
-    check('Enter the Unknown opens its first channel, Shock Theater', st.open && st.val === 'u:shock' && /Shock Theater/.test(st.count), st);
+    check('once unlocked, double-clicking the eye opens the World\'s first channel, Shock Theater, with its settings one row away', st.open && st.val === 'u:shock' && /Shock Theater/.test(st.count) && st.rows.some((r) => /World of Unknown settings/.test(r)), st);
     check('five Unknown channels are offered (no NASA)', st.grp.length === 5 && !st.grp.some((g) => /nasa/i.test(g)) && st.grp.some((g) => /OTR Theater/.test(g)), st.grp);
     check('adult titles never appear on a channel', !st.rows.some((r) => /Adult/.test(r)) && st.rows.some((r) => /Night of Terror/.test(r)), st.rows);
     const q0 = queries[queries.length - 1];
@@ -721,8 +721,9 @@ const toast = (p) => p.evaluate(() => [...document.querySelectorAll('.toast')].m
     await p.click('#u-tune'); await p.waitForTimeout(600);
     check('an old-time radio episode plays', /Suspense_49-01-06_The_Wrong_Way\.mp3$/.test(await p.evaluate(() => document.getElementById('vod-video').getAttribute('src') || '')));
     await p.keyboard.press('Escape'); await p.waitForTimeout(200); await p.keyboard.press('q'); await p.waitForTimeout(400);
-    const after = await p.evaluate(() => ({ enter: document.getElementById('mn-enter').hidden }));
-    check('locking hides the way in again', after.enter, after);
+    await p.dblclick('#brand'); await p.waitForTimeout(1100);
+    check('locked again, double-clicking the eye asks for 18+ instead of opening the channels', await p.evaluate(() => document.getElementById('ov-explicit').classList.contains('open') && !document.getElementById('ov-vod').classList.contains('open')));
+    await p.keyboard.press('Escape'); await p.waitForTimeout(300);
     await p.keyboard.press('w'); await p.waitForTimeout(300);
     check('W does nothing while locked', await p.evaluate(() => !document.getElementById('ov-vod').classList.contains('open')));
     check('no page errors', p.errs.length === 0, p.errs);

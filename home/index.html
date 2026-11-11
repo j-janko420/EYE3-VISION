@@ -431,7 +431,6 @@
   html.midnight .hero { background: linear-gradient(105deg, rgba(24, 3, 6, .5), rgba(58, 5, 13, .28) 46%, rgba(29, 4, 9, .5)); }
   html.midnight .hero::before { background: linear-gradient(90deg, rgba(0, 0, 0, .55), rgba(0, 0, 0, .2) 45%, transparent 80%); }
   html.midnight .kicker .live { background: var(--accent); color: #050101; }
-  .act.mn-enter[hidden] { display: none; }
   /* 24 hourly scenes, drawn in code (no pictures ship): rain, koi, stars, eclipse, embers, depths, veil, touch */
   .mn-scene { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
   .mn-scene[hidden] { display: none; }
@@ -465,7 +464,6 @@
   .sc-touch .spark { left: 50%; top: 48%; width: 1.6vmin; height: 1.6vmin; border-radius: 50%; transform: translate(-50%, 0); background: rgba(var(--mn-rgb), 1); box-shadow: 0 0 30px 10px rgba(var(--mn-rgb), .7); animation: mnTwinkle 3.5s ease-in-out infinite alternate backwards; }
   @keyframes mnReach { from { transform: translateX(-6vw); } to { transform: translateX(2vw); } }
   @keyframes mnReachR { from { transform: scaleX(-1) translateX(-6vw); } to { transform: scaleX(-1) translateX(2vw); } }
-  html.midnight .act.mn-enter { border-color: var(--accent); box-shadow: 0 0 22px var(--glow); }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
 </head>
@@ -512,7 +510,6 @@
       <div class="hero-actions">
         <button class="act primary" type="button" data-go="tv" tabindex="-1">▶ Watch Live TV</button>
         <button class="act" type="button" data-go="radio" tabindex="-1">📻 Radio</button>
-        <button class="act mn-enter" type="button" id="mn-enter" tabindex="-1" hidden>◈ Enter the Unknown</button>
       </div>
     </div>
   </section>
@@ -2422,7 +2419,7 @@
     var list = $("vod-list"); while (list.firstChild) list.removeChild(list.firstChild);
     var note = function (t, fn) { var r = make("div", "ch action", t); if (fn) { r.tabIndex = 0; r.addEventListener("click", fn); r.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); fn(); } }); } list.appendChild(r); return r; };
     var uc = unknownChannel(free.genre);
-    if (uc) { note("◈ " + uc.name + " — " + uc.desc); if (free.items.length) note("▶ Tune in (plays on, title after title)", freeTuneIn).id = "u-tune"; }
+    if (uc) { note("⚙ World of Unknown settings (Shift+X)", function () { closeOverlays(); openMidnight(); }).id = "u-settings"; note("◈ " + uc.name + " — " + uc.desc); if (free.items.length) note("▶ Tune in (plays on, title after title)", freeTuneIn).id = "u-tune"; }
     free.items.forEach(function (it) {
       var row = make("div", "ch"); row.tabIndex = 0;
       row.appendChild(nt(make("span", "", it.n)));
@@ -3674,7 +3671,7 @@
 
   // three clicks on the eye logo: Geeni. Two clicks (or a double-tap) still open the hidden section, after a short wait to be sure no third click follows.
   var brandClicks = 0, brandTimer = 0, exTimer = 0;
-  function armExplicit() { clearTimeout(exTimer); exTimer = setTimeout(function () { exTimer = 0; if (!overlayOpen()) openExplicit(); }, 420); }
+  function armExplicit() { clearTimeout(exTimer); exTimer = setTimeout(function () { exTimer = 0; if (overlayOpen()) return; if (explicitUnlocked) openUnknown(); else openExplicit(); }, 420); }
   $("brand").addEventListener("click", function () {
     brandClicks++; clearTimeout(brandTimer); brandTimer = setTimeout(function () { brandClicks = 0; }, 800);
     if (brandClicks >= 3) { brandClicks = 0; clearTimeout(exTimer); exTimer = 0; var on = !$("geeni").classList.contains("on"); geeniShow(on, true); toast(on ? "Geeni is here" : "Geeni went away"); }
@@ -3758,9 +3755,8 @@
     var h1 = document.querySelector(".hero h1"), kick = document.querySelector(".kicker span:last-child"), greet = $("greet");
     if (!heroDefault) heroDefault = { h1: h1.textContent, kick: kick.textContent, greet: greet.textContent };
     h1.textContent = on ? l2.title : heroDefault.h1; nt(h1);
-    kick.textContent = on ? "The Unknown · " + th.name + (netOn ? " · 🔒 private" : "") + " · locks with Q" : heroDefault.kick;
+    kick.textContent = on ? "The Unknown · " + th.name + (netOn ? " · 🔒 private" : "") + " · double-click the eye to enter · Q locks" : heroDefault.kick;
     if (on !== netWanted) { netWanted = on; netApply(on); }
-    $("mn-enter").hidden = !on;
     if (on) greet.textContent = l2.sub; else greet.textContent = heroDefault.greet;
     $("mn-haze").hidden = !on;
     var img = $("mn-bgimg"), vid = $("mn-bgvid"), emb = $("mn-emblem");
@@ -3927,7 +3923,6 @@
     if (!unknownChannel(free.genre)) { free.genre = "u:" + UNKNOWN_CHANNELS[0].id; free.items = []; free.total = 0; free.busy = ""; }
     vod.kind = "free"; openVod();
   }
-  $("mn-enter").addEventListener("click", openUnknown);
   document.addEventListener("keydown", function (e) {   // Q locks Midnight at once
     if (!explicitUnlocked || isTyping() || e.ctrlKey || e.metaKey || e.altKey) return;
     if (e.key === "q" || e.key === "Q") { e.preventDefault(); e.stopImmediatePropagation(); closeOverlays(); lockExplicit(); focusIndex = 0; paintFocus(); }
