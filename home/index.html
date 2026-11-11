@@ -3850,6 +3850,10 @@
     };
     nodes.push(chk("mn-net-strict", "Strict: never play without the private connection (all streams and the Unknown channels go through it, or nothing plays)", "strict", function () { if (net.pick >= 0) netApply(true); }));
     nodes.push(chk("mn-net-trace", "Leave no trace: nothing goes into Recently watched or Continue watching while this world is open", "trace"));
+    var wh = make("div", "opt"), wb = make("button", "btn", "Where do I appear?"), wr = make("span", "", ""); wb.type = "button"; wb.id = "mn-net-where"; wr.id = "mn-net-where-r";
+    wb.addEventListener("click", function () { wr.textContent = "checking…"; linkGet("/api/where", {}).then(function (d) { wr.textContent = "You appear in " + d.country + (d.viaProxy ? " (through your proxy)" : " (your VPN app or your own line)"); }, function (e) { wr.textContent = e.message; }); });
+    wh.appendChild(wb); wh.appendChild(wr); nodes.push(wh);
+    nodes.push(para("Using a VPN app for the whole computer (for example Proton VPN)? Turn it on, leave this on Direct, and press Where do I appear? to check."));
     nodes.push(para(netOn ? "Now: private, through " + net.list[net.pick].n + "." : net.pick >= 0 ? "Chosen, but not on yet (is EYE3 Link running?)." : "Now: direct, no proxy."));
   }
   function openMidnight() {

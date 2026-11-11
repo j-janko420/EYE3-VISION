@@ -651,10 +651,11 @@ const toast = (p) => p.evaluate(() => [...document.querySelectorAll('.toast')].m
   await suite('World of Unknown: private connection through the viewer\'s own proxies, strict mode and no trace', async () => {
     const p = await open(browser);
     const calls = [];
-    await p.route((u) => /^http:\/\/127\.0\.0\.1:8765\/(api\/proxy|stream)/.test(u.href), (r) => {
+    await p.route((u) => /^http:\/\/127\.0\.0\.1:8765\/(api\/proxy|api\/where|stream)/.test(u.href), (r) => {
       const u = new URL(r.request().url()), h = { 'access-control-allow-origin': '*' }; calls.push(u.pathname + '?' + u.searchParams.toString());
       const j = (o) => r.fulfill({ status: 200, headers: h, contentType: 'application/json', body: JSON.stringify(o) });
       if (u.pathname === '/api/proxy/test') return j(u.searchParams.get('u').includes(':1111') ? { ok: true, country: 'DE', ms: 240 } : u.searchParams.get('u').includes(':2222') ? { ok: true, country: 'NL', ms: 90 } : { ok: false, why: 'refused' });
+      if (u.pathname === '/api/where') return j({ country: 'AE', viaProxy: false });
       if (u.pathname === '/api/proxy/set') return j({ ok: true, proxy: u.searchParams.get('u') !== 'base', host: '127.0.0.1', strict: u.searchParams.get('strict') === '1', base: false });
       const t = u.searchParams.get('u') || '';
       if (t.includes('advancedsearch')) return j({ response: { numFound: 1, docs: [{ identifier: 'night-a', title: 'Night of Terror', year: '1933' }] } });
@@ -663,6 +664,8 @@ const toast = (p) => p.evaluate(() => [...document.querySelectorAll('.toast')].m
     });
     await p.keyboard.press('Shift+X'); await p.waitForTimeout(300); await p.check('#ex-age'); await p.click('#ex-unlock'); await p.waitForTimeout(500);
     await p.keyboard.press('Shift+X'); await p.waitForTimeout(300); await p.click('#ex-mn'); await p.waitForTimeout(400);
+    await p.click('#mn-net-where'); await p.waitForTimeout(600);
+    check('Where do I appear? asks EYE3 Link for the country (for a whole-computer VPN app)', /You appear in AE/.test(await p.evaluate(() => document.getElementById('mn-net-where-r').textContent)));
     check('the World settings offer a private connection, direct by default', await p.evaluate(() => !!document.getElementById('mn-net-add') && document.getElementById('mn-net-direct').classList.contains('primary')));
     await p.fill('#mn-net-url', 'not a proxy'); await p.click('#mn-net-add'); await p.waitForTimeout(200);
     check('a wrong address is refused', await p.evaluate(() => !document.getElementById('mn-net-0')));
