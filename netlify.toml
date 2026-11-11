@@ -1,7 +1,7 @@
 # Netlify (free hosting at https://eye3-vision.netlify.app): publish the same files as GitHub Pages
 # (.github/workflows/pages.yml), never the rest of the repo.
 [build]
-  command = "rm -rf _site && mkdir _site && cp index.html _site/ && cp -r portal iptv bridge home remote tools _site/ && touch _site/.nojekyll"
+  command = "rm -rf _site && mkdir _site && cp index.html _site/ && cp -r portal iptv bridge home remote tools downloads _site/ && touch _site/.nojekyll"
   publish = "_site"
 
 [[headers]]

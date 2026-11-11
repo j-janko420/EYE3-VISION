@@ -27,7 +27,7 @@ import urllib.parse as up
 import urllib.request as ur
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.10.0"
+VERSION = "1.10.1"
 ALLOWED_ORIGINS = ["https://j-janko420.github.io", "https://eye3-vision.netlify.app"]          # more: EYE3_ORIGINS=https://a,https://b
 LOCAL_ORIGIN = re.compile(r"^http://(localhost|127\.0\.0\.1)(:\d+)?$")
 BAD = re.compile(r"adult|xxx|18\+|porn|erotic|\bsex|playboy|hustler|brazzers|dorcel|penthouse|redlight", re.I)
@@ -332,7 +332,7 @@ def ver_tuple(v):
 
 
 def update_base():
-    return (STATE.get("update_base") or "https://github.com/j-janko420/EYE3-VISION/releases/download/eye3-link-latest").rstrip("/")
+    return (STATE.get("update_base") or "https://eye3-vision.netlify.app/downloads").rstrip("/")
 
 
 def asset_name():

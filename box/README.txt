@@ -23,7 +23,7 @@ Install from a USB stick (no internet needed for the program)
 
 Install over the network (no stick)
   Download the kit for your system from
-    https://github.com/j-janko420/EYE3-VISION/releases/tag/eye3-link-latest
+    https://eye3-vision.netlify.app/downloads/
   unzip it and run install.bat / install.sh. If the program is missing from the folder, the installer
   downloads it and checks its SHA-256 against the published list before it installs anything.
 
