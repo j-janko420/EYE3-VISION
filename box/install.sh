@@ -11,7 +11,7 @@
 set -u
 HERE=$(cd "$(dirname "$0")" && pwd)
 DEST="${EYE3_DIR:-$HOME/EYE3}"
-REL="https://github.com/j-janko420/EYE3-VISION/releases/download/eye3-link-latest"
+REL="https://eye3-vision.netlify.app/downloads"
 DRY=0; UNINSTALL=0; KIOSK=0
 for a in "$@"; do
   case "$a" in

@@ -17,7 +17,7 @@ EYE3 Home runs in your browser. IPTV providers (Xtream Codes, MAG/Stalker portal
 
 ### No Python? Use the ready-to-run program
 GitHub builds ready-to-run programs automatically from `eye3-link.py` and publishes them at
-https://github.com/j-janko420/EYE3-VISION/releases/tag/eye3-link-latest (Windows `.exe`, Mac with Apple chip, Linux). Download the one for your system and open it; leave its window open. Check the file against `SHA256SUMS.txt` if you like. They are **not code-signed**, so Windows SmartScreen or macOS Gatekeeper may warn you (Windows: More info, Run anyway; Mac: right-click, Open), and some antivirus tools flag this kind of program. If you prefer, run the Python script instead; it is the reference build.
+https://eye3-vision.netlify.app/downloads/ (Windows `.exe`, Mac with Apple chip, Linux). Download the one for your system and open it; leave its window open. Check the file against `SHA256SUMS.txt` if you like. They are **not code-signed**, so Windows SmartScreen or macOS Gatekeeper may warn you (Windows: More info, Run anyway; Mac: right-click, Open), and some antivirus tools flag this kind of program. If you prefer, run the Python script instead; it is the reference build.
 
 ## Add your account (EYE3 Home → Live TV → IPTV accounts)
 | Type | What to enter |
