@@ -75,11 +75,11 @@ Click the eye logo **three times** (or press **H** on the home screen). The eye 
 
 ### Direct links
 Open these on the laptop to jump straight to the right form (nothing is filled in or saved from the link):
-- M3U link: `https://j-janko420.github.io/EYE3-VISION/home/?add=m3u`
-- Xtream Codes login: `https://j-janko420.github.io/EYE3-VISION/home/?add=xtream`
-- MAG / Stalker portal (address + MAC): `https://j-janko420.github.io/EYE3-VISION/home/?add=mag`
-- Movies & series on demand (needs an Xtream account added first): `https://j-janko420.github.io/EYE3-VISION/home/?add=movies`
-- Playlist maker (your own channels, M3U import/export): `https://j-janko420.github.io/EYE3-VISION/home/?add=playlist`
+- M3U link: `https://eye3-vision.netlify.app/home/?add=m3u`
+- Xtream Codes login: `https://eye3-vision.netlify.app/home/?add=xtream`
+- MAG / Stalker portal (address + MAC): `https://eye3-vision.netlify.app/home/?add=mag`
+- Movies & series on demand (needs an Xtream account added first): `https://eye3-vision.netlify.app/home/?add=movies`
+- Playlist maker (your own channels, M3U import/export): `https://eye3-vision.netlify.app/home/?add=playlist`
 
 Adult groups in your own accounts show only after you unlock the hidden section (see below).
 

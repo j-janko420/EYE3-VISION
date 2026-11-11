@@ -87,7 +87,7 @@ if ($env:EYE3_NO_SERVICE -eq "1") {
   Say "Start-up: EYE3 Link at every sign-in (restarts by itself)"
   Act "create $LinkLnk and the Desktop link $DeskUrl" {
     MakeShortcut $LinkLnk (Join-Path $Dir "eye3-start.bat")
-    Set-Content -Path $DeskUrl -Value "[InternetShortcut]`r`nURL=https://j-janko420.github.io/EYE3-VISION/home/?splash=0&box=1"
+    Set-Content -Path $DeskUrl -Value "[InternetShortcut]`r`nURL=https://eye3-vision.netlify.app/home/?splash=0&box=1"
   }
   if ($Kiosk) {
     Say "Kiosk: EYE3 Home fullscreen at every sign-in"
