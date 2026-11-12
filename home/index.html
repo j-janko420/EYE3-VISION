@@ -464,10 +464,15 @@
   .sc-touch .spark { left: 50%; top: 48%; width: 1.6vmin; height: 1.6vmin; border-radius: 50%; transform: translate(-50%, 0); background: rgba(var(--mn-rgb), 1); box-shadow: 0 0 30px 10px rgba(var(--mn-rgb), .7); animation: mnTwinkle 3.5s ease-in-out infinite alternate backwards; }
   @keyframes mnReach { from { transform: translateX(-6vw); } to { transform: translateX(2vw); } }
   @keyframes mnReachR { from { transform: scaleX(-1) translateX(-6vw); } to { transform: scaleX(-1) translateX(2vw); } }
+  /* the i3 Design badge (the owner's logo, redrawn as a vector) */
+  .i3b { display: inline-flex; align-items: center; vertical-align: middle; }
+  .i3b svg { width: 2.1em; height: 2.42em; color: #fff5f6; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><symbol id="i3-badge" viewBox="0 0 200 230"><rect x="8" y="8" width="184" height="214" fill="#140609" stroke="currentColor" stroke-width="12"/><text x="100" y="140" fill="currentColor" font-family="Arial, Helvetica, sans-serif" font-size="128" font-weight="700" text-anchor="middle" letter-spacing="-4">i3</text><text x="100" y="196" fill="currentColor" font-family="Arial, Helvetica, sans-serif" font-size="36" font-weight="700" text-anchor="middle" letter-spacing="2">DESIGN</text></symbol></svg>
 <div class="mn-haze" id="mn-haze" hidden aria-hidden="true"></div>
 <div class="mn-scene" id="mn-scene" hidden aria-hidden="true"></div>
 <div class="mn-bg" id="mn-bgimg" hidden aria-hidden="true"></div>
@@ -483,7 +488,7 @@
     </svg>
     <h1 class="splash-title" translate="no"><span>EYE3</span> VISION</h1>
     <p class="splash-sub">See beyond</p>
-    <p class="splash-by">Designed by i3 Design</p>
+    <p class="splash-by">Designed by <span class="i3b"><svg aria-hidden="true" focusable="false"><use href="#i3-badge"/></svg><span class="sr">i3 Design</span></span></p>
   </div>
 <main class="home" id="home">
   <div class="top">
@@ -496,7 +501,7 @@
       <ellipse class="iris" cx="80" cy="80" rx="8" ry="18" fill="#020001"/>
       <circle class="ring" cx="80" cy="80" r="35" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".65"/>
     </svg>
-      <div><div class="wordmark" translate="no"><b>EYE3</b> VISION</div><p class="tagline">See beyond · by i3 Design</p></div>
+      <div><div class="wordmark" translate="no"><b>EYE3</b> VISION</div><p class="tagline">See beyond · by <span class="i3b"><svg aria-hidden="true" focusable="false"><use href="#i3-badge"/></svg><span class="sr">i3 Design</span></span></p></div>
     </div>
     <div class="clock"><div class="t" id="clock" translate="no">--:--</div><div class="d" id="date" translate="no"></div></div>
   </div>

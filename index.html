@@ -288,6 +288,10 @@
         .tool-card { min-height: 9.0625rem; }
         .prototype-tag { font-size: 0.5625rem; }
       }
+      /* the i3 Design badge (the owner's logo, redrawn as a vector) */
+      .i3b { display: inline-flex; align-items: center; vertical-align: middle; }
+      .i3b svg { width: 2.1em; height: 2.42em; color: #fff5f6; }
+      .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
       @media (prefers-reduced-motion: reduce) {
         .brand-mark .iris { animation: none; }
         *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation: none !important; }
@@ -429,6 +433,7 @@
     </style>
   </head>
   <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><symbol id="i3-badge" viewBox="0 0 200 230"><rect x="8" y="8" width="184" height="214" fill="#140609" stroke="currentColor" stroke-width="12"/><text x="100" y="140" fill="currentColor" font-family="Arial, Helvetica, sans-serif" font-size="128" font-weight="700" text-anchor="middle" letter-spacing="-4">i3</text><text x="100" y="196" fill="currentColor" font-family="Arial, Helvetica, sans-serif" font-size="36" font-weight="700" text-anchor="middle" letter-spacing="2">DESIGN</text></symbol></svg>
     <div class="app">
       <aside class="sidebar" aria-label="Main sidebar">
         <a class="brand" href="#overview" aria-label="EYE3 Vision home">
@@ -440,7 +445,7 @@
             <ellipse class="iris" cx="80" cy="80" rx="8" ry="18" fill="#020001"/>
             <circle class="ring" cx="80" cy="80" r="35" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".65"/>
           </svg>
-          <span><span class="brand-name"><b>EYE3</b> VISION</span><span class="brand-subtitle">See beyond · by i3 Design</span></span>
+          <span><span class="brand-name"><b>EYE3</b> VISION</span><span class="brand-subtitle">See beyond · by <span class="i3b"><svg aria-hidden="true" focusable="false"><use href="#i3-badge"/></svg><span class="sr">i3 Design</span></span></span></span>
         </a>
 
         <div class="nav-label">Workspace</div>
