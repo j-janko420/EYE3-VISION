@@ -759,6 +759,20 @@ const toast = (p) => p.evaluate(() => [...document.querySelectorAll('.toast')].m
     await p.close();
   });
 
+  await suite('the i3 Design badge sits next to "by i3 Design" in Home and the main app', async () => {
+    const p = await open(browser, {}, { ctx: { viewport: { width: 1366, height: 768 } } });
+    const h = await p.evaluate(() => { const b = document.querySelector('.tagline .i3b svg'), r = b && b.getBoundingClientRect(); return { has: !!b, w: r ? r.width : 0, hh: r ? r.height : 0, text: document.querySelector('.tagline').textContent, use: b && b.querySelector('use').getAttribute('href') }; });
+    check('Home: the tagline carries the badge, big enough to read, with the words kept for screen readers', h.has && h.w >= 18 && h.hh > h.w && /i3 Design/.test(h.text) && h.use === '#i3-badge', h);
+    const m = await p.evaluate(() => { const s = document.getElementById('i3-badge'); return { symbol: !!s, drawn: s ? s.querySelectorAll('rect, text').length : 0, name: s ? s.textContent.replace(/\s+/g, '') : '' }; });
+    check('the badge is the square with "i3" and "DESIGN"', m.symbol && m.drawn === 3 && m.name === 'i3DESIGN', m);
+    const q = await open(browser, {}, { ctx: { viewport: { width: 1461, height: 706 } }, url: HOME.replace('/home/?splash=0', '/index.html') });
+    const a = await q.evaluate(() => { const b = document.querySelector('.brand-subtitle .i3b svg'), r = b && b.getBoundingClientRect(), n = document.querySelector('.brand-name').getBoundingClientRect(), s = document.querySelector('.brand-subtitle').getBoundingClientRect(); return { has: !!b, w: r ? r.width : 0, under: s.top >= n.bottom - 1, text: document.querySelector('.brand-subtitle').textContent }; });
+    check('main app: the badge is in the brand lockup, still under the name', a.has && a.w >= 12 && a.under && /i3 Design/.test(a.text), a);
+    check('no page errors with the badge', p.errs.length === 0 && q.errs.length === 0, [p.errs, q.errs]);
+    await p.screenshot({ path: (process.env.TMPDIR || '/tmp') + '/eye3-badge-home.png', clip: { x: 0, y: 0, width: 700, height: 130 } });
+    await q.screenshot({ path: (process.env.TMPDIR || '/tmp') + '/eye3-badge-app.png', clip: { x: 0, y: 0, width: 420, height: 170 } });
+  });
+
   await browser.close();
   done();
 })().catch((e) => { console.error(e); process.exit(1); });
