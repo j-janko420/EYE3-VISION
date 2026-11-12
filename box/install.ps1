@@ -9,7 +9,7 @@ param([switch]$DryRun, [switch]$Uninstall, [switch]$Kiosk, [string]$Dir = "")
 $ErrorActionPreference = "Stop"
 $Here = Split-Path -Parent $MyInvocation.MyCommand.Path
 if (-not $Dir) { $Dir = Join-Path $env:LOCALAPPDATA "EYE3" }
-$Rel = "https://github.com/j-janko420/EYE3-VISION/releases/download/eye3-link-latest"
+$Rel = "https://eye3-vision.netlify.app/downloads"
 $Asset = "eye3-link-windows.exe"
 $Startup = [Environment]::GetFolderPath("Startup")
 $LinkLnk = Join-Path $Startup "EYE3 Link.lnk"
@@ -87,7 +87,7 @@ if ($env:EYE3_NO_SERVICE -eq "1") {
   Say "Start-up: EYE3 Link at every sign-in (restarts by itself)"
   Act "create $LinkLnk and the Desktop link $DeskUrl" {
     MakeShortcut $LinkLnk (Join-Path $Dir "eye3-start.bat")
-    Set-Content -Path $DeskUrl -Value "[InternetShortcut]`r`nURL=https://j-janko420.github.io/EYE3-VISION/home/?splash=0&box=1"
+    Set-Content -Path $DeskUrl -Value "[InternetShortcut]`r`nURL=https://eye3-vision.netlify.app/home/?splash=0&box=1"
   }
   if ($Kiosk) {
     Say "Kiosk: EYE3 Home fullscreen at every sign-in"

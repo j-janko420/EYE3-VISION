@@ -61,7 +61,7 @@
 
   .home { position: relative; z-index: 1; display: flex; flex-direction: column; height: 100vh; height: 100dvh; padding: clamp(16px, 2.6vw, 42px); }
   .top { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
-  .brand { display: flex; align-items: center; gap: clamp(10px, 1.2vw, 16px); }
+  .brand { display: flex; align-items: center; gap: clamp(10px, 1.2vw, 16px); -webkit-user-select: none; user-select: none; }
   .mark { width: clamp(44px, 4.4vw, 66px); height: clamp(44px, 4.4vw, 66px); color: var(--accent); flex-shrink: 0; filter: drop-shadow(0 0 10px rgba(255, 0, 35, .7)); }
   .wordmark { margin: 0; font-size: clamp(22px, 2.5vw, 38px); font-weight: 800; letter-spacing: .06em; line-height: 1; }
   .wordmark b { color: var(--accent); font-weight: 800; }
@@ -145,6 +145,7 @@
   .acct-row .who small { display: block; margin-top: 3px; color: var(--muted); font-size: clamp(11px, .85vw, 14px); }
   .acct-row .who small.bad { color: #ffd27a; }
   .acct-row .btn { padding: 7px 12px; font-size: clamp(11px, .9vw, 14px); }
+  .cu-row { display: block; width: 100%; margin: 0 0 6px; text-align: start; white-space: normal; }
   .acct-form { display: grid; gap: 12px; align-content: start; max-width: 680px; }
   .acct-form[hidden], .acct-form [hidden] { display: none; }
   .acct-form label { display: grid; gap: 6px; color: var(--muted); font-size: clamp(11px, .9vw, 14px); letter-spacing: .04em; text-transform: uppercase; }
@@ -168,6 +169,16 @@
   .screen .idle { color: var(--muted); font-size: clamp(14px, 1.3vw, 20px); text-align: center; padding: 20px; }
   .screen .label { position: absolute; inset-inline-start: 16px; bottom: 16px; padding: 8px 16px; border: 1px solid var(--accent); border-radius: 5px; background: rgba(8, 2, 3, .88); font-size: clamp(13px, 1.1vw, 18px); font-weight: 650; }
   .screen .label.err { border-color: #ffb020; color: #ffd27a; }
+  .vod-info { position: absolute; inset-inline-start: 12px; top: 12px; z-index: 3; display: flex; gap: 12px; width: min(520px, calc(100% - 24px)); max-height: calc(100% - 24px); overflow-y: auto; padding: 12px; border: 1px solid var(--accent); border-radius: 8px; background: rgba(8, 2, 3, .92); font-size: clamp(12px, .95vw, 15px); }
+  .vod-info[hidden] { display: none; }
+  .vod-info img { flex: none; width: 92px; height: 138px; object-fit: cover; border-radius: 5px; background: #140609; }
+  .vod-info .vi-body { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .vod-info h3 { margin: 0; font-size: 1.15em; }
+  .vod-info .vi-meta { color: var(--soft, #ff7a8a); }
+  .vod-info .vi-plot { margin: 0; color: var(--muted, #b9a9ac); display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; }
+  .vod-info .vi-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .vod-info .btn, .vod-info select { padding: 5px 10px; font-size: .95em; }
+  .vod-info .vi-x { position: absolute; inset-inline-end: 8px; top: 6px; border: 0; background: none; color: var(--ink); font-size: 18px; cursor: pointer; }
 
   .pane { flex: 1; display: flex; flex-direction: column; gap: 16px; min-height: 0; }
   .pane iframe { flex: 1; width: 100%; border: 1px solid rgba(255, 35, 60, .4); border-radius: 8px; background: #fff; }
@@ -306,10 +317,161 @@
     .tagline { letter-spacing: .18em; }
   }
   @media (max-height: 520px) and (orientation: landscape) { .hero { display: none; } .tile { min-height: 84px; } }
+  /* pro pack: guide grid, multi-view, welcome, PIN */
+  #grid-wrap { flex: 1; min-height: 0; overflow: auto; border: 1px solid rgba(255, 30, 55, .25); border-radius: 8px; background: rgba(12, 3, 5, .7); }
+  .gr-head, .gr-row { display: grid; grid-template-columns: clamp(110px, 16vw, 230px) minmax(640px, 1fr); }
+  .gr-head { position: sticky; top: 0; z-index: 3; background: #0b0406; border-bottom: 1px solid rgba(255, 30, 55, .3); }
+  .gr-scale { position: relative; height: 30px; }
+  .gr-scale span { position: absolute; top: 6px; padding-inline-start: 6px; border-inline-start: 1px solid rgba(255, 30, 55, .45); color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+  .gr-row { min-height: 52px; border-bottom: 1px solid rgba(255, 255, 255, .06); }
+  .gr-name { position: sticky; inset-inline-start: 0; z-index: 2; padding: 8px 10px; border: 0; border-inline-end: 1px solid rgba(255, 30, 55, .25); background: #0b0406; color: var(--ink); font: inherit; font-size: clamp(12px, 1vw, 15px); font-weight: 650; text-align: start; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+  .gr-lane { position: relative; min-height: 52px; }
+  .gr-prog { position: absolute; top: 5px; bottom: 5px; padding: 0 8px; border: 1px solid rgba(255, 35, 60, .28); border-radius: 5px; background: rgba(40, 10, 15, .9); color: var(--ink); font: inherit; font-size: clamp(11px, .9vw, 14px); text-align: start; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+  .gr-prog.on { border-color: var(--accent); background: rgba(255, 38, 63, .22); }
+  .gr-prog:hover, .gr-prog:focus-visible, .gr-name:hover, .gr-name:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 14px rgba(255, 38, 63, .35); }
+  .gr-none { position: absolute; inset-inline-start: 10px; top: 15px; color: var(--muted); font-size: 13px; }
+  .gr-now { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--accent); opacity: .8; pointer-events: none; z-index: 1; }
+  #grid-detail { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; min-height: 3em; padding-top: 10px; color: var(--muted); font-size: clamp(12px, 1vw, 15px); }
+  #grid-detail b { color: var(--ink); }
+  .mv-grid { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(2, 1fr); grid-auto-rows: 1fr; gap: 10px; }
+  .mv-tile { position: relative; min-height: 0; overflow: hidden; border: 2px solid rgba(255, 35, 60, .25); border-radius: 8px; background: #000; cursor: pointer; }
+  .mv-tile.audio { border-color: var(--accent); box-shadow: 0 0 18px rgba(255, 38, 63, .35); }
+  .mv-tile video { width: 100%; height: 100%; object-fit: contain; background: #000; }
+  .mv-tag { position: absolute; inset-inline: 0; top: 0; display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: linear-gradient(180deg, rgba(0, 0, 0, .75), transparent); font-size: clamp(12px, 1vw, 15px); font-weight: 650; }
+  .mv-tag button { margin-inline-start: auto; padding: 2px 9px; border: 1px solid rgba(255, 35, 60, .4); border-radius: 4px; background: rgba(20, 6, 9, .85); color: var(--ink); cursor: pointer; }
+  .mv-msg { position: absolute; inset: 0; display: grid; place-items: center; padding: 14px; color: var(--muted); text-align: center; pointer-events: none; }
+  .mv-empty { grid-column: 1 / -1; display: grid; place-items: center; padding: 20px; border: 1px dashed rgba(255, 35, 60, .3); border-radius: 8px; color: var(--muted); text-align: center; }
+  @media (max-width: 900px) { .mv-grid { grid-template-columns: 1fr; } }
+  #ov-pin { z-index: 20; }
+  #ov-info > .rows, #ov-pin > .rows { min-height: 0; overflow-y: auto; }
+  #profchip, #recchip { cursor: pointer; }
+  #recchip { border-color: var(--accent); color: #fff; background: rgba(255, 38, 63, .22); }
+  .rows .btn.big { padding: 16px 20px; font-size: clamp(15px, 1.3vw, 20px); text-align: start; }
+  .rows .big-actions { display: grid; gap: 12px; }
+  .rows .opt { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 6px 0; }
+  .rows .opt .field { min-width: 0; flex: 1 1 160px; }
+  .rows .opt .mn-net-res { color: var(--muted); }
+  .rows .opt input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--accent); }
+  .rows .opt input[type="range"] { accent-color: var(--accent); }
+  /* Geeni: three clicks on the eye logo spin the eye in 3D, then it turns into a small floating helper */
+  .geeni-summon { position: fixed; inset: 0; z-index: 70; display: grid; place-items: center; pointer-events: none; background: radial-gradient(circle at 50% 50%, rgba(255, 38, 63, .22), rgba(5, 1, 1, 0) 60%); perspective: 900px; }
+  .geeni-summon[hidden] { display: none; }
+  .gs-eye { position: relative; width: min(46vmin, 360px); aspect-ratio: 1; transform-style: preserve-3d; animation: geeniSpin 1.9s cubic-bezier(.55, .05, .3, 1) both; color: var(--accent); filter: drop-shadow(0 0 24px rgba(255, 38, 63, .85)); }
+  .gs-eye svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .gs-eye .gs-l1 { transform: translateZ(26px); }
+  .gs-eye .gs-l2 { transform: translateZ(-26px); opacity: .55; }
+  .gs-eye .gs-ring { position: absolute; inset: 6%; border: 2px solid rgba(255, 122, 138, .7); border-radius: 50%; transform: rotateX(72deg); animation: geeniRing 1.9s linear both; }
+  @keyframes geeniSpin {
+    0% { transform: rotateY(0) rotateX(12deg) scale(.15); opacity: 0; }
+    18% { opacity: 1; }
+    65% { transform: rotateY(1080deg) rotateX(-8deg) scale(1.15); opacity: 1; }
+    100% { transform: rotateY(1440deg) rotateX(0) scale(.12) translate(120%, 120%); opacity: 0; }
+  }
+  @keyframes geeniRing { from { transform: rotateX(72deg) rotateZ(0); } to { transform: rotateX(72deg) rotateZ(720deg); } }
+  .geeni { position: fixed; inset-inline-end: clamp(14px, 2vw, 28px); bottom: clamp(40px, 6vh, 60px); z-index: 60; display: none; width: clamp(74px, 7vw, 104px); padding: 0; border: 0; background: none; color: var(--accent); cursor: pointer; filter: drop-shadow(0 10px 18px rgba(255, 38, 63, .35)); animation: geeniPop .6s cubic-bezier(.2, 1.6, .4, 1) backwards, geeniFloat 3.6s ease-in-out .6s infinite; }
+  .geeni.on { display: block; }
+  .geeni.arriving { visibility: hidden; animation: none; }
+  .geeni:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; border-radius: 40%; }
+  .geeni svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .geeni .g-eye { transform-origin: 60px 40px; animation: geeniBlink 5s ease-in-out infinite; }
+  .geeni .g-arm-l { transform-origin: 26px 78px; animation: geeniWave 2.4s ease-in-out infinite; }
+  .geeni .g-glow { animation: geeniGlow 2.2s ease-in-out infinite; }
+  .geeni.listening .g-glow { animation-duration: .6s; }
+  @keyframes geeniPop { from { transform: scale(0) rotate(-30deg); opacity: 0; } to { transform: none; opacity: 1; } }
+  @keyframes geeniFloat { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-12px) rotate(2deg); } }
+  @keyframes geeniBlink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(.1); } }
+  @keyframes geeniWave { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-24deg); } }
+  @keyframes geeniGlow { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
+  #geeni-mic.on { border-color: var(--accent); background: rgba(255, 38, 63, .3); }
+  /* Geeni */
+  .geeni:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+  .geeni-panel { position: fixed; inset-inline-end: clamp(14px, 2vw, 28px); bottom: clamp(150px, 22vh, 190px); z-index: 61; display: none; flex-direction: column; width: min(400px, calc(100vw - 28px)); max-height: min(72vh, 580px); border: 1px solid rgba(255, 35, 60, .45); border-radius: 12px; background: rgba(12, 3, 5, .97); box-shadow: 0 10px 40px rgba(0, 0, 0, .7), 0 0 30px rgba(255, 38, 63, .2); }
+  .geeni-panel.open { display: flex; }
+  .g-head { display: flex; align-items: baseline; gap: 10px; padding: 12px 14px; border-bottom: 1px solid rgba(255, 30, 55, .3); }
+  .g-head b { color: var(--accent); font-size: 18px; letter-spacing: .08em; }
+  .g-head small { flex: 1; color: var(--muted); font-size: 12px; }
+  .g-head button { border: 0; background: none; color: var(--ink); font-size: 18px; cursor: pointer; }
+  .g-log { flex: 1; min-height: 120px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; }
+  .g-msg { max-width: 92%; padding: 9px 12px; border-radius: 10px; font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
+  .g-msg.bot { align-self: flex-start; border: 1px solid rgba(255, 35, 60, .3); background: rgba(40, 10, 15, .9); }
+  .g-msg.me { align-self: flex-end; background: rgba(255, 38, 63, .25); }
+  .g-acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .g-acts .btn { padding: 6px 12px; font-size: 13px; }
+  .g-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 14px 8px; }
+  .g-chips .chip { cursor: pointer; background: none; color: var(--ink); font: inherit; font-size: 12px; }
+  .g-chips .chip:hover, .g-chips .chip:focus-visible { border-color: var(--accent); outline: none; }
+  .g-form { display: flex; gap: 8px; padding: 10px 14px 14px; border-top: 1px solid rgba(255, 30, 55, .2); }
+  .g-form .field { padding: 10px 12px; font-size: 14px; }
+  .g-form .btn { padding: 8px 14px; }
+  /* ---- World of Unknown (internally "midnight"): the second layer, on while the hidden section is unlocked ----
+     Its own colours, background and hero; the EYE3 logo keeps its crimson look. No images ship with it:
+     backgrounds and the emblem are files the viewer picks, kept in this browser only. */
+  html.midnight {
+    --bg: #050101; --ink: #fff5f6; --muted: #c9a9ad; --line: rgba(255, 220, 225, .1);
+    --edge: rgba(var(--mn-rgb, 255, 38, 63), .3); --panel: linear-gradient(145deg, rgba(28, 4, 8, .62), rgba(8, 1, 2, .72));
+    --accent: var(--mn-accent, #ff263f); --accent-2: #7a0010; --glow: rgba(var(--mn-rgb, 255, 38, 63), .36); --orange-soft: #ff7a8a;
+  }
+  html.midnight body {
+    background-image:
+      linear-gradient(180deg, rgba(5, 1, 1, .5), rgba(5, 1, 1, .85)),
+      radial-gradient(ellipse at 15% -10%, rgba(var(--mn-rgb, 255, 38, 63), .28), transparent 40%),
+      radial-gradient(ellipse at 100% 35%, rgba(110, 0, 16, .3), transparent 40%),
+      radial-gradient(ellipse at 50% 120%, rgba(var(--mn-rgb, 255, 38, 63), .18), transparent 50%);
+  }
+  html.midnight .brand .mark, html.midnight .brand .wordmark b { color: #ff263f; }
+  html.midnight .brand .mark { filter: drop-shadow(0 0 10px rgba(255, 0, 35, .7)); }
+  .mn-bg { position: fixed; inset: 0; z-index: -1; width: 100%; height: 100%; object-fit: cover; background-size: cover; background-position: center; opacity: var(--mn-dim, .45); pointer-events: none; }
+  .mn-bg[hidden] { display: none; }
+  .mn-haze { position: fixed; inset: -20%; z-index: -1; pointer-events: none; background: radial-gradient(circle at 30% 40%, rgba(var(--mn-rgb, 255, 38, 63), .16), transparent 35%), radial-gradient(circle at 70% 60%, rgba(110, 0, 16, .18), transparent 40%); animation: mnHaze 24s ease-in-out infinite alternate; }
+  .mn-haze[hidden] { display: none; }
+  @keyframes mnHaze { to { transform: translate(6%, -4%) rotate(8deg) scale(1.08); } }
+  .mn-emblem { position: absolute; inset-inline-end: 6%; top: 50%; width: min(32%, 300px); max-height: 80%; transform: translateY(-50%); object-fit: contain; filter: drop-shadow(0 0 30px rgba(var(--mn-rgb, 255, 38, 63), .6)); }
+  .mn-emblem[hidden] { display: none; }
+  html.midnight .hero-art.has-emblem .orb, html.midnight .hero-art.has-emblem .sat { display: none; }
+  html.midnight .hero { background: linear-gradient(105deg, rgba(24, 3, 6, .5), rgba(58, 5, 13, .28) 46%, rgba(29, 4, 9, .5)); }
+  html.midnight .hero::before { background: linear-gradient(90deg, rgba(0, 0, 0, .55), rgba(0, 0, 0, .2) 45%, transparent 80%); }
+  html.midnight .kicker .live { background: var(--accent); color: #050101; }
+  /* 24 hourly scenes, drawn in code (no pictures ship): rain, koi, stars, eclipse, embers, depths, veil, touch */
+  .mn-scene { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
+  .mn-scene[hidden] { display: none; }
+  .mn-scene i { position: absolute; display: block; }
+  .sc-rain .drop { top: -40vh; width: 2px; background: linear-gradient(180deg, transparent, rgba(var(--mn-rgb), .9)); border-radius: 2px; animation: mnFall linear infinite backwards; }
+  .sc-rain .ring, .sc-depths .ring { border: 2px solid rgba(var(--mn-rgb), .5); border-radius: 50%; transform: scale(.2); animation: mnRipple 4s ease-out infinite backwards; }
+  .sc-rain .pool { inset: 55% 0 0 0; background: linear-gradient(180deg, rgba(var(--mn-rgb), .05), rgba(var(--mn-rgb), .22)); }
+  @keyframes mnFall { to { transform: translateY(150vh); } }
+  @keyframes mnRipple { 0% { transform: scale(.2); opacity: .9; } 100% { transform: scale(1.6); opacity: 0; } }
+  .sc-koi .fish { left: 50%; top: 50%; border-radius: 50%; border: 0 solid transparent; border-top: 18px solid rgba(var(--mn-rgb), .75); filter: blur(3px) drop-shadow(0 0 18px rgba(var(--mn-rgb), .8)); animation: mnSpin 46s linear infinite backwards; }
+  .sc-koi .fish.b { animation-direction: reverse; }
+  @keyframes mnSpin { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
+  .sc-stars .dot, .sc-eclipse .dot, .sc-embers .spark { width: 3px; height: 3px; border-radius: 50%; background: rgba(var(--mn-rgb), .95); box-shadow: 0 0 8px rgba(var(--mn-rgb), .9); animation: mnTwinkle 3s ease-in-out infinite alternate backwards; }
+  .sc-stars .strand { width: 46vw; height: 70vh; left: 27vw; top: 15vh; border-radius: 50% 50% 40% 60%; border: 2px solid rgba(var(--mn-rgb), .35); filter: blur(1px) drop-shadow(0 0 12px rgba(var(--mn-rgb), .6)); animation: mnSway 14s ease-in-out infinite alternate backwards; }
+  .sc-stars .shoot { width: 30vw; height: 2px; top: 12vh; left: 10vw; background: linear-gradient(90deg, transparent, rgba(var(--mn-rgb), 1)); transform: rotate(18deg); animation: mnShoot 9s ease-in infinite backwards; }
+  @keyframes mnTwinkle { from { opacity: .15; } to { opacity: 1; } }
+  @keyframes mnSway { to { transform: rotate(6deg) scale(1.05); } }
+  @keyframes mnShoot { 0%, 80% { opacity: 0; transform: rotate(18deg) translateX(-20vw); } 88% { opacity: 1; } 100% { opacity: 0; transform: rotate(18deg) translateX(40vw); } }
+  .sc-eclipse .halo { left: 50%; top: 38%; border-radius: 50%; border: 1px dashed rgba(var(--mn-rgb), .45); animation: mnSpin 80s linear infinite backwards; }
+  .sc-eclipse .core { left: 50%; top: 38%; width: 18vmin; height: 18vmin; border-radius: 50%; background: #050101; transform: translate(-50%, -50%); box-shadow: 0 0 0 4px rgba(var(--mn-rgb), .9), 0 0 60px 12px rgba(var(--mn-rgb), .7); }
+  .sc-eclipse .fire, .sc-embers .fire { inset: 70% 0 0 0; background: radial-gradient(ellipse at 50% 100%, rgba(var(--mn-rgb), .5), transparent 70%); }
+  .sc-embers .spark { bottom: -10px; animation: mnRise linear infinite backwards; }
+  @keyframes mnRise { from { transform: translateY(0); opacity: 1; } to { transform: translateY(-105vh) translateX(6vw); opacity: 0; } }
+  .sc-depths .wave { left: -20vw; width: 140vw; border-radius: 50%; background: rgba(var(--mn-rgb), .16); filter: blur(18px); animation: mnDrift 18s ease-in-out infinite alternate backwards; }
+  .sc-depths .floor { inset: 0; background: linear-gradient(180deg, rgba(var(--mn-rgb), .3), rgba(5, 1, 1, .1) 60%, #050101); }
+  @keyframes mnDrift { to { transform: translateX(12vw) scaleY(1.3); } }
+  .sc-veil .back { inset: 0; background: radial-gradient(ellipse at 50% 40%, rgba(var(--mn-rgb), .45), rgba(var(--mn-rgb), .12) 70%); }
+  .sc-veil .shade { border-radius: 45%; background: rgba(5, 1, 1, .85); filter: blur(34px); animation: mnDrift 22s ease-in-out infinite alternate backwards; }
+  .sc-touch .arm { top: 48%; height: 3vmin; width: 40vw; border-radius: 3vmin; background: linear-gradient(90deg, transparent, rgba(var(--mn-rgb), .85)); filter: drop-shadow(0 0 16px rgba(var(--mn-rgb), .8)); animation: mnReach 7s ease-in-out infinite alternate backwards; }
+  .sc-touch .arm.r { right: 0; transform: scaleX(-1); animation-name: mnReachR; }
+  .sc-touch .spark { left: 50%; top: 48%; width: 1.6vmin; height: 1.6vmin; border-radius: 50%; transform: translate(-50%, 0); background: rgba(var(--mn-rgb), 1); box-shadow: 0 0 30px 10px rgba(var(--mn-rgb), .7); animation: mnTwinkle 3.5s ease-in-out infinite alternate backwards; }
+  @keyframes mnReach { from { transform: translateX(-6vw); } to { transform: translateX(2vw); } }
+  @keyframes mnReachR { from { transform: scaleX(-1) translateX(-6vw); } to { transform: scaleX(-1) translateX(2vw); } }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
 </head>
 <body>
+<div class="mn-haze" id="mn-haze" hidden aria-hidden="true"></div>
+<div class="mn-scene" id="mn-scene" hidden aria-hidden="true"></div>
+<div class="mn-bg" id="mn-bgimg" hidden aria-hidden="true"></div>
+<video class="mn-bg" id="mn-bgvid" hidden muted loop playsinline aria-hidden="true"></video>
 <div class="splash" id="splash" role="button" tabindex="0" aria-label="EYE3 Vision. Press any key to continue">
     <svg class="splash-logo" viewBox="0 0 160 160" aria-hidden="true">
       <path d="M80 7 153 80 80 153 7 80Z" fill="none" stroke="currentColor" stroke-width="3.4"/>
@@ -340,7 +502,7 @@
   </div>
 
   <section class="hero" aria-label="Welcome">
-    <div class="hero-art" aria-hidden="true"><div class="orb"></div><div class="sat"></div></div>
+    <div class="hero-art" id="hero-art" aria-hidden="true"><div class="orb"></div><div class="sat"></div><img class="mn-emblem" id="mn-emblem" alt="" hidden></div>
     <div class="hero-content">
       <div class="kicker"><span class="live">Live</span><span>Your screen, your way</span></div>
       <h1>See beyond</h1>
@@ -357,7 +519,7 @@
 
   <div class="foot">
     <div class="hintkeys"><b>Arrows</b> move · <b>Enter</b> open · <b>Back/Esc</b> return · <b>F</b> fullscreen · <b>S</b> screensaver · <b>Z</b> sleep timer</div>
-    <div class="right"><span class="chip" id="agentchip" role="button" tabindex="0" hidden></span><span class="chip" id="sleepchip" hidden></span><span class="chip" id="rcchip" hidden>📱 Phone remote on</span><div class="net"><span class="dot" id="netdot"></span><span id="netlabel">Online</span></div></div>
+    <div class="right"><span class="chip" id="profchip" role="button" tabindex="0" hidden></span><span class="chip" id="agentchip" role="button" tabindex="0" hidden></span><span class="chip" id="recchip" role="button" tabindex="0" hidden></span><span class="chip" id="sleepchip" hidden></span><span class="chip" id="rcchip" hidden>📱 Phone remote on</span><div class="net"><span class="dot" id="netdot"></span><span id="netlabel">Online</span></div></div>
   </div>
 </main>
 
@@ -374,6 +536,12 @@
         <option value="https://iptv-org.github.io/iptv/categories/music.m3u">iptv-org · Music</option>
         <option value="https://m3upt.com/iptv">M3UPT · Portuguese (some need a Portuguese IP)</option>
       </select>
+      <button class="btn" id="tv-grid" type="button" title="Guide grid (D)">Guide grid</button>
+      <button class="btn" id="tv-multi" type="button" title="Watch up to 4 channels at once (M adds the selected channel)">Multi-view</button>
+      <button class="btn" id="tv-cast" type="button" title="Cast to a TV or speaker (C)">Cast</button>
+      <button class="btn" id="tv-pip" type="button" title="Mini window (O)">Mini window</button>
+      <button class="btn" id="tv-replay" type="button" title="Replay past programmes of this channel (U). Xtream channels with catch-up.">Replay</button>
+      <button class="btn" id="tv-rec" type="button" title="Record the channel that is playing (R). Needs EYE3 Link.">Record</button>
       <button class="btn" id="tv-vod" type="button">Movies &amp; series</button>
       <button class="btn" id="tv-maker" type="button">Playlist maker</button>
       <button class="btn" id="tv-accts" type="button">IPTV accounts</button>
@@ -389,7 +557,7 @@
     <button class="btn" id="tv-check" type="button" title="Test these channels from this computer's own connection (needs EYE3 Link)">Check from my connection</button>
     <label class="chip" style="cursor:pointer"><input type="checkbox" id="tv-hidefailed" checked> hide failed</label>
     <span class="chip" id="tv-count">0 channels</span>
-    <span class="hintkeys">↑↓ channel · ←→ category · 0-9 number · <b>P</b> previous · <b>L</b> favourite · <b>G</b> guide · <b>X</b> shape · <b>A</b> audio · <b>T</b> subtitles · <b>V</b> VLC · <b>/</b> search · <b>?</b> all keys</span>
+    <span class="hintkeys">↑↓ channel · ←→ category · 0-9 number · <b>P</b> previous · <b>L</b> favourite · <b>G</b> guide · <b>D</b> grid · <b>M</b> multi · <b>C</b> cast · <b>R</b> record · <b>X</b> shape · <b>A</b> audio · <b>T</b> subtitles · <b>V</b> VLC · <b>/</b> search · <b>?</b> all keys</span>
   </div>
   <div class="tv">
     <div class="chlist" id="chlist"></div>
@@ -417,6 +585,7 @@
     <button class="btn" id="vod-free" type="button" title="Public-domain films from the Internet Archive. No account needed.">Free movies</button>
     <select class="btn" id="vod-cat" aria-label="Category"></select>
     <input class="field tv-search" id="vod-search" type="search" placeholder="Search titles  ( / )" autocomplete="off" spellcheck="false" aria-label="Search titles">
+    <button class="btn" id="vod-meta" type="button" hidden title="Poster, plot, rating and subtitles for this title (I). Looked up from Stremio's free Cinemeta and OpenSubtitles services only when you press it.">Info &amp; subtitles</button>
     <button class="btn" id="vod-vlc" type="button" hidden title="Save this title as a file you can open in VLC (for mkv, H.265 and other formats a browser cannot play)">Open in VLC</button>
     <span class="chip" id="vod-count">0 titles</span>
     <span class="hintkeys">↑↓ title · Enter play · <b>←</b> back to series · <b>/</b> search</span>
@@ -427,6 +596,7 @@
       <video id="vod-video" controls playsinline></video>
       <div class="idle" id="vod-idle">Pick a title and press Enter.</div>
       <div class="label" id="vod-label" style="display:none"></div>
+      <div class="vod-info" id="vod-info" hidden></div>
     </div>
   </div>
 </section>
@@ -493,7 +663,7 @@
           <li><a href="../tools/eye3-link.py" download="eye3-link.py">Download eye3-link.py</a></li>
           <li>Run <code>python3 eye3-link.py</code> (Windows: <code>py eye3-link.py</code>) and leave that window open.</li>
         </ol>
-        <p style="margin:10px 0 0">No Python? <a href="https://github.com/j-janko420/EYE3-VISION/releases/tag/eye3-link-latest" target="_blank" rel="noopener noreferrer">Download the ready-to-run program</a> for Windows, Mac (Apple chip) or Linux, then just open it. It is not code-signed, so your system may warn you.</p>
+        <p style="margin:10px 0 0">No Python? <a href="https://eye3-vision.netlify.app/downloads/" target="_blank" rel="noopener noreferrer">Download the ready-to-run program</a> for Windows, Mac (Apple chip) or Linux, then just open it. It is not code-signed, so your system may warn you.</p>
         <button class="btn" id="link-retry" type="button" style="margin-top:10px">Check again</button>
       </div>
       <div class="chlist" id="acct-list"></div>
@@ -537,6 +707,7 @@
     <div class="toolbar">
       <button class="btn on" type="submit" id="ex-unlock">Unlock</button>
       <button class="btn" type="button" id="ex-lock" hidden>Lock now</button>
+      <button class="btn" type="button" id="ex-mn" hidden>World of Unknown settings</button>
       <button class="btn" type="button" id="ex-removepin" hidden>Remove PIN</button>
     </div>
     <p class="acct-note" id="ex-msg"></p>
@@ -583,6 +754,9 @@
   </div>
 </section>
 
+<div class="geeni-summon" id="geeni-summon" aria-hidden="true" hidden>
+  <div class="gs-eye"><span class="gs-ring"></span><svg class="gs-l2" viewBox="0 0 160 160"><path d="M80 7 153 80 80 153 7 80Z" fill="none" stroke="currentColor" stroke-width="3.4"/><path d="M13 80Q80 18 147 80Q80 142 13 80Z" fill="#020001" stroke="currentColor" stroke-width="4.2"/><path d="M80 26 105 80 80 134 55 80Z" fill="none" stroke="currentColor" stroke-width="2" opacity=".8"/><circle cx="80" cy="80" r="24" fill="currentColor"/><ellipse cx="80" cy="80" rx="8" ry="18" fill="#020001"/></svg><svg class="gs-l1" viewBox="0 0 160 160"><path d="M80 7 153 80 80 153 7 80Z" fill="none" stroke="currentColor" stroke-width="3.4"/><path d="M13 80Q80 18 147 80Q80 142 13 80Z" fill="#020001" stroke="currentColor" stroke-width="4.2"/><path d="M80 26 105 80 80 134 55 80Z" fill="none" stroke="currentColor" stroke-width="2" opacity=".8"/><circle cx="80" cy="80" r="24" fill="currentColor"/><ellipse cx="80" cy="80" rx="8" ry="18" fill="#020001"/></svg></div>
+</div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <!-- Screensaver -->
@@ -606,6 +780,60 @@
 <section class="ov" id="ov-info" aria-label="Info">
   <div class="ov-top"><h2 id="info-title">Cast &amp; mirror</h2><button class="btn" id="info-close" type="button">Close</button></div>
   <div class="rows" id="info-body"></div>
+</section>
+
+<!-- Guide grid -->
+<section class="ov" id="ov-grid" aria-label="Guide grid">
+  <div class="ov-top"><h2>Guide<small id="grid-sub"></small></h2><div class="toolbar"><button class="btn" id="grid-close" type="button">Back</button></div></div>
+  <div id="grid-wrap" role="grid" aria-label="Programmes by channel and time"></div>
+  <div id="grid-detail" aria-live="polite"></div>
+</section>
+
+<!-- Multi-view -->
+<section class="ov" id="ov-multi" aria-label="Multi-view">
+  <div class="ov-top"><h2>Multi-view<small>Up to 4 channels, one sound · click a picture for its sound · 1-4 keys</small></h2><div class="toolbar"><button class="btn" id="mv-clear" type="button">Clear</button><button class="btn" id="mv-close" type="button">Back</button></div></div>
+  <div class="mv-grid" id="mv-grid"></div>
+</section>
+
+<!-- PIN entry (parent PIN) -->
+<section class="ov" id="ov-pin" aria-label="PIN">
+  <div class="ov-top"><h2 id="pin-title">PIN</h2><button class="btn" id="pin-cancel" type="button">Cancel</button></div>
+  <form class="rows" id="pin-form" autocomplete="off">
+    <p id="pin-msg" aria-live="polite"></p>
+    <input class="field" id="pin-input" type="password" inputmode="numeric" maxlength="8" autocomplete="off" aria-label="PIN, 4 to 8 digits">
+    <div class="kv"><button class="btn" type="submit">OK</button></div>
+  </form>
+</section>
+
+<!-- Geeni, the built-in EYE3 assistant (three clicks on the eye logo) -->
+<button class="geeni" id="geeni" type="button" aria-label="Geeni, the EYE3 assistant" aria-controls="geeni-panel">
+  <svg viewBox="0 0 120 150" aria-hidden="true">
+        <defs>
+          <linearGradient id="g-skin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff4d62"/><stop offset=".55" stop-color="#ff263f"/><stop offset="1" stop-color="#8a0a1a"/></linearGradient>
+          <radialGradient id="g-halo"><stop offset="0" stop-color="#ff263f" stop-opacity=".9"/><stop offset="1" stop-color="#ff263f" stop-opacity="0"/></radialGradient>
+        </defs>
+        <ellipse cx="60" cy="146" rx="26" ry="4" fill="#000" opacity=".45"/>
+        <path class="g-arm-l" d="M28 76Q12 70 10 56" fill="none" stroke="#c4142c" stroke-width="7" stroke-linecap="round"/>
+        <path d="M92 78Q108 84 106 98" fill="none" stroke="#c4142c" stroke-width="7" stroke-linecap="round"/>
+        <rect x="40" y="128" width="12" height="16" rx="5" fill="#2a0408"/><rect x="68" y="128" width="12" height="16" rx="5" fill="#2a0408"/>
+        <path d="M60 6C88 6 96 30 96 58V112C96 126 80 134 60 134S24 126 24 112V58C24 30 32 6 60 6Z" fill="url(#g-skin)"/>
+        <path d="M30 96H90V110C90 120 76 126 60 126S30 120 30 110Z" fill="#2a0408" opacity=".85"/>
+        <path d="M48 104H72" stroke="#ff7a8a" stroke-width="2" stroke-linecap="round" opacity=".7"/>
+        <circle class="g-glow" cx="60" cy="40" r="30" fill="url(#g-halo)"/>
+        <g class="g-eye">
+          <path d="M60 16 84 40 60 64 36 40Z" fill="#050101" stroke="#fff5f6" stroke-width="1.6"/>
+          <path d="M38 40Q60 22 82 40Q60 58 38 40Z" fill="#020001" stroke="#ff263f" stroke-width="2"/>
+          <circle cx="60" cy="40" r="8.5" fill="#ff263f"/><ellipse cx="60" cy="40" rx="2.8" ry="6.4" fill="#020001"/>
+          <circle cx="63" cy="36.5" r="1.6" fill="#fff5f6"/>
+        </g>
+        <path d="M48 76Q60 86 72 76" fill="none" stroke="#2a0408" stroke-width="3.2" stroke-linecap="round"/>
+      </svg>
+</button>
+<section class="geeni-panel" id="geeni-panel" role="dialog" aria-label="Geeni, the EYE3 assistant">
+  <div class="g-head"><b>Geeni</b><small>EYE3 helper · runs on this device only</small><button id="geeni-x" type="button" aria-label="Close Geeni">✕</button></div>
+  <div class="g-log" id="geeni-log" aria-live="polite"></div>
+  <div class="g-chips" id="geeni-chips"></div>
+  <form class="g-form" id="geeni-form" autocomplete="off"><input class="field" id="geeni-in" type="text" maxlength="160" placeholder="Ask or tell Geeni: “play CNN”, “louder”…" aria-label="Ask Geeni"><button class="btn" id="geeni-mic" type="button" aria-label="Speak to Geeni" title="Speak to Geeni">🎤</button><button class="btn" type="submit">Ask</button></form>
 </section>
 
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js" defer></script>
@@ -754,7 +982,7 @@
     $("clock").textContent = pad(h) + ":" + pad(now.getMinutes());
     $("date").textContent = now.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
     var part = h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
-    $("greet").innerHTML = part + ". <span>What shall we watch?</span>";
+    if (!explicitUnlocked) $("greet").innerHTML = part + ". <span>What shall we watch?</span>";   // the World of Unknown keeps its own line
   }
   tick(); setInterval(tick, 20000);
 
@@ -805,7 +1033,7 @@
   function overlayOpen() { return !!document.querySelector(".ov.open"); }
   function openOverlay(id) { $(id).classList.add("open"); }
   function closeOverlays() {
-    stopPlayback();
+    stopPlayback(); mvStop();
     [].slice.call(document.querySelectorAll(".ov.open")).forEach(function (o) { o.classList.remove("open"); });
     $("web-frame").src = "about:blank";
     paintFocus();
@@ -847,6 +1075,14 @@
   }
 
   var localChannels = [], localFiles = [];   // from the playlists folder that EYE3 Link reads (the viewer's own files)
+  var mv = [], mvAudio = 0, rawAll = [];   // multi-view slots; every channel before the profile filter
+  var SETUP_KEY = "eye3.home.setup", PROF_KEY = "eye3.home.profiles", PROF_ACTIVE = "eye3.home.profile", PPIN_KEY = "eye3.home.parentpin";
+  var profiles = [];
+  try { profiles = (JSON.parse(get(PROF_KEY) || "[]") || []).filter(function (p) { return p && /^[\w-]{1,20}$/.test(p.id) && typeof p.name === "string"; }).map(function (p) { return { id: p.id, name: p.name.slice(0, 24), kids: !!p.kids, hide: (Array.isArray(p.hide) ? p.hide : []).filter(function (x) { return typeof x === "string"; }).slice(0, 200) }; }); } catch (e) { profiles = []; }
+  if (!profiles.length) profiles = [{ id: "main", name: "Main", kids: false, hide: [] }];
+  function activeProfile() { var id = get(PROF_ACTIVE); return profiles.filter(function (p) { return p.id === id; })[0] || profiles[0]; }
+  function isKids() { return !!activeProfile().kids; }
+  function profileOk(c) { var p = activeProfile(); if (p.kids && c.adult) return false; return !(p.hide.length && p.hide.indexOf(c.cat) > -1); }
   function buildAll() {
     var seen = {}, out = [];
     var add = function (c) { if (c && c.url && !seen[c.url]) { seen[c.url] = 1; out.push(c); } };
@@ -858,7 +1094,8 @@
     accounts.forEach(function (a) { (acctChannels[a.id] || []).forEach(function (c) { out.push(c); }); });
     libChannels.forEach(function (c) { out.push(c); });
     localChannels.forEach(function (c) { out.push(c); });
-    allChannels = out;
+    rawAll = out;
+    allChannels = out.filter(profileOk);
   }
   function isOwnCat(k) { return k === "My playlist" || k === "Added list" || k === "My channels" || accounts.some(function (a) { return a.name === k; }) || localFiles.some(function (f) { return f.name === k; }) || libMeta.some(function (l) { return l.name === k; }); }
   function categoryList() {
@@ -938,6 +1175,7 @@
       var meta = [c.q ? c.q + "p" : "", c.country, c.sub || (tvFilter.cat === "All" || tvFilter.cat === FAVS || tvFilter.cat === RECENT ? c.grp : "")].filter(Boolean).join(" · ");
       if (meta) row.appendChild(make("small", "", meta));
       if (isFav(c.url)) row.appendChild(make("i", "fav", "★"));
+      if (c.arc) { var cu = make("i", "fav", "⟲"); cu.title = "Catch-up: " + c.arc + " days (U)"; row.appendChild(cu); }
       if (health[c.url] && health[c.url][0] === 1 && Date.now() - health[c.url][1] < HEALTH_TTL) row.appendChild(make("i", "fav", "✓"));
       row.addEventListener("click", function () { chIndex = i; paintChannels(); playChannel(i); });
       if (i < 12) { row.classList.add("in"); row.style.animationDelay = (i * 22) + "ms"; }
@@ -1015,7 +1253,7 @@
         var lg = /tvg-logo="([^"]*)"/i.exec(line), ti = /tvg-id="([^"]*)"/i.exec(line);
         info = { name: c > -1 ? line.slice(c + 1).replace(/^\s+/, "") : "Channel", sub: g ? g[1] : "", logo: lg ? lg[1] : "", tvgid: ti ? ti[1] : "" };
       } else if (line.charAt(0) !== "#" && /^(https?):/i.test(line)) {
-        var item = info || { name: line, sub: "" }; item.url = line; item.country = ""; item.q = 0;
+        var item = info || { name: line, sub: "" }; item.url = line.split("|")[0]; item.country = ""; item.q = 0;
         item.grp = item.sub; item.sub = "";
         item.adult = ADULT_RX.test(item.grp + " " + item.name);
         out.push(item);
@@ -1036,7 +1274,7 @@
   try { recent = (JSON.parse(get(RECENT_KEY) || "[]") || []).filter(function (x) { return typeof x === "string"; }).slice(0, 30); } catch (e) { recent = []; }
   function rkey(c) { return c.cat + "|" + c.name; }
   function noteRecent(c) {
-    if (c.adult) return;                               // adult channels leave no trace in this list
+    if (c.adult || noTrace()) return;                  // adult channels, and anything in the World of Unknown, leave no trace here
     var k = rkey(c), first = !recent.length; recent = recent.filter(function (x) { return x !== k; }); recent.unshift(k); recent = recent.slice(0, 30);
     set(RECENT_KEY, JSON.stringify(recent));
     if (first) fillSelects();                          // the category appears as soon as there is something in it
@@ -1054,10 +1292,14 @@
     if (xml && (c.tvg || c.name)) return { key: xml + "|" + (c.tvg || c.name) + "|" + n, path: "/api/xmltv", params: withUa(a || {}, { url: xml, id: c.tvg || "", name: c.name, n: String(n) }) };
     return null;
   }
+  // Settings → Guide time shift: some providers send their guide in the wrong time zone; move every programme by whole hours
+  var EPG_SHIFT_KEY = "eye3.home.epgshift";
+  function epgShift() { var h = parseInt(get(EPG_SHIFT_KEY) || "0", 10); return h >= -12 && h <= 12 ? h : 0; }
+  function shifted(items) { var sec = epgShift() * 3600; return sec ? items.map(function (it) { return Object.assign({}, it, { s: it.s + sec, e: it.e + sec }); }) : items; }
   function epgItems(c, n) {
     var src = epgSource(c, n); if (!src) return Promise.resolve(null);
-    var hit = epgCache[src.key]; if (hit && Date.now() - hit.t < 120000) return Promise.resolve(hit.items);
-    return linkGet(src.path, src.params).then(function (d) { epgCache[src.key] = { t: Date.now(), items: d.items || [] }; return epgCache[src.key].items; });
+    var hit = epgCache[src.key]; if (hit && Date.now() - hit.t < 120000) return Promise.resolve(shifted(hit.items));
+    return linkGet(src.path, src.params).then(function (d) { epgCache[src.key] = { t: Date.now(), items: d.items || [] }; return shifted(epgCache[src.key].items); });
   }
   function epgFor(c, title, token) {
     clearTimeout(epgTimer);
@@ -1097,6 +1339,54 @@
     }
     rowsHtml($("info-body"), nodes); openOverlay("ov-info");
   }
+  // ---- catch-up TV (key U): replay a past programme of an Xtream channel whose panel keeps an archive (EYE3 Link 1.9+) ----
+  function dayName(sec) {
+    var d = new Date(sec * 1000), t = new Date(); t.setHours(0, 0, 0, 0);
+    var diff = Math.round((t.getTime() - new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()) / 86400000);
+    return diff === 0 ? "Today" : diff === 1 ? "Yesterday" : d.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "short" });
+  }
+  function catchupAccount(c) { var a = c && c.acct ? accounts.filter(function (x) { return x.id === c.acct; })[0] : null; return a && a.type === "xtream" && c.eid && c.arc ? a : null; }
+  function openCatchup() {
+    var c = prevCh; $("info-title").textContent = "Catch-up TV";
+    var nodes = [], a = catchupAccount(c);
+    if (!c) nodes.push(para("Play a channel first, then press U to replay its past programmes."));
+    else if (!a) nodes.push(para("“" + c.name + "” has no catch-up. Replay works for Xtream Codes channels whose provider keeps an archive (look for ⟲ in the channel list)."));
+    else {
+      nodes.push(nt(make("h3", "", c.name + " · " + c.arc + (c.arc === 1 ? " day" : " days") + " of replay")));
+      var box = para("Loading past programmes…"); nodes.push(box);
+      linkGet("/api/catchup", withUa(a, { server: a.server, user: a.user, pass: a.pass, id: String(c.eid), days: String(c.arc) })).then(function (d) {
+        var items = d.items || [];
+        if (!items.length) { box.textContent = "The provider lists nothing to replay for this channel right now."; return; }
+        var wrap = make("div", ""), day = "";
+        items.forEach(function (it) {
+          var dn = dayName(it.s);
+          if (dn !== day) { day = dn; wrap.appendChild(make("h3", "", dn)); }
+          var b = make("button", "btn cu-row", clock(it.s) + "–" + clock(it.e) + "  " + (it.on ? "● " : "") + it.t);
+          b.type = "button"; nt(b); b.title = it.d || "";
+          b.addEventListener("click", function () { playCatchup(c, a, it); });
+          wrap.appendChild(b);
+        });
+        box.parentNode.replaceChild(wrap, box);
+        var first = wrap.querySelector("button"); if (first) try { first.focus(); } catch (e) {}
+      })["catch"](function (err) { box.textContent = /Unknown request/.test(err.message) ? "Your EYE3 Link is older than 1.9. Update it in Settings → EYE3 agent, or download the new program." : "Could not load the replay list: " + err.message; });
+    }
+    rowsHtml($("info-body"), nodes); openOverlay("ov-info");
+  }
+  function playCatchup(c, a, it) {
+    var minutes = Math.max(1, Math.min(720, Math.ceil((it.e - it.s) / 60) + 2));
+    linkGet("/api/catchup/play", withUa(a, { server: a.server, user: a.user, pass: a.pass, id: String(c.eid), start: it.st, minutes: String(minutes) })).then(function (d) {
+      $("ov-info").classList.remove("open");   // back to Live TV; closing every overlay would stop the player
+      var replay = { name: c.name, url: d.url, alt: d.alt || "", ts: true, adult: c.adult, acct: c.acct };
+      var title = "⟲ " + c.name + " · " + it.t + " · " + dayName(it.s) + " " + clock(it.s);
+      $("idle").style.display = "none";
+      clearTimeout(epgTimer); stopHls(); reopenCount = 0;
+      var token = ++playToken;
+      showLabel(title, false);
+      openStream(replay, title, token, replay.url, true, false);
+      toast("Replay: " + it.t + " — press Enter on a channel to go back to live");
+    })["catch"](function (err) { toast("Replay failed: " + err.message); });
+  }
+
   // ---- playback: HLS (hls.js / native), raw MPEG-TS (mpegts.js), a fallback format, http streams through EYE3 Link, stall recovery ----
   var tsPlayer = null, mpegtsLoad = null, watchTimer = null, reopenCount = 0;
   var MPEGTS_SRC = "https://cdn.jsdelivr.net/npm/mpegts.js@1.7.3/dist/mpegts.js";
@@ -1113,6 +1403,9 @@
   }
   // an http:// stream cannot play on an https page; EYE3 Link (if it runs) fetches it instead
   function playable(url) {
+    if (strictPrivate() && /^https?:\/\//i.test(url) && url.indexOf(LINK_BASE) !== 0)
+      return linkHello().then(function (h) { return LINK_BASE + "/stream?" + new URLSearchParams({ u: url, t: h.token }).toString(); },
+        function () { throw new Error("Strict private connection is on and EYE3 Link is not running, so nothing plays (nothing leaks)."); });
     if (location.protocol !== "https:" || !/^http:\/\//i.test(url) || url.indexOf(LINK_BASE) === 0) return Promise.resolve(url);
     return linkHello().then(function (h) { return LINK_BASE + "/stream?" + new URLSearchParams({ u: url, t: h.token }).toString(); },
       function () { throw new Error("This stream is http:// and this page is https://, so it needs EYE3 Link. Start EYE3 Link, or use the playlist's https:// streams."); });
@@ -1314,7 +1607,7 @@
     paintAccounts();
     var req = acctRequest(a);
     return linkGet(req[0], req[1]).then(function (d) {
-      acctChannels[a.id] = (d.channels || []).map(function (c) { return { name: c.n, cat: a.name, grp: c.c || "", country: "", url: c.u, q: 0, sub: "", adult: !!c.x, eid: c.e || 0, acct: a.id, alt: c.a || "", ts: !!c.t, tvg: c.i || "" }; });
+      acctChannels[a.id] = (d.channels || []).map(function (c) { return { name: c.n, cat: a.name, grp: c.c || "", country: "", url: c.u, q: 0, sub: "", adult: !!c.x, eid: c.e || 0, arc: c.ar || 0, acct: a.id, alt: c.a || "", ts: !!c.t, tvg: c.i || "" }; });
       var info = d.account || {};
       acctInfo[a.id] = { epg: info.epg || "" };
       var bits = [acctChannels[a.id].filter(function (c) { return !c.adult; }).length + " channels"];
@@ -1536,7 +1829,9 @@
   }
 
   // ---- Explicit section: hidden behind a double-click on the eye logo (or Shift+X). Own accounts/playlists only. ----
-  var PIN_KEY = "eye3.home.pin", pinFails = 0, pinBlockedUntil = 0;
+  var PIN_KEY = "eye3.home.pin", PINLOCK_KEY = "eye3.home.pinlock", pinFails = 0, pinBlockedUntil = 0;
+  try { var pl0 = JSON.parse(get(PINLOCK_KEY) || "null"); if (pl0 && typeof pl0 === "object") { pinFails = +pl0.f || 0; pinBlockedUntil = +pl0.u || 0; } } catch (e) {}
+  function pinLockSave() { try { set(PINLOCK_KEY, JSON.stringify({ f: pinFails, u: pinBlockedUntil })); } catch (e) {} }
   function pinInfo() { try { return JSON.parse(get(PIN_KEY) || "null"); } catch (e) { return null; } }
   function sha(text) {
     return crypto.subtle.digest("SHA-256", new TextEncoder().encode(text)).then(function (b) {
@@ -1550,12 +1845,13 @@
     $("ex-age-row").hidden = explicitUnlocked;
     $("ex-pin").parentNode.hidden = explicitUnlocked && !pin;
     $("ex-pin-label").textContent = pin ? "Your PIN" : "Optional: set a PIN (4–8 digits) to protect this";
-    $("ex-unlock").hidden = explicitUnlocked; $("ex-lock").hidden = !explicitUnlocked; $("ex-removepin").hidden = !(explicitUnlocked && pin);
+    $("ex-unlock").hidden = explicitUnlocked; $("ex-lock").hidden = !explicitUnlocked; $("ex-mn").hidden = !explicitUnlocked; $("ex-removepin").hidden = !(explicitUnlocked && pin);
     $("ex-pin").value = ""; $("ex-age").checked = false;
     var nLocal = explicitUnlocked ? localChannels.filter(function (c) { return c.adult; }).length : 0;
     exMsg(explicitUnlocked ? "Unlocked for this session. It locks again after a reload, the screensaver or the sleep timer." + (nLocal ? " Your playlists folder adds " + nLocal + "." : "") : "", explicitUnlocked ? "good" : "");
   }
   function openExplicit() {
+    if (isKids()) { toast("Not available in a kids profile"); return; }
     paintExplicit(); openOverlay("ov-explicit");
     setTimeout(function () { try { (explicitUnlocked ? $("ex-lock") : $("ex-age")).focus(); } catch (e) {} }, 60);
   }
@@ -1563,7 +1859,8 @@
     if (!explicitUnlocked) return;
     explicitUnlocked = false;
     if (tvFilter.cat === EXPLICIT) { tvFilter.cat = "All"; tvFilter.group = ""; }
-    stopPlayback(); refreshLists();
+    if (free.genre.indexOf("u:") === 0) { free.genre = ""; free.items = []; free.total = 0; free.token++; }
+    stopPlayback(); refreshLists(); applyLayer();
     if (!quiet) toast("Explicit section locked");
   }
   $("ex-form").addEventListener("submit", function (e) {
@@ -1572,11 +1869,11 @@
     if (!$("ex-age").checked) return exMsg("Please confirm you are 18 or older.", "bad");
     if (Date.now() < pinBlockedUntil) return exMsg("Too many wrong tries. Wait half a minute.", "bad");
     var pin = $("ex-pin").value, info = pinInfo();
-    var done = function () { explicitUnlocked = true; pinFails = 0; refreshLists(); closeOverlays(); toast("Explicit section unlocked"); };
+    var done = function () { explicitUnlocked = true; pinFails = 0; pinBlockedUntil = 0; pinLockSave(); refreshLists(); closeOverlays(); applyLayer(); toast("The World of Unknown is open. Press Q to lock it at once."); };
     if (info) {
       sha(info.s + ":" + pin).then(function (h) {
         if (h === info.h) done();
-        else { pinFails++; if (pinFails >= 5) { pinBlockedUntil = Date.now() + 30000; pinFails = 0; } exMsg("Wrong PIN.", "bad"); }
+        else { pinFails++; if (pinFails >= 5) { pinBlockedUntil = Date.now() + 30000; pinFails = 0; } pinLockSave(); exMsg("Wrong PIN.", "bad"); }
       });
     } else if (pin) {
       if (!/^\d{4,8}$/.test(pin)) return exMsg("A PIN is 4 to 8 digits.", "bad");
@@ -1594,12 +1891,12 @@
     });
   });
   $("ex-close").addEventListener("click", function () { closeOverlays(); });
-  $("brand").addEventListener("dblclick", function (e) { e.preventDefault(); if (!overlayOpen()) openExplicit(); });
   var lastTap = 0;   // double-tap on a touch screen
+  $("brand").addEventListener("dblclick", function (e) { e.preventDefault(); armExplicit(); });
   $("brand").addEventListener("pointerup", function (e) {
     if (e.pointerType !== "touch") return;
     var n = Date.now();
-    if (n - lastTap < 400) { lastTap = 0; if (!overlayOpen()) openExplicit(); } else lastTap = n;
+    if (n - lastTap < 400) { lastTap = 0; armExplicit(); } else lastTap = n;
   });
 
   // ---- check channels from THIS connection (via EYE3 Link, and through your own proxy/VPN if you set one) ----
@@ -1754,6 +2051,7 @@
   var RESUME_KEY = "eye3.home.resume", resume = {};
   try { resume = JSON.parse(get(RESUME_KEY) || "{}") || {}; } catch (e) { resume = {}; }
   function resumeSave() {
+    if (noTrace()) return;                             // kept in memory only while the World of Unknown is open
     var keys = Object.keys(resume);
     if (keys.length > 200) keys.sort(function (a, b) { return resume[a].t - resume[b].t; }).slice(0, keys.length - 200).forEach(function (k) { delete resume[k]; });
     set(RESUME_KEY, JSON.stringify(resume));
@@ -1876,7 +2174,8 @@
   }
   function vodPick(it) {
     var a = vodAcct(); if (!a) return;
-    if (vod.kind === "movie") { vodPlay({ id: it.id, e: it.e }, it.n + (it.y ? " (" + it.y + ")" : "")); return; }
+    if (vod.kind === "movie") { vod.meta = { type: "movie", name: it.n, year: it.y || "", adult: !!it.x }; vodPlay({ id: it.id, e: it.e }, it.n + (it.y ? " (" + it.y + ")" : "")); return; }
+    vod.seriesMeta = { type: "series", name: it.n, year: it.y || "", adult: !!it.x };
     vod.busy = "Loading episodes…"; vodRender();
     linkGet("/api/vod/series", vodCreds(a, { id: it.id })).then(function (d) {
       vod.busy = ""; vod.mode = "episodes"; vod.seasons = d.seasons || []; vod.seriesName = it.n;
@@ -1895,7 +2194,8 @@
         vodLabel(title + " — can't play this file here." + (/^(mkv|avi|ts|flv|wmv)$/.test(d.ext) ? " A ." + d.ext + " file often needs VLC: press Open in VLC." : " Is EYE3 Link still running?"), true);
       };
       resumeAttach(v, a.id + "|" + vod.kind + "|" + ep.id, title);
-      vod.cur = { url: d.url, title: title }; $("vod-vlc").hidden = false;
+      var m = vod.kind === "series" && vod.seriesMeta ? Object.assign({}, vod.seriesMeta, epNumbers(ep)) : vod.meta;
+      vod.cur = { url: d.url, title: title, meta: m }; $("vod-vlc").hidden = false; metaReset();
       clearTimeout(vod.nextTimer);
       if (vod.kind === "series" && vod.flat) {
         var endedBase = v.onended;
@@ -1916,6 +2216,7 @@
     })["catch"](function (err) { vodLabel(title + " — " + err.message, true); });
   }
   function openVod() {
+    if (isKids()) { toast("Not available in a kids profile"); return; }
     var cur = vodAccts();
     if (!vod.acct && cur.length) vod.acct = cur[0].id;
     openOverlay("ov-vod");
@@ -1923,6 +2224,83 @@
   }
   $("tv-vod").addEventListener("click", function () { closeOverlays(); openVod(); });
   $("vod-close").addEventListener("click", closeOverlays);
+  // ---- film info and subtitles (button "Info & subtitles", key I): Stremio's free Cinemeta and OpenSubtitles add-ons ----
+  // Asked only when the viewer presses the button; sends the title (and year) to strem.io. Never for adult titles.
+  var CINEMETA = "https://v3-cinemeta.strem.io", OPENSUBS = "https://opensubtitles-v3.strem.io";
+  var LANG3 = { en: "eng", es: "spa", fr: "fre", de: "ger", it: "ita", pt: "por", ar: "ara", hi: "hin", ml: "mal", ta: "tam", ru: "rus", tr: "tur", nl: "dut", pl: "pol" };
+  function epNumbers(ep) {
+    var out = { season: 0, episode: parseInt(ep.num, 10) || 0 };
+    (vod.seasons || []).forEach(function (se) { se.episodes.forEach(function (e) { if (e.id === ep.id) out.season = parseInt(se.season, 10) || 0; }); });
+    return out;
+  }
+  function cleanTitle(n) {
+    return String(n || "").replace(/^\s*[A-Z]{2,3}\s*[|:\-]\s*/, "").replace(/[\[(][^\])]*[\])]/g, " ")
+      .replace(/\b(4k|uhd|fhd|hd|sd|1080p|720p|2160p|hevc|x26[45]|multi|vostfr|dubbed|subbed)\b/gi, " ").replace(/\b(19|20)\d\d\b\s*$/, "").replace(/\s+/g, " ").trim();
+  }
+  function metaReset() { var box = $("vod-info"); box.hidden = true; while (box.firstChild) box.removeChild(box.firstChild); dropSubs(); $("vod-meta").hidden = !(vod.cur && vod.cur.meta && !vod.cur.meta.adult); }
+  function getJson(url) { return fetch(url).then(function (r) { if (!r.ok) throw new Error("answered " + r.status); return r.json(); }); }
+  function metaFind(m) {
+    var q = cleanTitle(m.name); if (!q) return Promise.reject(new Error("no title to look up"));
+    return getJson(CINEMETA + "/catalog/" + m.type + "/top/search=" + encodeURIComponent(q) + ".json").then(function (d) {
+      var list = (d && d.metas) || []; if (!list.length) throw new Error("not found");
+      var year = String(m.year || "").slice(0, 4);
+      var hit = list.filter(function (x) { return year && String(x.releaseInfo || x.year || "").indexOf(year) === 0; })[0] || list[0];
+      if (!/^tt\d+$/.test(hit.id || "")) throw new Error("not found");
+      return getJson(CINEMETA + "/meta/" + m.type + "/" + hit.id + ".json").then(function (r) { return (r && r.meta) || hit; }, function () { return hit; });
+    });
+  }
+  function dropSubs() { var v = $("vod-video"); [].slice.call(v.querySelectorAll("track[data-eye3]")).forEach(function (t) { if (t.src.indexOf("blob:") === 0) URL.revokeObjectURL(t.src); t.parentNode.removeChild(t); }); }
+  function srtToVtt(text) { return "WEBVTT\n\n" + String(text).replace(/\r/g, "").replace(/^\uFEFF/, "").replace(/(\d\d:\d\d:\d\d),(\d\d\d)/g, "$1.$2"); }
+  function subText(url) {
+    return fetch(url).then(function (r) { if (!r.ok) throw new Error("answered " + r.status); return r.text(); })["catch"](function () {
+      // some subtitle hosts refuse browsers: EYE3 Link on this computer can fetch it instead
+      return linkHello().then(function (h) { return fetch(LINK_BASE + "/stream?" + new URLSearchParams({ u: url, t: h.token })); }).then(function (r) { if (!r.ok) throw new Error("answered " + r.status); return r.text(); });
+    });
+  }
+  function loadSub(s, msg) {
+    msg.textContent = "Loading subtitles…";
+    subText(s.url).then(function (t) {
+      dropSubs();
+      var vtt = /^\s*WEBVTT/.test(t) ? t : srtToVtt(t);
+      var tr = document.createElement("track"); tr.kind = "subtitles"; tr.label = s.lang; tr.srclang = String(s.lang).slice(0, 2); tr.setAttribute("data-eye3", "1");
+      tr.src = URL.createObjectURL(new Blob([vtt], { type: "text/vtt" }));
+      var v = $("vod-video"); v.appendChild(tr);
+      setTimeout(function () { for (var i = 0; i < v.textTracks.length; i++) v.textTracks[i].mode = v.textTracks[i].label === s.lang ? "showing" : "disabled"; }, 50);
+      msg.textContent = "Subtitles on (" + s.lang + ").";
+    })["catch"](function (e) { msg.textContent = "Could not load these subtitles (" + e.message + "). Try another, or start EYE3 Link."; });
+  }
+  function openMeta() {
+    var m = vod.cur && vod.cur.meta, box = $("vod-info");
+    if (!m || m.adult) return;
+    if (!box.hidden) { box.hidden = true; return; }
+    while (box.firstChild) box.removeChild(box.firstChild);
+    var x = make("button", "vi-x", "×"); x.type = "button"; x.setAttribute("aria-label", "Close"); x.addEventListener("click", function () { box.hidden = true; }); box.appendChild(x);
+    var body = make("div", "vi-body"); body.appendChild(make("p", "vi-plot", "Looking up “" + cleanTitle(m.name) + "”…")); box.appendChild(body); box.hidden = false;
+    metaFind(m).then(function (meta) {
+      while (body.firstChild) body.removeChild(body.firstChild);
+      if (/^https:\/\//.test(meta.poster || "")) { var img = make("img"); img.alt = ""; img.src = meta.poster; img.onerror = function () { img.remove(); }; box.insertBefore(img, body); }
+      body.appendChild(nt(make("h3", "", meta.name || m.name)));
+      var bits = [meta.releaseInfo || meta.year, meta.imdbRating ? "★ " + meta.imdbRating : "", meta.runtime, (meta.genres || meta.genre || []).slice(0, 3).join(", ")].filter(Boolean);
+      if (bits.length) body.appendChild(make("div", "vi-meta", bits.join(" · ")));
+      if (meta.description) body.appendChild(make("p", "vi-plot", meta.description));
+      var row = make("div", "vi-row"), msg = make("span", "", "Finding subtitles…"); row.appendChild(msg); body.appendChild(row);
+      var subId = m.type === "series" ? meta.id + ":" + (m.season || 1) + ":" + (m.episode || 1) : meta.id;
+      getJson(OPENSUBS + "/subtitles/" + m.type + "/" + encodeURIComponent(subId) + ".json").then(function (d) {
+        var seen = {}, subs = ((d && d.subtitles) || []).filter(function (s) { if (!s || !/^https:\/\//.test(s.url || "") || seen[s.lang]) return false; seen[s.lang] = 1; return true; });
+        if (!subs.length) { msg.textContent = "No subtitles found."; return; }
+        var want = LANG3[String(navigator.language || "en").slice(0, 2)] || "eng";
+        subs.sort(function (a, b) { return (b.lang === want) - (a.lang === want) || (b.lang === "eng") - (a.lang === "eng") || String(a.lang).localeCompare(String(b.lang)); });
+        var sel = make("select", "btn"); sel.setAttribute("aria-label", "Subtitle language");
+        subs.forEach(function (s, i) { var o = make("option", "", s.lang); o.value = String(i); sel.appendChild(o); });
+        var go = make("button", "btn", "Show subtitles"); go.type = "button"; go.addEventListener("click", function () { loadSub(subs[+sel.value], msg); });
+        var off = make("button", "btn", "Off"); off.type = "button"; off.addEventListener("click", function () { dropSubs(); msg.textContent = "Subtitles off."; });
+        msg.textContent = subs.length + (subs.length === 1 ? " language" : " languages") + ":";
+        row.appendChild(sel); row.appendChild(go); row.appendChild(off);
+      })["catch"](function () { msg.textContent = "Subtitles are not available right now."; });
+    })["catch"](function (e) { while (body.firstChild) body.removeChild(body.firstChild); body.appendChild(make("p", "vi-plot", "No information found for “" + cleanTitle(m.name) + "” (" + e.message + ").")); });
+  }
+  $("vod-meta").addEventListener("click", openMeta);
+
   $("vod-vlc").addEventListener("click", function () { if (vod.cur) downloadM3u(vod.cur.title, vod.cur.url); });
   $("vod-accts").addEventListener("click", function () { closeOverlays(); openAccounts(); });
   $("vod-acct").addEventListener("change", function () { vod.acct = this.value; vod.cat = "All"; vod.q = ""; $("vod-search").value = ""; this.blur(); vodLoad(); });
@@ -1942,9 +2320,26 @@
   var FREE_GENRES = [["", "All free movies"], ["comedy", "Comedy"], ["drama", "Drama"], ["sci-fi", "Sci-fi"], ["horror", "Horror"], ["western", "Western"], ["film noir", "Film noir"], ["animation", "Animation"], ["documentary", "Documentary"], ["silent", "Silent films"], ["crime", "Crime"], ["romance", "Romance"], ["war", "War"]];
   var free = { q: "", genre: "", page: 1, items: [], total: 0, busy: "", note: "", timer: null, token: 0 };
   var FREE_ROWS = 60;
+  // World of Unknown channels: themed, public-domain Internet Archive collections, listed only while the layer is open.
+  // Each one needs a matching subject (no blind fallback) and drops adult, news, vlog and podcast items.
+  var FREE_DENY = ["adult", "erotic", "xxx", "porn", "pornographic", "sexploitation", "nudist", "nudity", "hardcore", "explicit", "news", "vlog", "youtube", "podcast", "commercial", "advertising"];
+  var UNKNOWN_CHANNELS = [
+    { id: "shock", name: "Shock Theater", desc: "Classic horror: monsters, vampires, haunted houses.", coll: ["feature_films"], subj: ["horror", "monster", "monsters", "vampire", "vampires", "zombie", "zombies", "ghost", "ghosts", "haunted", "werewolf", "mummy"] },
+    { id: "scifi", name: "Sci-Fi Theater", desc: "Flying saucers, invaders and lost worlds.", coll: ["feature_films"], subj: ["science fiction", "sci-fi", "scifi", "aliens", "alien", "outer space", "flying saucers", "space travel", "robots"] },
+    { id: "noir", name: "Noir Nights", desc: "Film noir, mysteries and detectives.", coll: ["feature_films"], subj: ["film noir", "noir", "mystery", "detective", "suspense", "thriller"] },
+    { id: "unexplained", name: "The Unexplained", desc: "UFOs, the paranormal and strange phenomena on film.", coll: ["prelinger", "FedFlix", "opensource_movies", "feature_films"], subj: ["ufo", "ufos", "unidentified flying objects", "flying saucers", "paranormal", "supernatural", "unexplained", "occult", "psychic", "extraterrestrial", "bigfoot", "sea monster"], deny: ["training film", "music video", "gameplay"] },
+    { id: "otr", name: "OTR Theater", desc: "Old-time radio drama: Suspense, Inner Sanctum, X Minus One, The Shadow.", coll: ["oldtimeradio"], audio: true, subj: ["suspense", "inner sanctum", "x minus one", "dimension x", "the shadow", "lights out", "escape", "horror", "science fiction", "mystery", "radio drama", "old time radio"], deny: ["modern podcast", "npr"] }
+  ];
+  function unknownChannel(g) { if (!explicitUnlocked || String(g || "").indexOf("u:") !== 0) return null; var id = g.slice(2); return UNKNOWN_CHANNELS.filter(function (c) { return c.id === id; })[0] || null; }
+  function iaList(a) { return a.map(function (t) { return /\s/.test(t) ? "\"" + t + "\"" : t; }).join(" OR "); }
   function freeQuery() {
-    var q = "collection:(feature_films) AND mediatype:(movies) AND -subject:(adult OR erotic OR xxx OR porn)";
-    if (free.genre) q += " AND subject:(\"" + free.genre + "\")";
+    var uc = unknownChannel(free.genre), q;
+    if (uc) {
+      q = "collection:(" + uc.coll.join(" OR ") + ") AND mediatype:(" + (uc.audio ? "audio" : "movies") + ") AND subject:(" + iaList(uc.subj) + ") AND -subject:(" + iaList(FREE_DENY.concat(uc.deny || [])) + ")";
+    } else {
+      q = "collection:(feature_films) AND mediatype:(movies) AND -subject:(adult OR erotic OR xxx OR porn)";
+      if (free.genre) q += " AND subject:(\"" + free.genre + "\")";
+    }
     var t = free.q.replace(/[^\w\s'-]/g, " ").replace(/\s+/g, " ").trim();
     if (t) q += " AND title:(" + t + ")";
     return q;
@@ -1956,17 +2351,17 @@
     free.busy = "Loading free movies from the Internet Archive…"; free.note = ""; vodRender();
     var url = "https://archive.org/advancedsearch.php?" + new URLSearchParams({ q: freeQuery(), rows: String(FREE_ROWS), page: String(free.page), output: "json" }).toString() +
       "&fl[]=identifier&fl[]=title&fl[]=year&sort[]=downloads+desc";
-    return fetch(url).then(function (r) { if (!r.ok) throw new Error("The Internet Archive answered " + r.status + "."); return r.json(); }).then(function (d) {
+    return netFetch(url).then(function (r) { if (!r.ok) throw new Error("The Internet Archive answered " + r.status + "."); return r.json(); }).then(function (d) {
       if (my !== free.token) return;
       var rs = d && d.response || {}, docs = rs.docs || [];
       docs.forEach(function (x) {
         var title = freeText(x.title), id = freeText(x.identifier);
-        if (!id || !title || ADULT_RX.test(title)) return;          // adult titles are never listed from this source
+        if (!id || !title || ADULT_RX.test(title) || /\b(trailer|podcast|vlog|nudist)\b/i.test(title)) return;   // adult titles are never listed from this source
         free.items.push({ id: id, n: title, y: /^\d{4}/.test(freeText(x.year)) ? freeText(x.year).slice(0, 4) : "" });
       });
       free.total = rs.numFound || free.items.length; free.busy = "";
       if (docs.length < FREE_ROWS) free.total = free.items.length;   // last page (titles we hide are not counted)
-      if (!free.items.length) free.note = "No free movies match. Try another genre or search.";
+      if (!free.items.length) free.note = unknownChannel(free.genre) ? "Nothing on this channel right now. Try another channel." : "No free movies match. Try another genre or search.";
       vodRender();
     })["catch"](function (err) {
       if (my !== free.token) return;
@@ -1974,7 +2369,11 @@
     });
   }
   // pick a file a browser can play: the Archive's standard h.264 copy first, then any mp4/webm/ogv, avoiding trailers and huge files
-  function freePick(files) {
+  function freePick(files, audio) {
+    if (audio) {   // an old-time radio item holds many episodes: tune in to one of them at random
+      var eps = (files || []).filter(function (f) { return /\.(mp3|ogg)$/i.test(f.name || "") && !/(_64kb|sample)/i.test(f.name); });
+      return eps.length ? eps[Math.floor(Math.random() * eps.length)] : null;
+    }
     var ok = (files || []).filter(function (f) { return /\.(mp4|m4v|webm|ogv)$/i.test(f.name || "") && !/(trailer|sample|thumb)/i.test(f.name); });
     var rank = function (f) { return /^(h\.264|mpeg4)/i.test(f.format || "") ? 0 : /\.mp4$/i.test(f.name) ? 1 : 2; };
     var size = function (f) { return parseInt(f.size, 10) || 0; };
@@ -1982,28 +2381,47 @@
     return ok[0] || null;
   }
   function freePlay(it) {
-    var title = it.n + (it.y ? " (" + it.y + ")" : "");
-    $("vod-idle").style.display = "none"; vodLabel(title + " — finding the video…", false);
-    fetch("https://archive.org/metadata/" + encodeURIComponent(it.id)).then(function (r) { if (!r.ok) throw new Error("answered " + r.status); return r.json(); }).then(function (d) {
-      var f = freePick(d && d.files);
-      if (!f) throw new Error("has no video file a browser can play");
+    var uc = unknownChannel(free.genre), title = (uc ? "◈ " + uc.name + " · " : "") + it.n + (it.y ? " (" + it.y + ")" : "");
+    $("vod-idle").style.display = "none"; vodLabel(title + " — " + (uc && uc.audio ? "tuning in…" : "finding the video…"), false);
+    netFetch("https://archive.org/metadata/" + encodeURIComponent(it.id)).then(function (r) { if (!r.ok) throw new Error("answered " + r.status); return r.json(); }).then(function (d) {
+      var f = freePick(d && d.files, uc && uc.audio);
+      if (!f) throw new Error(uc && uc.audio ? "has no episode a browser can play" : "has no video file a browser can play");
+      if (uc && uc.audio) title += " — " + f.name.replace(/^.*\//, "").replace(/\.\w+$/, "").replace(/_/g, " ");
       var v = $("vod-video");
       v.onerror = function () { vodLabel(title + " — can't play this file here. Try another movie.", true); };
-      resumeAttach(v, "free|" + it.id, title);
-      v.src = "https://archive.org/download/" + encodeURIComponent(it.id) + "/" + f.name.split("/").map(encodeURIComponent).join("/");
-      vod.cur = { url: v.src, title: title }; $("vod-vlc").hidden = false;
+      resumeAttach(v, "free|" + it.id + (uc && uc.audio ? "|" + f.name : ""), title);
+      if (uc) { var endBase = v.onended; v.onended = function () { if (endBase) endBase(); freeNext(it); }; }   // a channel keeps playing
+      var direct = "https://archive.org/download/" + encodeURIComponent(it.id) + "/" + f.name.split("/").map(encodeURIComponent).join("/");
+      return playable(direct).then(function (real) {
+      v.src = real;
+      vod.cur = { url: direct, title: title, meta: { type: "movie", name: it.n, year: it.y || "" } }; $("vod-vlc").hidden = false; metaReset();
       var p = v.play(); if (p && p["catch"]) p["catch"](function () {});
+      });
     })["catch"](function (err) { vodLabel(title + " — " + (err && err.message || "could not load") + ".", true); });
   }
+  function freeNext(it) {
+    var uc = unknownChannel(free.genre); if (!uc || !$("ov-vod").classList.contains("open") || vod.kind !== "free" || !free.items.length) return;
+    var i = free.items.indexOf(it), nx = free.items[(i + 1) % free.items.length];
+    if (nx) freePlay(nx);
+  }
+  function freeTuneIn() { if (free.items.length) freePlay(free.items[Math.floor(Math.random() * free.items.length)]); }
   function freeFill() {
     var sel = $("vod-cat");
     while (sel.firstChild) sel.removeChild(sel.firstChild);
+    if (free.genre.indexOf("u:") === 0 && !explicitUnlocked) free.genre = "";
+    if (explicitUnlocked) {
+      var og = document.createElement("optgroup"); og.label = "◈ World of Unknown";
+      UNKNOWN_CHANNELS.forEach(function (c) { var o = make("option", "", "◈ " + c.name + (c.audio ? " (radio)" : "")); o.value = "u:" + c.id; og.appendChild(o); });
+      sel.appendChild(og);
+    }
     FREE_GENRES.forEach(function (g) { var o = make("option", "", g[1]); o.value = g[0]; sel.appendChild(o); });
     sel.value = free.genre;
   }
   function freeRender() {
     var list = $("vod-list"); while (list.firstChild) list.removeChild(list.firstChild);
-    var note = function (t, fn) { var r = make("div", "ch action", t); if (fn) { r.tabIndex = 0; r.addEventListener("click", fn); } list.appendChild(r); return r; };
+    var note = function (t, fn) { var r = make("div", "ch action", t); if (fn) { r.tabIndex = 0; r.addEventListener("click", fn); r.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); fn(); } }); } list.appendChild(r); return r; };
+    var uc = unknownChannel(free.genre);
+    if (uc) { note("⚙ World of Unknown settings (Shift+X)", function () { closeOverlays(); openMidnight(); }).id = "u-settings"; note("◈ " + uc.name + " — " + uc.desc); if (free.items.length) note("▶ Tune in (plays on, title after title)", freeTuneIn).id = "u-tune"; }
     free.items.forEach(function (it) {
       var row = make("div", "ch"); row.tabIndex = 0;
       row.appendChild(nt(make("span", "", it.n)));
@@ -2016,8 +2434,8 @@
     if (free.busy) note(free.busy);
     else if (free.note) note(free.note, function () { freeFetch(true); });
     else if (free.items.length < free.total) note("Load more (" + free.items.length + " of " + free.total + ")", function () { free.page++; freeFetch(false); });
-    note("Public-domain films from the Internet Archive (archive.org). Free, no account.");
-    $("vod-count").textContent = free.total + " free movie" + (free.total === 1 ? "" : "s");
+    note(uc && uc.audio ? "Public-domain old-time radio from the Internet Archive (archive.org). Free, no account." : "Public-domain films from the Internet Archive (archive.org). Free, no account.");
+    $("vod-count").textContent = uc ? free.total + " on " + uc.name : free.total + " free movie" + (free.total === 1 ? "" : "s");
   }
   function freeOpen() {
     vod.kind = "free"; vod.mode = "titles";
@@ -2514,6 +2932,12 @@
     inst.type = "button"; inst.addEventListener("click", function () { if (!window.__installApp || !window.__installApp()) window.alert(tr("To install: in your browser menu choose \"Install app\" or \"Add to Home screen\". On iPhone Safari: Share then Add to Home Screen.")); });
     var setup = make("button", "btn", "Turn a spare device into an EYE3 box");
     setup.type = "button"; setup.addEventListener("click", function () { location.href = "setup.html"; });
+    var es = make("button", "btn", ""); es.type = "button"; es.id = "set-epgshift";
+    var paintEs = function () { var h = epgShift(); es.textContent = "Guide time shift: " + (h > 0 ? "+" : "") + h + " h"; };
+    paintEs();
+    es.addEventListener("click", function () { var steps = [0, 1, 2, 3, 4, 5, 6, -6, -5, -4, -3, -2, -1], at = steps.indexOf(epgShift()), h = steps[(at + 1) % steps.length]; set(EPG_SHIFT_KEY, String(h)); epgCache = {}; paintEs(); toast("TV guide moved by " + (h > 0 ? "+" : "") + h + " hours"); });
+    var gd = make("button", "btn", "EYE3 Guide: free places to watch, listen and download");
+    gd.type = "button"; gd.id = "set-guide"; gd.addEventListener("click", function () { location.href = "guide.html"; });
     var sv = make("button", "btn", "");
     sv.type = "button";
     var paintSv = function () { var m = saverMinutes(); sv.textContent = "Screensaver: " + (m ? "after " + m + " min" : "off"); };
@@ -2530,6 +2954,14 @@
     ac.type = "button"; ac.addEventListener("click", function () { closeOverlays(); openAccounts(); });
     var ag = make("button", "btn", "EYE3 agent (updates, fixes, playlists folder)");
     ag.type = "button"; ag.addEventListener("click", openAgent);
+    var pr = make("button", "btn", "Profiles & parent PIN");
+    pr.type = "button"; pr.addEventListener("click", openProfiles);
+    var rc2 = make("button", "btn", "Recordings");
+    rc2.type = "button"; rc2.addEventListener("click", openRecordings);
+    var tl = make("button", "btn", "Smart TV tools");
+    tl.type = "button"; tl.addEventListener("click", openTools);
+    var wg = make("button", "btn", "Setup guide");
+    wg.type = "button"; wg.addEventListener("click", openWelcome);
     var ts = make("button", "btn", "Connect your TV (addresses)");
     ts.type = "button"; ts.addEventListener("click", openTvSetup);
     var gl = make("button", "btn", get(XMLTV_KEY) ? "TV guide link: set" : "TV guide link (XMLTV)…");
@@ -2543,7 +2975,7 @@
     hp.type = "button"; hp.addEventListener("click", openHelp);
     var sy = make("button", "btn", syncCode ? "Sync phone and laptop: on" : "Sync phone and laptop");
     sy.type = "button"; sy.addEventListener("click", function () { openSyncInfo(); });
-    var kv = make("div", "kv"); kv.appendChild(fs); kv.appendChild(ac); kv.appendChild(ag); kv.appendChild(ts); kv.appendChild(hp); kv.appendChild(gl); kv.appendChild(rc); kv.appendChild(sy); kv.appendChild(sl); kv.appendChild(sv); kv.appendChild(pl); kv.appendChild(inst); kv.appendChild(setup); kv.appendChild(ph);
+    var kv = make("div", "kv"); kv.appendChild(fs); kv.appendChild(ac); kv.appendChild(ag); kv.appendChild(pr); kv.appendChild(rc2); kv.appendChild(tl); kv.appendChild(wg); kv.appendChild(ts); kv.appendChild(hp); kv.appendChild(es); kv.appendChild(gd); kv.appendChild(gl); kv.appendChild(rc); kv.appendChild(sy); kv.appendChild(sl); kv.appendChild(sv); kv.appendChild(pl); kv.appendChild(inst); kv.appendChild(setup); kv.appendChild(ph);
     rowsHtml(body, [
       para("EYE3 Home runs in this browser and shows on the TV over HDMI. For the best look, press F or use the button below to go fullscreen."),
       kv,
@@ -2569,8 +3001,8 @@
   function openShortcuts() {
     $("info-title").textContent = "Keyboard shortcuts";
     var rows = [["Everywhere", null], ["Ctrl / ⌘ + K", "Quick search: any channel or action"], ["?", "This list"], ["F", "Fullscreen"], ["S", "Screensaver"], ["Z", "Sleep timer"], ["Esc / Backspace", "Back"], ["Shift + X", "Hidden section"],
-      ["Live TV", null], ["↑ ↓", "Channel"], ["← →", "Category"], ["0–9", "Channel number"], ["Enter", "Play"], ["P", "Previous channel"], ["L", "Favourite"], ["/", "Search"], ["G", "TV guide of this channel"],
-      ["X", "Picture shape"], ["A", "Audio track"], ["T", "Subtitles"], ["V", "Save the stream for VLC"], ["Movies & series", null], ["↑ ↓ Enter", "Choose and play"], ["←", "Back to the series list"]];
+      ["Live TV", null], ["↑ ↓", "Channel"], ["← →", "Category"], ["0–9", "Channel number"], ["Enter", "Play"], ["P", "Previous channel"], ["L", "Favourite"], ["/", "Search"], ["G", "TV guide of this channel"], ["U", "Catch-up: replay a past programme"],
+      ["X", "Picture shape"], ["A", "Audio track"], ["T", "Subtitles"], ["V", "Save the stream for VLC"], ["D", "Guide grid"], ["M", "Add to multi-view"], ["C", "Cast"], ["O", "Mini window"], ["R", "Record the channel that is playing"], ["Movies & series", null], ["↑ ↓ Enter", "Choose and play"], ["I", "Info & subtitles of the title that plays"], ["←", "Back to the series list"]];
     var wrap = make("div", "keys");
     rows.forEach(function (r) { if (r[1] === null) wrap.appendChild(make("h3", "", r[0])); else { wrap.appendChild(make("kbd", "", r[0])); wrap.appendChild(make("span", "", r[1])); } });
     rowsHtml($("info-body"), [wrap]); openOverlay("ov-info");
@@ -2582,7 +3014,7 @@
     return [["Open Live TV", function () { openTile("tv"); }], ["Open Radio", function () { openTile("radio"); }], ["Open My media", function () { openTile("media"); }],
       ["Movies & series", function () { closeOverlays(); openVod(); }], ["Free movies", function () { closeOverlays(); openVod(); freeOpen(); }],
       ["Playlist maker", function () { closeOverlays(); openMaker(); }], ["IPTV accounts", function () { closeOverlays(); openAccounts(); }],
-      ["Settings", function () { openTile("settings"); }], ["Copy support report", function () { closeOverlays(); openReport(); }], ["Sync phone and laptop", function () { closeOverlays(); openSyncInfo(); }],
+      ["Settings", function () { openTile("settings"); }], ["Profiles and parent PIN", function () { closeOverlays(); openProfiles(); }], ["Smart TV tools", function () { closeOverlays(); openTools(); }], ["Guide grid", function () { openTile("tv"); setTimeout(openGrid, 600); }], ["Recordings", function () { closeOverlays(); openRecordings(); }], ["Multi-view", function () { closeOverlays(); mvOpen(); }], ["Copy support report", function () { closeOverlays(); openReport(); }], ["Sync phone and laptop", function () { closeOverlays(); openSyncInfo(); }],
       ["Phone remote", function () { closeOverlays(); openRemoteInfo(); }], ["Keyboard shortcuts", function () { closeOverlays(); openShortcuts(); }], ["Go fullscreen", toggleFullscreen]];
   }
   function goChannel(c) {
@@ -2673,10 +3105,842 @@
     importItems(items, box);
   });
 
+  // ---- Pro pack: first-run welcome, profiles with a parent PIN, guide grid, multi-view, cast / mini window, TV tools ----
+  function saveProfiles() { set(PROF_KEY, JSON.stringify(profiles)); }
+  function paintProfChip() {
+    var c = $("profchip"), p = activeProfile();
+    c.hidden = profiles.length < 2; if (!c.hidden) { c.textContent = (p.kids ? "🧒 " : "👤 ") + p.name; c.setAttribute("translate", "no"); }
+  }
+  // PIN entry
+  var pinCb = null;
+  function askPin(title, msg, cb) {
+    pinCb = cb; $("pin-title").textContent = title; $("pin-msg").textContent = msg || ""; $("pin-input").value = "";
+    openOverlay("ov-pin"); setTimeout(function () { try { $("pin-input").focus(); } catch (e) {} }, 60);
+  }
+  $("pin-form").addEventListener("submit", function (e) {
+    e.preventDefault(); var v = $("pin-input").value, cb = pinCb;
+    if (!/^\d{4,8}$/.test(v)) { $("pin-msg").textContent = "A PIN is 4 to 8 digits."; return; }
+    $("ov-pin").classList.remove("open"); pinCb = null; if (cb) cb(v);
+  });
+  $("pin-cancel").addEventListener("click", function () { $("ov-pin").classList.remove("open"); pinCb = null; });
+  var ppFails = 0, ppBlocked = 0;
+  function parentPin() { try { return JSON.parse(get(PPIN_KEY) || "null"); } catch (e) { return null; } }
+  function needParentPin(why, ok) {   // runs ok() at once when no parent PIN is set, otherwise after the right PIN
+    var info = parentPin(); if (!info) { ok(); return; }
+    if (Date.now() < ppBlocked) { toast("Too many wrong tries. Wait half a minute."); return; }
+    askPin("Parent PIN", why, function (v) {
+      sha(info.s + ":" + v).then(function (h) {
+        if (h === info.h) { ppFails = 0; ok(); }
+        else { ppFails++; if (ppFails >= 5) { ppBlocked = Date.now() + 30000; ppFails = 0; } toast("Wrong PIN"); }
+      });
+    });
+  }
+  function chooseParentPin(done) {
+    askPin("Choose a parent PIN", "4 to 8 digits. It is needed to leave a kids profile and to change profiles. It stays on this device.", function (v) {
+      var b = new Uint8Array(8); crypto.getRandomValues(b);
+      var salt = [].map.call(b, function (x) { return ("0" + x.toString(16)).slice(-2); }).join("");
+      sha(salt + ":" + v).then(function (h) { set(PPIN_KEY, JSON.stringify({ s: salt, h: h })); toast("Parent PIN saved"); if (done) done(); });
+    });
+  }
+  function switchProfile(id) {
+    var target = profiles.filter(function (p) { return p.id === id; })[0]; if (!target) return;
+    var go = function () {
+      set(PROF_ACTIVE, id); explicitUnlocked = false; applyLayer(); closeOverlays(); tvFilter.cat = "All"; tvFilter.group = ""; tvFilter.q = "";
+      refreshLists(); paintProfChip(); toast("Profile: " + target.name);
+    };
+    if (activeProfile().kids && !target.kids) needParentPin("Enter the parent PIN to leave this kids profile.", go); else go();
+  }
+  function openProfiles() {
+    $("info-title").textContent = "Profiles";
+    var nodes = [para("Each profile can hide categories. A kids profile also hides every adult channel, blocks the Explicit section and Movies & series, and needs the parent PIN to leave.")], first = null;
+    profiles.forEach(function (p) {
+      var row = make("div", "acct-row"), who = make("div", "who");
+      who.appendChild(nt(make("b", "", p.name)));
+      who.appendChild(make("small", "", (p.kids ? "Kids · " : "") + (p.hide.length ? p.hide.length + " categories hidden" : "everything allowed") + (p.id === activeProfile().id ? " · in use" : "")));
+      row.appendChild(who);
+      if (p.id !== activeProfile().id) { var use = make("button", "btn", "Use"); use.type = "button"; use.addEventListener("click", function () { switchProfile(p.id); }); row.appendChild(use); if (!first) first = use; }
+      var ed = make("button", "btn", "Edit"); ed.type = "button"; ed.addEventListener("click", function () { needParentPin("Enter the parent PIN to change profiles.", function () { editProfile(p); }); });
+      row.appendChild(ed); if (!first) first = ed;
+      nodes.push(row);
+    });
+    var kv = make("div", "kv");
+    var add = make("button", "btn", "Add a profile"); add.type = "button";
+    add.addEventListener("click", function () { needParentPin("Enter the parent PIN to add a profile.", function () { editProfile(null); }); });
+    var pin = make("button", "btn", parentPin() ? "Change the parent PIN" : "Set a parent PIN"); pin.type = "button";
+    pin.addEventListener("click", function () { needParentPin("Enter the current parent PIN.", function () { chooseParentPin(openProfiles); }); });
+    kv.appendChild(add); kv.appendChild(pin);
+    if (parentPin()) { var rm = make("button", "btn", "Remove the parent PIN"); rm.type = "button"; rm.addEventListener("click", function () { if (profiles.some(function (p) { return p.kids; })) { toast("Delete the kids profiles first"); return; } needParentPin("Enter the parent PIN to remove it.", function () { set(PPIN_KEY, null); toast("Parent PIN removed"); openProfiles(); }); }); kv.appendChild(rm); }
+    nodes.push(kv);
+    rowsHtml($("info-body"), nodes); openOverlay("ov-info");
+    setTimeout(function () { try { (first || add).focus(); } catch (e) {} }, 60);
+  }
+  function editProfile(p) {
+    if (!rawAll.length) buildAll();
+    var isNew = !p, d = p ? { id: p.id, name: p.name, kids: p.kids, hide: p.hide.slice() } : { id: "p" + Date.now().toString(36), name: "", kids: false, hide: [] };
+    $("info-title").textContent = isNew ? "New profile" : "Edit profile";
+    var name = make("input", "field"); name.type = "text"; name.maxLength = 24; name.value = d.name; name.placeholder = "Name, for example Kids"; name.setAttribute("aria-label", "Profile name");
+    var kidsRow = make("label", "opt"), kids = make("input"); kids.type = "checkbox"; kids.checked = d.kids; kidsRow.appendChild(kids); kidsRow.appendChild(make("span", "", "Kids profile (no adult channels, no Explicit, no Movies & series, parent PIN to leave)"));
+    var cats = {}; rawAll.forEach(function (c) { if (!c.adult && c.cat) cats[c.cat] = (cats[c.cat] || 0) + 1; });
+    var names = Object.keys(cats).sort().slice(0, 120), boxes = [];
+    var list = make("div", "keys");
+    names.forEach(function (k) {
+      var l = make("label", "opt"), b = make("input"); b.type = "checkbox"; b.checked = d.hide.indexOf(k) > -1; b.value = k; boxes.push(b);
+      l.appendChild(b); l.appendChild(nt(make("span", "", k + " (" + cats[k] + ")"))); list.appendChild(l);
+    });
+    var msg = make("p", "acct-note", "");
+    var kv = make("div", "kv"), save = make("button", "btn", "Save"); save.type = "button";
+    var back = make("button", "btn", "Back"); back.type = "button"; back.addEventListener("click", openProfiles);
+    save.addEventListener("click", function () {
+      var nm = name.value.replace(/^\s+|\s+$/g, "");
+      if (!nm) { msg.textContent = "Give the profile a name."; msg.className = "acct-note bad"; return; }
+      if (profiles.some(function (x) { return x.id !== d.id && x.name.toLowerCase() === nm.toLowerCase(); })) { msg.textContent = "Another profile has that name."; msg.className = "acct-note bad"; return; }
+      d.name = nm; d.kids = kids.checked; d.hide = boxes.filter(function (b) { return b.checked; }).map(function (b) { return b.value; });
+      var commit = function () {
+        if (isNew) profiles.push(d); else for (var i = 0; i < profiles.length; i++) if (profiles[i].id === d.id) profiles[i] = d;
+        saveProfiles(); paintProfChip(); if (activeProfile().id === d.id) refreshLists(); toast("Profile saved"); openProfiles();
+      };
+      if (d.kids && !parentPin()) chooseParentPin(commit); else commit();
+    });
+    kv.appendChild(save); kv.appendChild(back);
+    if (!isNew && profiles.length > 1) {
+      var del = make("button", "btn", "Delete this profile"); del.type = "button";
+      del.addEventListener("click", function () {
+        if (activeProfile().id === d.id) { msg.textContent = "Switch to another profile first."; msg.className = "acct-note bad"; return; }
+        profiles = profiles.filter(function (x) { return x.id !== d.id; }); saveProfiles(); paintProfChip(); toast("Profile deleted"); openProfiles();
+      });
+      kv.appendChild(del);
+    }
+    rowsHtml($("info-body"), [name, kidsRow, kv, msg, make("h3", "", "Hide these categories"), list]); openOverlay("ov-info");
+    setTimeout(function () { try { name.focus(); } catch (e) {} }, 60);
+  }
+  $("profchip").addEventListener("click", openProfiles);
+  $("profchip").addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openProfiles(); } });
+  paintProfChip();
+
+  // ---- first-run welcome (once; never for someone who already has accounts, lists or favourites) ----
+  function openWelcome() {
+    set(SETUP_KEY, "1");
+    $("info-title").textContent = "Welcome to EYE3";
+    var go = function (label, hint, fn) {
+      var b = make("button", "btn big"); b.type = "button"; b.appendChild(make("b", "", label)); b.appendChild(make("br")); b.appendChild(make("small", "", hint));
+      b.addEventListener("click", fn); return b;
+    };
+    var acts = make("div", "big-actions"), first = go("▶ Watch free channels now", "Thousands of free, checked channels. Nothing to set up.", function () { closeOverlays(); openTile("tv"); });
+    acts.appendChild(first);
+    acts.appendChild(go("➕ Add my IPTV account", "M3U link, Xtream Codes login or MAG portal. Saved on this device only.", function () { closeOverlays(); openAccounts(); }));
+    acts.appendChild(go("📄 Import my own playlist", "An .m3u file, a pasted list or a PDF. Nothing is uploaded.", function () { closeOverlays(); openMaker(); }));
+    acts.appendChild(go("🖥 I am setting up a TV or a box", "Android projector, PC or mini-PC behind the TV, one-time install.", function () { location.href = "setup.html"; }));
+    rowsHtml($("info-body"), [para("Your lists, accounts and settings stay on this device. You can open this guide again from Settings."), acts]);
+    openOverlay("ov-info"); setTimeout(function () { try { first.focus(); } catch (e) {} }, 80);
+  }
+  function maybeWelcome() {
+    if (get(SETUP_KEY) === "1" || overlayOpen()) return;
+    if (accounts.length || get(PLAYLIST_KEY) || get("eye3.home.mychannels") || favs.length || get(LINKUSED_KEY) === "1" || libMeta.length) { set(SETUP_KEY, "1"); return; }
+    openWelcome();
+  }
+  setTimeout(maybeWelcome, /[?&]splash=0/.test(location.search) ? 900 : 4200);
+
+  // ---- cast and mini window ----
+  function hasPicture() { var v = $("video"); return !!(v.currentSrc || v.src); }
+  function castNow() {
+    var v = $("video");
+    if (!hasPicture()) { toast("Play a channel first, then cast"); return; }
+    if (v.remote && v.remote.prompt) {
+      v.remote.prompt()["catch"](function (e) {
+        toast(e && e.name === "NotSupportedError" ? "This stream cannot be cast from the page. In Chrome use the menu, then Cast, then Cast tab." : e && e.name === "NotFoundError" ? "No cast device found on this network." : "Cast was cancelled.");
+      });
+    } else if (v.webkitShowPlaybackTargetPicker) v.webkitShowPlaybackTargetPicker();
+    else toast("This browser has no cast button. In Chrome use the menu, then Cast.");
+  }
+  function miniWindow() {
+    var v = $("video");
+    if (document.pictureInPictureElement) { document.exitPictureInPicture(); return; }
+    if (!document.pictureInPictureEnabled) { toast("This browser has no mini window."); return; }
+    if (!hasPicture()) { toast("Play a channel first"); return; }
+    v.requestPictureInPicture()["catch"](function () { toast("Could not open the mini window."); });
+  }
+  $("tv-cast").addEventListener("click", castNow);
+  $("tv-replay").addEventListener("click", openCatchup);
+  $("tv-pip").addEventListener("click", miniWindow);
+
+  // ---- guide grid ----
+  var GRID_ROWS = 40, GRID_HOURS = 3;
+  function closeGrid() { $("ov-grid").classList.remove("open"); }
+  function showProg(c, it) {
+    var d = $("grid-detail"); while (d.firstChild) d.removeChild(d.firstChild);
+    d.appendChild(nt(make("b", "", it.t))); d.appendChild(make("span", "", clock(it.s) + "–" + clock(it.e) + " · "));
+    d.appendChild(nt(make("span", "", c.name)));
+    if (it.d) d.appendChild(nt(make("span", "", it.d.slice(0, 200))));
+  }
+  function paintLane(r, items, t0, span, failed) {
+    var lane = r.lane;
+    if (!items || !items.length) { lane.appendChild(make("span", "gr-none", items === null ? "No guide for this channel" : failed ? "Guide unavailable" : "Nothing listed")); return; }
+    var now = Date.now() / 1000;
+    items.forEach(function (it) {
+      var s = Math.max(it.s, t0), e = Math.min(it.e, t0 + span); if (e <= s) return;
+      var b = make("button", "gr-prog" + (it.s <= now && now < it.e ? " on" : ""), it.t); b.type = "button"; nt(b);
+      b.style.left = ((s - t0) / span * 100) + "%"; b.style.width = Math.max((e - s) / span * 100 - .2, .8) + "%";
+      b.title = clock(it.s) + "–" + clock(it.e) + " " + it.t;
+      b.addEventListener("click", function () { showProg(r.c, it); });
+      b.addEventListener("focus", function () { showProg(r.c, it); });
+      lane.appendChild(b);
+    });
+  }
+  function openGrid() {
+    var list = channels.slice(0, GRID_ROWS);
+    if (!list.length) { toast("Pick a category with channels first"); return; }
+    var now = Date.now() / 1000, t0 = Math.floor((now - 1800) / 1800) * 1800, span = GRID_HOURS * 3600, nowPct = (now - t0) / span * 100;
+    var wrap = $("grid-wrap"); while (wrap.firstChild) wrap.removeChild(wrap.firstChild);
+    $("grid-sub").textContent = list.length < tvTotal ? "first " + list.length + " of " + tvTotal + " channels" : list.length + " channels";
+    $("grid-detail").textContent = "Arrows move, Enter plays a channel, Back returns.";
+    var head = make("div", "gr-head"), scale = make("div", "gr-scale");
+    head.appendChild(make("div", "gr-name", "")); head.appendChild(scale);
+    for (var k = 0; k < GRID_HOURS * 2; k++) { var tick = make("span", "", clock(t0 + k * 1800)); tick.style.left = (k * 1800 / span * 100) + "%"; scale.appendChild(tick); }
+    wrap.appendChild(head);
+    var rows = [];
+    list.forEach(function (c) {
+      var row = make("div", "gr-row"), name = make("button", "gr-name", c.name), lane = make("div", "gr-lane"), line = make("div", "gr-now");
+      name.type = "button"; nt(name); line.style.left = nowPct + "%"; lane.appendChild(line);
+      name.addEventListener("click", function () { var at = channels.indexOf(c); closeGrid(); if (at > -1) { chIndex = at; paintChannels(); scrollCh(); playChannel(at); } });
+      row.appendChild(name); row.appendChild(lane); wrap.appendChild(row); rows.push({ c: c, lane: lane });
+    });
+    var next = 0, running = 0;
+    var pump = function () {
+      while (running < 4 && next < rows.length) {
+        (function (r) {
+          running++;
+          epgItems(r.c, 10).then(function (items) { paintLane(r, items, t0, span, false); }, function () { paintLane(r, undefined, t0, span, true); }).then(function () { running--; pump(); });
+        })(rows[next++]);
+      }
+    };
+    openOverlay("ov-grid"); pump();
+    var cur = rows.filter(function (r) { return r.c === channels[chIndex]; })[0];
+    setTimeout(function () { try { var n = (cur || rows[0]).lane.parentNode.querySelector(".gr-name"); n.focus(); n.scrollIntoView({ block: "center" }); } catch (e) {} }, 60);
+  }
+  function gridKey(e) {
+    if (isBack(e)) { e.preventDefault(); closeGrid(); return; }
+    var a = document.activeElement, rows = [].slice.call($("grid-wrap").querySelectorAll(".gr-row"));
+    var row = a && a.closest ? a.closest(".gr-row") : null, ri = rows.indexOf(row);
+    var focusIt = function (el) { if (el) { el.focus(); el.scrollIntoView({ block: "nearest", inline: "nearest" }); } };
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      e.preventDefault();
+      var to = rows[Math.max(0, Math.min(rows.length - 1, ri < 0 ? 0 : ri + (e.key === "ArrowDown" ? 1 : -1)))]; if (!to) return;
+      var left = a && a.classList.contains("gr-prog") ? a.getBoundingClientRect().left : -1, pick = null;
+      if (left >= 0) [].slice.call(to.querySelectorAll(".gr-prog")).forEach(function (p) { if (!pick && p.getBoundingClientRect().right > left + 4) pick = p; });
+      focusIt(pick || to.querySelector(".gr-name"));
+    } else if ((e.key === "ArrowRight" || e.key === "ArrowLeft") && row) {
+      e.preventDefault();
+      var items = [row.querySelector(".gr-name")].concat([].slice.call(row.querySelectorAll(".gr-prog"))), at = items.indexOf(a);
+      focusIt(items[Math.max(0, Math.min(items.length - 1, at + (e.key === "ArrowRight" ? 1 : -1)))]);
+    }
+  }
+  $("tv-grid").addEventListener("click", openGrid);
+  $("grid-close").addEventListener("click", closeGrid);
+
+  // ---- multi-view: up to 4 channels, one sound ----
+  function mvStop() {
+    mv.forEach(function (s) { if (s.hls) { try { s.hls.destroy(); } catch (e) {} s.hls = null; } if (s.video) { try { s.video.pause(); s.video.removeAttribute("src"); s.video.load(); } catch (e) {} } });
+  }
+  function mvClose() { mvStop(); $("ov-multi").classList.remove("open"); }
+  function mvSound(i) { mvAudio = i; mv.forEach(function (s, k) { if (s.video) s.video.muted = k !== i; if (s.tile) s.tile.classList.toggle("audio", k === i); if (s.tag) s.tag.firstChild.textContent = (k === i ? "🔊 " : "🔇 ") + s.c.name; }); }
+  function mvStart(s, i) {
+    playable(s.c.url).then(function (u) {
+      if (looksTs(u)) { s.msg.textContent = "Raw TS streams cannot be shown in multi-view. Use the normal player."; return; }
+      var v = s.video; v.muted = i !== mvAudio;
+      if (window.Hls && Hls.isSupported() && !/\.(mp4|webm)(\?|$)/i.test(u)) {
+        var h = new Hls({ maxBufferLength: 12 }); s.hls = h; h.loadSource(u); h.attachMedia(v);
+        h.on(Hls.Events.MANIFEST_PARSED, function () { s.msg.textContent = ""; v.play()["catch"](function () {}); });
+        h.on(Hls.Events.ERROR, function (ev, d) { if (d && d.fatal) s.msg.textContent = "This channel did not load."; });
+      } else { v.src = u; v.addEventListener("playing", function () { s.msg.textContent = ""; }); v.play()["catch"](function () {}); }
+    }, function (err) { s.msg.textContent = err.message; });
+  }
+  function mvPaint() {
+    var g = $("mv-grid"); while (g.firstChild) g.removeChild(g.firstChild);
+    if (!mv.length) { g.appendChild(make("div", "mv-empty", "Nothing here yet. In Live TV select a channel and press M to add it. Add up to 4.")); return; }
+    mv.forEach(function (s, i) {
+      s.tile = make("div", "mv-tile"); s.video = make("video"); s.video.playsInline = true; s.video.muted = true;
+      s.tag = make("div", "mv-tag"); s.tag.appendChild(nt(make("span", "", s.c.name)));
+      var x = make("button", "", "✕"); x.type = "button"; x.title = "Remove"; x.setAttribute("aria-label", "Remove " + s.c.name);
+      x.addEventListener("click", function (ev) { ev.stopPropagation(); mvStop(); mv.splice(i, 1); if (mvAudio >= mv.length) mvAudio = 0; mvPaint(); });
+      s.tag.appendChild(x); s.msg = make("div", "mv-msg", "Loading…");
+      s.tile.appendChild(s.video); s.tile.appendChild(s.tag); s.tile.appendChild(s.msg);
+      s.tile.addEventListener("click", function () { mvSound(i); });
+      g.appendChild(s.tile);
+    });
+    mvSound(mvAudio); mv.forEach(mvStart);
+  }
+  function mvOpen() { stopPlayback(); mvStop(); openOverlay("ov-multi"); mvPaint(); }
+  function mvAdd(c) {
+    if (!c) { toast("Select a channel first"); return; }
+    if (c.adult && !explicitUnlocked) return;
+    if (mv.some(function (s) { return s.c.url === c.url; })) { toast("Already in multi-view"); mvOpen(); return; }
+    if (mv.length >= 4) { toast("Multi-view holds 4 channels. Remove one first."); mvOpen(); return; }
+    mv.push({ c: c }); mvOpen();
+  }
+  function multiKey(e) {
+    if (isBack(e)) { e.preventDefault(); mvClose(); return; }
+    if (e.key >= "1" && e.key <= "4" && mv[+e.key - 1]) { e.preventDefault(); mvSound(+e.key - 1); }
+  }
+  $("tv-multi").addEventListener("click", mvOpen);
+  $("mv-close").addEventListener("click", mvClose);
+  $("mv-clear").addEventListener("click", function () { mvStop(); mv = []; mvAudio = 0; mvPaint(); });
+
+
+  // ---- recording (EYE3 Link 1.8+): the channel that is playing is saved as a .ts file in the Link recordings folder ----
+  var recId = "", recTimer = 0, recName = "";
+  function recSource(c) {    // the address EYE3 Link should record: the original link, never Link's own wrapper
+    var u = String(c.url || "");
+    if (u.indexOf(LINK_BASE) === 0) {
+      try { var x = new URL(u); if (x.pathname !== "/stream" || !x.searchParams.get("u")) return null; return { u: x.searchParams.get("u"), h: x.searchParams.get("h") || "" }; } catch (e) { return null; }
+    }
+    return /^https?:\/\//i.test(u) ? { u: u, h: "" } : null;
+  }
+  function megabytes(n) { return n >= 1e9 ? (n / 1e9).toFixed(2) + " GB" : (n / 1e6).toFixed(1) + " MB"; }
+  function recMinutes(sec) { return ("0" + Math.floor(sec / 60)).slice(-2) + ":" + ("0" + (sec % 60)).slice(-2); }
+  function recLinkError(e) { return /Unknown request/.test(e.message) ? "Your EYE3 Link is older than 1.8. Update it in Settings → EYE3 agent, or download the new program." : e.message; }
+  function recPoll() {
+    return linkGet("/api/record/list", {}).then(function (d) {
+      var chip = $("recchip"), mine = null;
+      (d.items || []).forEach(function (i) { if (i.id === recId) mine = i; });
+      if (mine && mine.state === "recording") { chip.hidden = false; chip.textContent = "● REC " + recMinutes(mine.seconds) + " · " + megabytes(mine.bytes); return d; }
+      if (mine) {
+        clearInterval(recTimer); recTimer = 0; recId = ""; chip.hidden = true;
+        toast(mine.state === "failed" ? "Recording failed: " + mine.error : "Saved: " + mine.file + " (" + megabytes(mine.bytes) + ")");
+      } else if (recId) { clearInterval(recTimer); recTimer = 0; recId = ""; chip.hidden = true; }
+      return d;
+    })["catch"](function () { return null; });
+  }
+  function recToggle() {
+    if (recId) { linkGet("/api/record/stop", { id: recId }).then(recPoll, function (e) { toast(recLinkError(e)); }); return; }
+    var c = prevCh;
+    if (!c) { toast("Play a channel first, then press R to record it"); return; }
+    if (c.adult) { toast("Adult channels are never recorded"); return; }
+    var src = recSource(c);
+    if (!src) { toast("This channel cannot be recorded. Channels from links, M3U lists and Xtream accounts can."); return; }
+    var params = { u: src.u, name: c.name, minutes: "180" }; if (src.h) params.h = src.h;
+    linkGet("/api/record/start", params).then(function (r) {
+      recId = r.id; recName = c.name; toast("Recording " + c.name + " (stops by itself after 3 hours)");
+      clearInterval(recTimer); recTimer = setInterval(recPoll, 2000); recPoll();
+    }, function (e) { toast(recLinkError(e) + (/not running/.test(e.message) ? " Recording needs EYE3 Link." : "")); });
+  }
+  function openRecordings() {
+    $("info-title").textContent = "Recordings";
+    var nodes = [para("Recordings are saved by EYE3 Link as .ts files that VLC and most players open. Only channels from your own links, lists and accounts can be recorded; encrypted streams cannot, and adult channels are never recorded.")], box = para("Loading…");
+    nodes.push(box); rowsHtml($("info-body"), nodes); openOverlay("ov-info");
+    recPoll().then(function () { return linkGet("/api/record/list", {}); }).then(function (d) {
+      var list = [];
+      list.push(nt(para("Saved in: " + d.dir)));
+      if (!(d.items || []).length) list.push(para("No recordings yet. Play a channel in Live TV and press R."));
+      (d.items || []).forEach(function (i) {
+        var row = make("div", "acct-row"), who = make("div", "who");
+        who.appendChild(nt(make("b", "", i.file)));
+        who.appendChild(make("small", i.state === "failed" ? "bad" : "", (i.state === "recording" ? "recording · " : i.state === "failed" ? "failed: " + i.error + " · " : "") + recMinutes(i.seconds) + " · " + megabytes(i.bytes)));
+        row.appendChild(who);
+        if (i.state === "recording") { var st = make("button", "btn", "Stop"); st.type = "button"; st.addEventListener("click", function () { linkGet("/api/record/stop", { id: i.id }).then(function () { setTimeout(openRecordings, 600); }); }); row.appendChild(st); }
+        list.push(row);
+      });
+      rowsHtml($("info-body"), nodes.slice(0, 1).concat(list));
+    }, function (e) { box.textContent = recLinkError(e); });
+  }
+  $("tv-rec").addEventListener("click", recToggle);
+  $("recchip").addEventListener("click", openRecordings);
+  $("recchip").addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openRecordings(); } });
+
+  // ---- Smart TV tools: what this screen can play, how fast the connection is ----
+  var CODEC_TESTS = [["H.264 video (almost every channel)", 'video/mp4; codecs="avc1.640028"', "This should work. If not, update the browser."],
+    ["H.265 / HEVC video", 'video/mp4; codecs="hvc1.1.6.L93.B0"', "Not supported: press V on a channel and open it in VLC."],
+    ["VP9 video", 'video/webm; codecs="vp9"', ""], ["AV1 video", 'video/mp4; codecs="av01.0.05M.08"', ""],
+    ["AAC audio", 'audio/mp4; codecs="mp4a.40.2"', "This should work."], ["Dolby Digital (AC-3) audio", 'audio/mp4; codecs="ac-3"', "Not supported: some channels play without sound. Use VLC for them."],
+    ["Dolby Digital Plus (E-AC-3) audio", 'audio/mp4; codecs="ec-3"', ""]];
+  function openTools() {
+    $("info-title").textContent = "Smart TV tools";
+    var nodes = [make("h3", "", "What this screen can play")], keys = make("div", "keys");
+    CODEC_TESTS.forEach(function (t) {
+      var ok = false; try { ok = !!(window.MediaSource && MediaSource.isTypeSupported(t[1])); } catch (e) {}
+      keys.appendChild(make("kbd", "", ok ? "✓ yes" : "✗ no")); keys.appendChild(make("span", "", t[0] + (ok || !t[2] ? "" : " — " + t[2])));
+    });
+    var v = document.createElement("video"), hls = !!(v.canPlayType && v.canPlayType("application/vnd.apple.mpegurl"));
+    keys.appendChild(make("kbd", "", window.Hls && Hls.isSupported() ? "✓ yes" : hls ? "✓ native" : "✗ no")); keys.appendChild(make("span", "", "HLS streams (.m3u8)"));
+    keys.appendChild(make("kbd", "", document.pictureInPictureEnabled ? "✓ yes" : "✗ no")); keys.appendChild(make("span", "", "Mini window"));
+    keys.appendChild(make("kbd", "", $("video").remote ? "✓ yes" : "✗ no")); keys.appendChild(make("span", "", "Cast button from the page"));
+    nodes.push(keys);
+    nodes.push(make("h3", "", "This screen"));
+    nodes.push(nt(para(window.innerWidth + " × " + window.innerHeight + " px at " + (window.devicePixelRatio || 1) + "× · " + (navigator.hardwareConcurrency || "?") + " CPU threads · " + (document.fullscreenElement ? "fullscreen" : "windowed"))));
+    nodes.push(make("h3", "", "Connection speed"));
+    var out = para("Press the button. It downloads a test file from Cloudflare for a few seconds. Nothing else is sent."), kv = make("div", "kv"), go = make("button", "btn", "Test my connection"); go.type = "button";
+    go.addEventListener("click", function () { go.disabled = true; speedTest(out).then(function () { go.disabled = false; }); });
+    kv.appendChild(go); nodes.push(out); nodes.push(kv);
+    nodes.push(make("h3", "", "Phone remote and Link"));
+    nodes.push(nt(para("Phone remote page: " + ORIGIN + "remote/ · EYE3 Link: " + (linkUp && linkUp.ok ? "running, version " + linkUp.version : linkUp === false ? "not running" : "not checked yet"))));
+    rowsHtml($("info-body"), nodes); openOverlay("ov-info"); setTimeout(function () { try { go.focus(); } catch (e) {} }, 60);
+  }
+  function speedTest(out) {
+    var t0 = performance.now(), got = 0, done = false;
+    return fetch("https://speed.cloudflare.com/__down?bytes=25000000", { cache: "no-store" }).then(function (r) {
+      var rd = r.body.getReader();
+      var pump = function () {
+        return rd.read().then(function (x) {
+          if (x.done || done) return;
+          got += x.value.length; var sec = (performance.now() - t0) / 1000;
+          out.textContent = "Measuring… " + (got * 8 / sec / 1e6).toFixed(1) + " Mbit/s";
+          if (sec > 8) { done = true; rd.cancel(); return; }
+          return pump();
+        });
+      };
+      return pump();
+    }).then(function () {
+      var mbit = got * 8 / ((performance.now() - t0) / 1000) / 1e6;
+      out.textContent = mbit.toFixed(1) + " Mbit/s — " + (mbit < 3 ? "enough for standard definition only." : mbit < 8 ? "good for HD (720p)." : mbit < 20 ? "good for Full HD (1080p)." : "good for 4K.");
+    })["catch"](function () { out.textContent = "The test could not run (offline, or a blocker?)."; });
+  }
+
+  // ---- Geeni: the built-in EYE3 assistant. Three clicks on the eye logo call it or send it away. ----
+  // It runs in this page only: no server, no key, nothing is sent anywhere. It answers about EYE3, checks what is wrong and opens the right screen.
+  var GEENI_KEY = "eye3.home.geeni";   // sessionStorage: Geeni stays while this tab lives
+  var geeniFxTimer = 0;
+  function geeniShow(on, summon) {
+    var g = $("geeni");
+    g.classList.toggle("on", on); if (!on) { $("geeni-panel").classList.remove("open"); geeniListen(false); }
+    try { sessionStorage.setItem(GEENI_KEY, on ? "1" : ""); } catch (e) {}
+    if (on && summon && !reduceMotion) {   // the eye spins in 3D, then Geeni pops out of it
+      var fx = $("geeni-summon"); clearTimeout(geeniFxTimer);
+      g.classList.add("arriving"); fx.hidden = false;
+      geeniFxTimer = setTimeout(function () { fx.hidden = true; g.classList.remove("arriving"); }, 1850);
+    }
+  }
+  function geeniPanel(open) {
+    var p = $("geeni-panel"); p.classList.toggle("open", open);
+    if (open) { if (!$("geeni-log").firstChild) geeniHello(); setTimeout(function () { try { $("geeni-in").focus(); } catch (e) {} }, 60); }
+  }
+  var geeniSpoke = false, geeniRec = null;
+  function geeniSay(text, who, actions) {
+    if (who === "bot" && geeniSpoke && window.speechSynthesis && window.SpeechSynthesisUtterance) {   // answer aloud only when the viewer spoke
+      try { window.speechSynthesis.cancel(); var u = new SpeechSynthesisUtterance(text); u.rate = 1.05; u.pitch = 1.3; window.speechSynthesis.speak(u); } catch (e) {}
+    }
+    var log = $("geeni-log"), m = make("div", "g-msg " + who);
+    m.appendChild(make("span", "", text));
+    if (actions && actions.length) {
+      var row = make("div", "g-acts");
+      actions.forEach(function (a) { var b = make("button", "btn", a[0]); b.type = "button"; if (a[2]) nt(b); b.addEventListener("click", function () { geeniPanel(false); a[1](); }); row.appendChild(b); });
+      m.appendChild(row);
+    }
+    log.appendChild(m); log.scrollTop = log.scrollHeight;
+  }
+  var GEENI_CHIPS = ["Add my IPTV account", "Import a playlist", "Record a channel", "Why won't it play?", "Show shortcuts"];
+  function geeniHello() {
+    geeniSay("Hi, I am Geeni, the EYE3 helper. Ask me how something works, tell me what to do (“play CNN”, “next channel”, “louder”, “replay”), or ask “why won't it play?” and I will check. Press 🎤 to talk.", "bot");
+    var c = $("geeni-chips"); while (c.firstChild) c.removeChild(c.firstChild);
+    GEENI_CHIPS.forEach(function (t) { var b = make("button", "chip", t); b.type = "button"; b.addEventListener("click", function () { geeniAsk(t); }); c.appendChild(b); });
+  }
+  var geeniOpenTv = function () { openTile("tv"); };
+  function geeniFind(q, cb) {
+    var go = function () {
+      var words = fold(q).split(/\s+/).filter(Boolean), out = [];
+      if (!rawAll.length) buildAll();
+      for (var i = 0; i < allChannels.length && out.length < 5; i++) {
+        var c = allChannels[i]; if (c.adult) continue;
+        var n = fold(c.name); if (words.every(function (w) { return n.indexOf(w) > -1; })) out.push(c);
+      }
+      cb(out);
+    };
+    if (catalogueState === "idle") loadCatalogue();
+    var tries = 0, wait = function () { if (catalogueState !== "loading" || ++tries > 25) go(); else setTimeout(wait, 200); };
+    wait();
+  }
+  function geeniPlay(c) {
+    openTile("tv");
+    setTimeout(function () {
+      tvFilter.cat = "All"; tvFilter.group = ""; tvFilter.country = ""; tvFilter.q = c.name; $("tv-search").value = c.name; fillSelects(); applyFilter();
+      for (var i = 0; i < channels.length; i++) if (channels[i].url === c.url) { chIndex = i; paintChannels(); scrollCh(); playChannel(i); return; }
+    }, 600);
+  }
+  function geeniDiagnose() {
+    linkHello().then(function (h) { return "EYE3 Link is running (version " + h.version + "). "; }, function () { return "EYE3 Link is not running. Channels from your own accounts and http:// streams need it. "; }).then(function (linkText) {
+      var c = prevCh, bits = [linkText];
+      if (!c) bits.push("You have not played a channel yet: open Live TV, pick one and press OK.");
+      else {
+        bits.push("Last channel: " + c.name + ".");
+        if (/^http:\/\//i.test(c.url) && location.protocol === "https:" && c.url.indexOf(LINK_BASE) !== 0) bits.push("It is an http:// stream and this page is https://, so it only plays through EYE3 Link.");
+        else if (looksTs(c.url)) bits.push("It is a raw TS stream; these need a moment to start and the TS player from the internet.");
+        else bits.push("Try another channel of the same list first: if others play, this one is down or blocked in your country.");
+        bits.push("Press V to open it in VLC (it plays H.265 and Dolby sound). Live TV → Check from my connection tests every channel.");
+      }
+      geeniSay(bits.join(" "), "bot", [["Open Smart TV tools", openTools], ["Open EYE3 agent", openAgent]]);
+    });
+  }
+  var GEENI_TOPICS = [
+    [/eye3 guide|free (sites|apps|movies sites|places)|where (can|to) (i )?(watch|download|listen)|resources|useful (sites|links|apps)|download (apps|software)|legal/, "The EYE3 Guide lists free and legal places to watch, listen, read and download, with search and our ⭐ picks.", [["Open the EYE3 Guide", function () { location.href = "guide.html"; }]]],
+    [/hello|\bhi\b|\bhey\b|who are you|your name|what can you do|\bhelp\b/, "I am Geeni. I can explain EYE3, find and play a channel, check why something does not play, and open any screen for you.", []],
+    [/add.*(account|xtream|m3u|mag|login|subscription|provider|portal)|xtream|stalker|\bmag\b|iptv account/, "Open IPTV accounts and choose M3U link, Xtream Codes login or MAG portal. It is saved on this computer only. It needs EYE3 Link, a small program that runs on your computer.", [["Open IPTV accounts", function () { openAccounts(); }]]],
+    [/import|playlist|\bm3u\b|\bpdf\b|\bfile\b|my own list/, "The Playlist maker imports an .m3u file, a pasted list or a PDF, and exports a list for other players. Nothing is uploaded.", [["Open Playlist maker", function () { openMaker(); }]]],
+    [/record/, "Play a channel and press R to record it, press R again to stop. Files go to the recordings folder next to EYE3 Link (it must be version 1.8 or newer). Protected streams and adult channels are never recorded.", [["Open Recordings", function () { openRecordings(); }]]],
+    [/guide|epg|programme|program|schedule|grid/, "Press D in Live TV for the guide grid: 40 channels across the next 3 hours. Xtream accounts bring their own guide; for other lists add an XMLTV link in Settings.", [["Open Live TV", geeniOpenTv], ["Open the guide grid", function () { openTile("tv"); setTimeout(openGrid, 700); }]]],
+    [/multi|several channels|split screen|4 channels/, "Multi-view shows up to 4 channels at once with one sound. Select a channel in Live TV and press M to add it; keys 1-4 move the sound.", [["Open Multi-view", function () { mvOpen(); }]]],
+    [/cast|chromecast|airplay|mirror|miracast|projector|screen to tv/, "Press C in Live TV to cast the playing channel with your browser's cast list (Chromecast, AirPlay in Safari). For a projector or TV: Android ones run EYE3 Home in their browser; others need a laptop or box on HDMI.", [["Open the TV setup guide", function () { location.href = "setup.html"; }]]],
+    [/profile|kids|child|parent|\bpin\b|lock/, "Profiles can hide categories. A kids profile also hides every adult channel and needs the parent PIN to leave.", [["Open Profiles", function () { openProfiles(); }]]],
+    [/install|usb|stick|pendrive|box|kiosk|android|tv box|set up|setup/, "For a computer behind your TV, download the one-time install kit from the release page and run install.bat (Windows) or install.sh. An Android projector can use its browser and the Home link. The setup page has the steps.", [["Open the TV setup guide", function () { location.href = "setup.html"; }]]],
+    [/speed|slow|buffer|codec|h\.?265|hevc|no sound|no audio|dolby|ac-?3|compat/, "Smart TV tools shows which video and sound formats this screen can play and tests your connection speed. If H.265 or Dolby is missing, press V on the channel to open it in VLC.", [["Open Smart TV tools", openTools]]],
+    [/sync|phone and laptop|two devices|same on phone/, "Sync keeps My channels and favourites the same on your phone and laptop, with an encrypted code. Accounts, passwords and PINs are never synced.", [["Open Sync", function () { openSyncInfo(); }]]],
+    [/remote|control from.*phone/, "The phone remote controls Home from your phone. Turn it on in Settings, then open the remote page on the phone and enter the code.", [["Open Phone remote", function () { openRemoteInfo(); }]]],
+    [/update|version|upgrade|agent/, "EYE3 Link can check for new versions and install them by itself. The agent screen shows what it did.", [["Open EYE3 agent", openAgent]]],
+    [/screensaver|sleep|timer|night/, "Press S for the screensaver and Z for the sleep timer. The sleep timer stops playback and locks the hidden sections.", []],
+    [/shortcut|keys?\b|keyboard|remote keys/, "Here are all the keys.", [["Show shortcuts", function () { openShortcuts(); }]]],
+    [/vpn|geo|blocked|country|region/, "EYE3 does not include a VPN. If your provider's channels are blocked where you are, run your own VPN or proxy and give it to EYE3 Link with --proxy. Live TV → Check from my connection shows which channels work from here.", [["Open Help", function () { openHelp(); }]]],
+    [/dns|getaddrinfo|server not|not connected|could not (reach|find)|link is not running|not working|doesn.?t work|won.?t play|wont play|error|problem|broken|fix/, null, []]
+  ];
+  // short orders Geeni carries out at once ("louder", "next channel", "channel 5", "replay"...); questions go on to the topics below
+  var GEENI_NUM = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10 };
+  function geeniTv(then) {   // Live TV open and its list ready, then go on
+    if (!$("ov-tv").classList.contains("open")) openTile("tv");
+    var tries = 0; (function wait() { if (allChannels.length || ++tries > 40) then(); else setTimeout(wait, 200); })();
+  }
+  function geeniCommand(t) {
+    var m, done = function (text) { geeniSay(text, "bot"); return true; };
+    if ((m = /^(?:channel|go to channel|switch to channel|number)\s+(\d{1,4}|one|two|three|four|five|six|seven|eight|nine|ten)$/.exec(t))) {
+      var n = GEENI_NUM[m[1]] || parseInt(m[1], 10);
+      geeniTv(function () { if (!channels[n - 1]) { geeniSay("There is no channel " + n + " in this list.", "bot"); return; } chIndex = n - 1; paintChannels(); scrollCh(); playChannel(chIndex); geeniSay("Channel " + n + ": " + channels[chIndex].name + ".", "bot"); });
+      return true;
+    }
+    if (/^(next|channel up)( channel)?$/.test(t)) { geeniTv(function () { stepList(1); }); return done("Next channel."); }
+    if (/^(previous|prev|channel down)( channel)?$/.test(t)) { geeniTv(function () { stepList(-1); }); return done("Previous channel."); }
+    if (/^(louder|volume up|turn it up|more volume)$/.test(t)) { setVolume(0.2); return done("Louder."); }
+    if (/^(quieter|softer|volume down|turn it down|less volume)$/.test(t)) { setVolume(-0.2); return done("Quieter."); }
+    if (/^(mute|silence)$/.test(t)) { if (!mediaEls()[0].muted) setVolume(0, true); return done("Muted."); }
+    if (/^(unmute|sound on)$/.test(t)) { if (mediaEls()[0].muted) setVolume(0, true); return done("Sound on."); }
+    if (/^(pause|resume|continue|stop|play)$/.test(t)) { togglePlay(); return done("Okay."); }
+    if (/^full ?screen$/.test(t)) { toggleFullscreen(); return done("Fullscreen."); }
+    if (/^(replay|catch ?up|rewind|watch (it )?again)( this| it)?$/.test(t)) { if (!prevCh) return done("Play a channel first, then ask me to replay it."); geeniPanel(false); openCatchup(); return true; }
+    if (/^(record|record (this|it)|start recording|stop recording)( channel)?$/.test(t)) { if (!prevCh) return done("Play a channel first, then ask me to record it."); recToggle(); return done("Done."); }
+    if (/^(sleep|sleep timer)$/.test(t)) { cycleSleep(); var left = sleepLeft(); return done(left ? "Sleep timer: " + left + " minutes." : "Sleep timer off."); }
+    if (/^(movies|series|movies and series|films)$/.test(t)) { geeniPanel(false); closeOverlays(); openVod(); return true; }
+    if (/^free (movies|films)$/.test(t)) { geeniPanel(false); closeOverlays(); openVod(); setTimeout(freeOpen, 200); return true; }
+    if (/^(radio|youtube|my media|settings|live tv)$/.test(t)) { geeniPanel(false); closeOverlays(); openTile({ "my media": "media", "live tv": "tv" }[t] || t); return true; }
+    if (/^(home|go home|main menu)$/.test(t)) { closeOverlays(); focusIndex = 0; paintFocus(); return done("Home."); }
+    if (/^(what time is it|what s the time|whats the time|time)$/.test(t)) { var d = new Date(); return done("It is " + ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2) + "."); }
+    if (/^(bye|goodbye|go away|see you)$/.test(t)) { geeniSay("Bye! Three clicks on the eye bring me back.", "bot"); setTimeout(function () { geeniShow(false); }, 900); return true; }
+    return false;
+  }
+  // voice: the browser's own speech recognition, started only by the microphone button
+  var GEENI_VOICE = "eye3.home.geeni.voice";
+  function geeniListen(on) {
+    var mic = $("geeni-mic");
+    if (!on) { if (geeniRec) { try { geeniRec.abort(); } catch (e) {} geeniRec = null; } mic.classList.remove("on"); $("geeni").classList.remove("listening"); return; }
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { geeniSay("Voice is not available in this browser. Type instead (Chrome and Edge support voice).", "bot"); return; }
+    if (get(GEENI_VOICE) !== "1") {
+      set(GEENI_VOICE, "1");
+      geeniSay("Voice uses your browser's speech service: in Chrome and Edge your words are sent to Google or Microsoft to be turned into text. Press 🎤 again to talk, or just type.", "bot");
+      return;
+    }
+    var rec = new SR(); geeniRec = rec;
+    rec.lang = navigator.language || "en-US"; rec.interimResults = false; rec.maxAlternatives = 1;
+    rec.onresult = function (e) { var r = e.results && e.results[0] && e.results[0][0]; if (r) geeniAsk(r.transcript, true); };
+    rec.onerror = function (e) { if (e.error !== "aborted" && e.error !== "no-speech") geeniSay(e.error === "not-allowed" ? "The microphone is blocked. Allow it in the browser's address bar, then try again." : "I could not hear that (" + e.error + ").", "bot"); };
+    rec.onend = function () { if (geeniRec === rec) geeniRec = null; mic.classList.remove("on"); $("geeni").classList.remove("listening"); };
+    try { rec.start(); mic.classList.add("on"); $("geeni").classList.add("listening"); } catch (e) { geeniSay("Voice could not start: " + e.message, "bot"); }
+  }
+  function geeniAsk(raw, spoken) {
+    var q = String(raw || "").replace(/^\s+|\s+$/g, "").slice(0, 160); if (!q) return;
+    geeniSpoke = !!spoken;
+    geeniSay(q, "me");
+    var f = fold(q).replace(/[!?.,;:"“”]+/g, " ").replace(/\b(hey|hi|ok|okay)?\s*(geeni|genie)\b/g, " ").replace(/\bplease\b/g, " ").replace(/\s+/g, " ").replace(/^\s+|\s+$/g, "");
+    if (!f) { geeniHello(); return; }
+    if (/adult|explicit|xxx|18\+|porn|\bsex/.test(f)) { geeniSay("Adult content is never in the normal lists. Your own lists can unlock a separate hidden section with an age check and a PIN. I cannot open that section for you.", "bot"); return; }
+    if (geeniCommand(f)) return;
+    var m = /^(?:please\s+)?(?:play|watch|find|search(?: for)?|open|show me)\s+(.{2,40})$/.exec(f);
+    if (m && !/^(live tv|radio|settings|my media|recordings?|profiles?|guide|multi.?view)$/.test(m[1])) {
+      geeniSay("Looking for “" + m[1] + "”…", "bot");
+      geeniFind(m[1], function (res) {
+        if (!res.length) { geeniSay("I found no channel with that name. Open Live TV once so the free list loads, or add your own list, then ask again.", "bot", [["Open Live TV", geeniOpenTv]]); return; }
+        var want = fold(m[1]).replace(/\s+/g, " "), best = res.filter(function (c) { return fold(c.name) === want; })[0] || res[0];
+        var others = res.filter(function (c) { return c !== best; });
+        geeniPlay(best); if (!others.length) geeniPanel(false);   // tuck the panel away so the picture shows
+        geeniSay("Playing " + best.name + "." + (others.length ? " Other matches:" : ""), "bot", others.map(function (c) { return ["▶ " + c.name, function () { geeniPlay(c); }, true]; }));
+      });
+      return;
+    }
+    for (var i = 0; i < GEENI_TOPICS.length; i++) {
+      var t = GEENI_TOPICS[i];
+      if (t[0].test(f)) { if (t[1] === null) { geeniDiagnose(); return; } geeniSay(t[1], "bot", t[2]); return; }
+    }
+    if (/why|how|can.*(play|watch)|play/.test(f) && /(play|watch|work|load|show)/.test(f)) { geeniDiagnose(); return; }
+    geeniSay("I did not get that. I can help with accounts and playlists, recording, the guide, multi-view, casting, profiles, the TV setup, updates and problems. You can also say “play” and a channel name.", "bot");
+  }
+  $("geeni").addEventListener("click", function () { geeniPanel(!$("geeni-panel").classList.contains("open")); });
+  $("geeni-x").addEventListener("click", function () { geeniPanel(false); });
+  $("geeni-form").addEventListener("submit", function (e) { e.preventDefault(); var v = $("geeni-in").value; $("geeni-in").value = ""; geeniAsk(v); });
+  try { if (sessionStorage.getItem(GEENI_KEY) === "1") $("geeni").classList.add("on"); } catch (e) {}
+
+  // three clicks on the eye logo: Geeni. Two clicks (or a double-tap) still open the hidden section, after a short wait to be sure no third click follows.
+  var brandClicks = 0, brandTimer = 0, exTimer = 0;
+  function armExplicit() { clearTimeout(exTimer); exTimer = setTimeout(function () { exTimer = 0; if (overlayOpen()) return; if (explicitUnlocked) openUnknown(); else openExplicit(); }, 420); }
+  $("brand").addEventListener("click", function () {
+    brandClicks++; clearTimeout(brandTimer); brandTimer = setTimeout(function () { brandClicks = 0; }, 800);
+    if (brandClicks >= 3) { brandClicks = 0; clearTimeout(exTimer); exTimer = 0; var on = !$("geeni").classList.contains("on"); geeniShow(on, true); toast(on ? "Geeni is here" : "Geeni went away"); }
+  });
+  $("geeni-mic").addEventListener("click", function () { geeniListen(!geeniRec); });
+  document.addEventListener("keydown", function (e) {   // H calls Geeni from the home screen
+    if ((e.key === "h" || e.key === "H") && !e.ctrlKey && !e.metaKey && !e.altKey && !isTyping() && !overlayOpen() && !$("geeni-panel").classList.contains("open")) {
+      e.preventDefault(); var fresh = !$("geeni").classList.contains("on"); geeniShow(true, fresh); setTimeout(function () { geeniPanel(true); }, fresh && !reduceMotion ? 1850 : 0);
+    }
+  });
+
+
+  // ---- World of Unknown (internally "midnight"): the second layer of the app while the hidden section is unlocked ----
+  // Look (colours, background picture or video, emblem, dim), hero text and its own settings. Pictures are
+  // the viewer's files in this browser's IndexedDB ("eye3-layer2"), never uploaded and never in the repo.
+  var L2_KEY = "eye3.home.layer2", L2_DB = "eye3-layer2";
+  // 24 themes, one for each hour of the day (theme N at N:00). 8 scenes drawn in code x 3 shades of red.
+  var MN_SCENES = ["rain", "koi", "stars", "eclipse", "embers", "depths", "veil", "touch"];
+  var MN_SHADES = [["#ff263f", "255, 38, 63"], ["#c8102e", "200, 16, 46"], ["#ff3b1f", "255, 59, 31"]];
+  var MN_NAMES = ["Red Rain", "Koi Circle", "Starlit Veins", "Blood Eclipse", "Embers", "Crimson Depths", "Behind the Glass", "First Touch",
+    "Midnight Downpour", "Twin Currents", "Red Nebula", "The Iris", "Ash and Fire", "Drowning Light", "Shadow Play", "Almost",
+    "Ripple Hour", "Ember Koi", "Falling Star", "Crimson Halo", "Last Sparks", "Undertow", "The Veil", "Reach"];
+  var MN_THEMES = MN_NAMES.map(function (n, i) { var sh = MN_SHADES[Math.floor(i / 8)]; return { name: n, scene: MN_SCENES[i % 8], accent: sh[0], rgb: sh[1] }; });
+  var L2_TITLE = "World of Unknown", L2_SUB = "Mysteries, monsters and the unexplained.";
+  var l2 = { theme: "auto", hours: 0, dim: 45, lockHidden: true, title: L2_TITLE, sub: L2_SUB, v: 3 };
+  try { var l2s = JSON.parse(get(L2_KEY) || "null"); if (l2s && typeof l2s === "object") Object.keys(l2).forEach(function (k) { if (typeof l2s[k] === typeof l2[k]) l2[k] = l2s[k]; });
+    if (l2s && l2s.v !== 3) { if (l2.title === "Midnight Desires") l2.title = L2_TITLE; if (l2.sub === "Your private screen.") l2.sub = L2_SUB; l2.v = 3; }   // the old Midnight defaults become the new world
+    if (l2.theme !== "auto" && !(+l2.theme >= 0 && +l2.theme < 24 && /^\d+$/.test(l2.theme))) l2.theme = "auto";
+    l2.hours = Math.max(0, Math.min(24, l2.hours | 0));
+  } catch (e) {}
+  function l2Save() { set(L2_KEY, JSON.stringify(l2)); }
+  var heroDefault = null, l2Urls = {};
+  function l2Db() {
+    return new Promise(function (ok, no) {
+      if (!window.indexedDB) return no(new Error("no storage"));
+      var r = indexedDB.open(L2_DB, 1);
+      r.onupgradeneeded = function () { r.result.createObjectStore("files"); };
+      r.onsuccess = function () { ok(r.result); }; r.onerror = function () { no(r.error); };
+    });
+  }
+  function l2File(op, key, val) {
+    return l2Db().then(function (db) {
+      return new Promise(function (ok, no) {
+        var tx = db.transaction("files", op === "get" ? "readonly" : "readwrite"), st = tx.objectStore("files");
+        var r = op === "get" ? st.get(key) : op === "put" ? st.put(val, key) : st["delete"](key);
+        r.onsuccess = function () { ok(r.result); }; r.onerror = function () { no(r.error); };
+      });
+    });
+  }
+  function l2Url(key) {
+    if (l2Urls[key]) return Promise.resolve(l2Urls[key]);
+    return l2File("get", key).then(function (f) { if (!f) return null; l2Urls[key] = { url: URL.createObjectURL(f), video: /^video\//.test(f.type || "") }; return l2Urls[key]; })["catch"](function () { return null; });
+  }
+  function l2Forget(key) { if (l2Urls[key]) { URL.revokeObjectURL(l2Urls[key].url); delete l2Urls[key]; } }
+  function themeIndex() { return l2.theme === "auto" ? new Date().getHours() : +l2.theme; }
+  var sceneShown = "";
+  function rnd(a, b) { return a + Math.random() * (b - a); }
+  function buildScene(kind) {
+    var box = $("mn-scene"); if (sceneShown === kind) return; sceneShown = kind;
+    while (box.firstChild) box.removeChild(box.firstChild);
+    box.className = "mn-scene sc-" + kind;
+    var add = function (cls, st) { var el = make("i", cls); Object.keys(st).forEach(function (k) { el.style[k] = st[k]; }); box.appendChild(el); return el; };
+    var vmin = function (n) { return n + "vmin"; }, i;
+    if (kind === "rain") { add("pool", {}); for (i = 0; i < 32; i++) add("drop", { left: rnd(0, 100) + "vw", height: rnd(18, 45) + "vh", animationDuration: rnd(1.6, 3.6) + "s", animationDelay: -rnd(0, 4) + "s", opacity: rnd(.35, 1) }); for (i = 0; i < 9; i++) { var w = rnd(8, 22); add("ring", { left: rnd(0, 92) + "vw", top: rnd(62, 95) + "vh", width: vmin(w * 2), height: vmin(w * .5), animationDelay: -rnd(0, 4) + "s" }); } }
+    else if (kind === "koi") { add("fish", { width: vmin(52), height: vmin(52) }); add("fish b", { width: vmin(40), height: vmin(40), animationDuration: "38s" }); }
+    else if (kind === "stars") { add("strand", {}); add("strand", { left: "33vw", width: "34vw", animationDelay: "-7s" }); add("shoot", {}); for (i = 0; i < 90; i++) add("dot", { left: rnd(0, 100) + "vw", top: rnd(0, 100) + "vh", animationDelay: -rnd(0, 3) + "s", transform: "scale(" + rnd(.4, 1.3) + ")" }); }
+    else if (kind === "eclipse") { add("fire", {}); [72, 58, 44, 32].forEach(function (d, k) { add("halo", { width: vmin(d), height: vmin(d), animationDuration: (60 + k * 25) + "s", animationDirection: k % 2 ? "reverse" : "normal" }); }); add("core", {}); for (i = 0; i < 30; i++) add("dot spark", { left: rnd(0, 100) + "vw", top: rnd(0, 60) + "vh", width: "2px", height: "2px" }); }
+    else if (kind === "embers") { add("fire", {}); for (i = 0; i < 46; i++) add("spark", { left: rnd(0, 100) + "vw", animationDuration: rnd(6, 14) + "s", animationDelay: -rnd(0, 14) + "s" }); }
+    else if (kind === "depths") { add("floor", {}); for (i = 0; i < 7; i++) add("wave", { top: (i * 9) + "vh", height: rnd(4, 9) + "vh", animationDuration: rnd(12, 22) + "s", animationDelay: -rnd(0, 10) + "s" }); }
+    else if (kind === "veil") { add("back", {}); for (i = 0; i < 5; i++) add("shade", { left: rnd(5, 70) + "vw", top: rnd(5, 55) + "vh", width: rnd(14, 30) + "vw", height: rnd(30, 60) + "vh", animationDuration: rnd(16, 28) + "s", animationDelay: -rnd(0, 10) + "s" }); }
+    else if (kind === "touch") { add("arm", { left: "0" }); add("arm r", {}); add("spark", {}); }
+  }
+  function hourKey(h) { return l2.hours ? "h" + (h % l2.hours) : ""; }
+  function applyLayer() {
+    var on = explicitUnlocked, root = document.documentElement, ti = themeIndex(), th = MN_THEMES[ti];
+    root.classList.toggle("midnight", on);
+    if (on) { root.style.setProperty("--mn-accent", th.accent); root.style.setProperty("--mn-rgb", th.rgb); root.style.setProperty("--mn-dim", String(l2.dim / 100)); root.setAttribute("data-mn-theme", String(ti)); }
+    else { ["--mn-accent", "--mn-rgb", "--mn-dim"].forEach(function (k) { root.style.removeProperty(k); }); root.removeAttribute("data-mn-theme"); }
+    var sc = $("mn-scene"); sc.hidden = !on;
+    if (on) buildScene(th.scene); else { sceneShown = ""; while (sc.firstChild) sc.removeChild(sc.firstChild); }
+    var h1 = document.querySelector(".hero h1"), kick = document.querySelector(".kicker span:last-child"), greet = $("greet");
+    if (!heroDefault) heroDefault = { h1: h1.textContent, kick: kick.textContent, greet: greet.textContent };
+    h1.textContent = on ? l2.title : heroDefault.h1; nt(h1);
+    kick.textContent = on ? "The Unknown · " + th.name + (netOn ? " · 🔒 private" : "") + " · double-click the eye to enter · Q locks" : heroDefault.kick;
+    if (on !== netWanted) { netWanted = on; netApply(on); }
+    if (on) greet.textContent = l2.sub; else greet.textContent = heroDefault.greet;
+    $("mn-haze").hidden = !on;
+    var img = $("mn-bgimg"), vid = $("mn-bgvid"), emb = $("mn-emblem");
+    img.hidden = true; vid.hidden = true; emb.hidden = true; $("hero-art").classList.remove("has-emblem");
+    if (!on) { try { vid.pause(); } catch (e) {} vid.removeAttribute("src"); img.style.backgroundImage = ""; emb.removeAttribute("src"); return; }
+    var hk = hourKey(new Date().getHours());   // your own picture for this hour, else your one background
+    (hk ? l2Url(hk) : Promise.resolve(null)).then(function (b) { return b || l2Url("bg"); }).then(function (b) {
+      if (!b || !explicitUnlocked) return;
+      if (b.video) { vid.src = b.url; vid.hidden = false; var pp = vid.play(); if (pp && pp["catch"]) pp["catch"](function () {}); }
+      else { img.style.backgroundImage = 'url("' + b.url + '")'; img.hidden = false; }
+    });
+    l2Url("emblem").then(function (e) { if (!e || e.video || !explicitUnlocked) return; emb.src = e.url; emb.hidden = false; $("hero-art").classList.add("has-emblem"); });
+  }
+  // ---- Private connection: the viewer's OWN proxies (a VPN app's HTTP proxy mode, a proxy they pay for) ----
+  // EYE3 includes no VPN and no proxies. The list lives only in this browser (eye3.home.l2net) and is never synced.
+  // While the World is open, EYE3 Link switches to the chosen one; locking switches Link back to how it was started.
+  var NET_KEY = "eye3.home.l2net", net = { list: [], pick: -1, strict: true, trace: true }, netRes = {}, netOn = false, netWanted = false;
+  try {
+    var ns = JSON.parse(get(NET_KEY) || "null");
+    if (ns && typeof ns === "object") {
+      net.list = (Array.isArray(ns.list) ? ns.list : []).filter(function (x) { return x && typeof x.n === "string" && typeof x.u === "string" && /^https?:\/\/\S+$/i.test(x.u); }).slice(0, 20).map(function (x) { return { n: x.n.slice(0, 30), u: x.u.slice(0, 300) }; });
+      net.pick = typeof ns.pick === "number" && ns.pick >= 0 && ns.pick < net.list.length ? ns.pick : -1;
+      if (typeof ns.strict === "boolean") net.strict = ns.strict;
+      if (typeof ns.trace === "boolean") net.trace = ns.trace;
+    }
+  } catch (e) {}
+  function netSave() { set(NET_KEY, JSON.stringify(net)); }
+  function netHost(u) { try { var x = new URL(u); return x.hostname + (x.port ? ":" + x.port : ""); } catch (e) { return "?"; } }
+  function strictPrivate() { return explicitUnlocked && net.strict && net.pick >= 0; }
+  function noTrace() { return explicitUnlocked && net.trace; }
+  function netFetch(url) { return strictPrivate() ? playable(url).then(function (u) { return fetch(u); }) : fetch(url); }
+  function netApply(on) {
+    var it = on && net.pick >= 0 ? net.list[net.pick] : null;
+    if (it) return linkGet("/api/proxy/set", { u: it.u, strict: net.strict ? "1" : "" }).then(function () { netOn = true; applyLayer(); return true; },
+      function (e) { netOn = false; applyLayer(); toast("Private connection is not on: " + e.message + (net.strict ? " Strict mode blocks playback until it is." : "")); return false; });
+    if (netOn) { netOn = false; return linkGet("/api/proxy/set", { u: "base" }).then(function () { applyLayer(); return true; }, function () { return false; }); }
+    return Promise.resolve(true);
+  }
+  function netTest(i) {
+    var it = net.list[i]; netRes[i] = { busy: true };
+    return linkGet("/api/proxy/test", { u: it.u }).then(function (d) { netRes[i] = d; }, function (e) { netRes[i] = { ok: false, why: e.message }; });
+  }
+  function netTestAll() { var p = Promise.resolve(); net.list.forEach(function (_, i) { p = p.then(function () { return netTest(i); }); }); return p; }
+  function netSection(nodes) {
+    nodes.push(make("h3", "", "Private connection"));
+    nodes.push(para("Route this world through a VPN or proxy you already have (a VPN app's HTTP proxy mode, or a proxy you pay for). EYE3 includes no VPN and no proxies. EYE3 Link must be running on this computer; addresses stay in this browser and in Link's memory only."));
+    var redraw = function () { var y = $("info-body").scrollTop; openMidnight(); $("info-body").scrollTop = y; };
+    net.list.forEach(function (it, i) {
+      var r = make("div", "opt" + (net.pick === i ? " on" : "")); r.id = "mn-net-" + i;
+      var use = make("button", "btn" + (net.pick === i ? " primary" : ""), net.pick === i ? "● In use" : "Use"); use.type = "button";
+      use.addEventListener("click", function () { net.pick = i; netSave(); netApply(true).then(redraw); });
+      r.appendChild(use); r.appendChild(nt(make("span", "", it.n + " · " + netHost(it.u))));
+      var res = netRes[i], rs = make("small", "", !res ? "" : res.busy ? "testing…" : res.ok ? res.country + " · " + res.ms + " ms" : "✗ " + (res.why || "no answer")); rs.className = "mn-net-res"; r.appendChild(rs);
+      var t = make("button", "btn", "Test"); t.type = "button"; t.addEventListener("click", function () { netTest(i).then(redraw); redraw(); });
+      var x = make("button", "btn", "Remove"); x.type = "button";
+      x.addEventListener("click", function () { net.list.splice(i, 1); if (net.pick === i) { net.pick = -1; netApply(false); } else if (net.pick > i) net.pick--; netRes = {}; netSave(); redraw(); });
+      r.appendChild(t); r.appendChild(x); nodes.push(r);
+    });
+    var add = make("div", "opt"), nm = make("input", "field"), ad = make("input", "field"), ab = make("button", "btn", "Add");
+    nm.id = "mn-net-name"; nm.placeholder = "Name (e.g. My VPN)"; nm.maxLength = 30; ad.id = "mn-net-url"; ad.placeholder = "http://127.0.0.1:40000"; ad.maxLength = 300; ab.type = "button"; ab.id = "mn-net-add";
+    nm.setAttribute("aria-label", "Proxy name"); ad.setAttribute("aria-label", "Proxy address");
+    ab.addEventListener("click", function () {
+      var u = ad.value.trim();
+      if (!/^https?:\/\/(?:[^\s\/@:]+(?::[^\s\/@]*)?@)?[A-Za-z0-9.\-]+(?::\d{1,5})?$/.test(u)) { toast("A proxy looks like http://127.0.0.1:8080 (HTTP proxies only)"); return; }
+      if (net.list.length >= 20) { toast("Up to 20 proxies"); return; }
+      net.list.push({ n: nm.value.trim().slice(0, 30) || netHost(u), u: u }); netSave(); redraw();
+    });
+    add.appendChild(nm); add.appendChild(ad); add.appendChild(ab); nodes.push(add);
+    var kv = make("div", "kv");
+    var ta = make("button", "btn", "Test all"); ta.type = "button"; ta.id = "mn-net-test"; ta.disabled = !net.list.length;
+    ta.addEventListener("click", function () { netTestAll().then(redraw); });
+    var best = make("button", "btn", "Use the fastest"); best.type = "button"; best.id = "mn-net-best"; best.disabled = !net.list.length;
+    best.addEventListener("click", function () {
+      netTestAll().then(function () {
+        var b = -1; net.list.forEach(function (_, i) { var r = netRes[i]; if (r && r.ok && (b < 0 || r.ms < netRes[b].ms)) b = i; });
+        if (b < 0) { toast("None of your proxies answered"); return redraw(); }
+        net.pick = b; netSave(); return netApply(true).then(function () { toast("Using " + net.list[b].n + " (" + netRes[b].country + ", " + netRes[b].ms + " ms)"); redraw(); });
+      });
+    });
+    var dir = make("button", "btn" + (net.pick < 0 ? " primary" : ""), "Direct (no proxy)"); dir.type = "button"; dir.id = "mn-net-direct";
+    dir.addEventListener("click", function () { net.pick = -1; netSave(); netApply(false).then(redraw); });
+    kv.appendChild(ta); kv.appendChild(best); kv.appendChild(dir); nodes.push(kv);
+    var chk = function (id, label, key, after) {
+      var l = make("label", "opt"), c = make("input"); c.type = "checkbox"; c.id = id; c.checked = net[key];
+      c.addEventListener("change", function () { net[key] = c.checked; netSave(); if (after) after(); });
+      l.appendChild(c); l.appendChild(document.createTextNode(label)); return l;
+    };
+    nodes.push(chk("mn-net-strict", "Strict: never play without the private connection (all streams and the Unknown channels go through it, or nothing plays)", "strict", function () { if (net.pick >= 0) netApply(true); }));
+    nodes.push(chk("mn-net-trace", "Leave no trace: nothing goes into Recently watched or Continue watching while this world is open", "trace"));
+    var wh = make("div", "opt"), wb = make("button", "btn", "Where do I appear?"), wr = make("span", "", ""); wb.type = "button"; wb.id = "mn-net-where"; wr.id = "mn-net-where-r";
+    wb.addEventListener("click", function () { wr.textContent = "checking…"; linkGet("/api/where", {}).then(function (d) { wr.textContent = "You appear in " + d.country + (d.viaProxy ? " (through your proxy)" : " (your VPN app or your own line)"); }, function (e) { wr.textContent = e.message; }); });
+    wh.appendChild(wb); wh.appendChild(wr); nodes.push(wh);
+    nodes.push(para("Using a VPN app for the whole computer (for example Proton VPN)? Turn it on, leave this on Direct, and press Where do I appear? to check."));
+    nodes.push(para(netOn ? "Now: private, through " + net.list[net.pick].n + "." : net.pick >= 0 ? "Chosen, but not on yet (is EYE3 Link running?)." : "Now: direct, no proxy."));
+  }
+  function openMidnight() {
+    if (!explicitUnlocked) return;
+    $("info-title").textContent = "World of Unknown settings";
+    var nodes = [para("This world appears only while the hidden section is unlocked. Pictures and videos you pick stay in this browser; nothing is uploaded. The EYE3 logo stays as it is.")];
+    var go = make("button", "btn", "◈ Enter the Unknown (W)"); go.type = "button"; go.id = "mn-go"; go.addEventListener("click", openUnknown); nodes.push(go);
+    var row = function (label, el) { var r = make("div", "opt"); r.appendChild(make("span", "", label)); r.appendChild(el); return r; };
+    var pal = make("select", "btn"); pal.id = "mn-pal";
+    var ao = make("option", "", "Changes every hour (24 themes)"); ao.value = "auto"; pal.appendChild(ao);
+    MN_THEMES.forEach(function (t, i) { var o = make("option", "", (i < 10 ? "0" : "") + i + ":00 · " + t.name); o.value = String(i); pal.appendChild(o); }); pal.value = l2.theme;
+    pal.addEventListener("change", function () { l2.theme = pal.value; l2Save(); applyLayer(); });
+    nodes.push(row("Theme", pal));
+    var dim = make("input"); dim.type = "range"; dim.min = "10"; dim.max = "90"; dim.value = String(l2.dim); dim.id = "mn-dim"; dim.setAttribute("aria-label", "Background strength");
+    dim.addEventListener("input", function () { l2.dim = +dim.value; l2Save(); applyLayer(); });
+    nodes.push(row("Background strength", dim));
+    var title = make("input", "field"); title.id = "mn-title"; title.maxLength = 40; title.value = l2.title; title.setAttribute("aria-label", "Title on the home screen");
+    title.addEventListener("change", function () { l2.title = title.value.replace(/^\s+|\s+$/g, "").slice(0, 40) || L2_TITLE; l2Save(); applyLayer(); });
+    nodes.push(row("Home title", title));
+    var pick = function (key, label, accept) {
+      var wrap = make("div", "opt"), inp = make("input"); inp.type = "file"; inp.accept = accept; inp.id = "mn-file-" + key; inp.hidden = true;
+      var b = make("button", "btn", label); b.type = "button"; b.addEventListener("click", function () { inp.click(); });
+      var rm = make("button", "btn", "Remove"); rm.type = "button";
+      rm.addEventListener("click", function () { l2File("del", key)["catch"](function () {}).then(function () { l2Forget(key); applyLayer(); toast("Removed"); }); });
+      inp.addEventListener("change", function () {
+        var f = inp.files && inp.files[0]; if (!f) return;
+        if (!/^(image|video)\//.test(f.type) || (key === "emblem" && !/^image\//.test(f.type))) { toast("Pick a picture" + (key === "bg" ? " or a video" : "")); return; }
+        if (f.size > 80 * 1024 * 1024) { toast("That file is over 80 MB"); return; }
+        l2File("put", key, f).then(function () { l2Forget(key); applyLayer(); toast("Saved on this computer"); })["catch"](function () { toast("This browser could not keep the file"); });
+      });
+      wrap.appendChild(b); wrap.appendChild(rm); wrap.appendChild(inp); return wrap;
+    };
+    nodes.push(pick("bg", "Background picture or video", "image/*,video/*"));
+    var hw = make("div", "opt"), hin = make("input"); hin.type = "file"; hin.multiple = true; hin.accept = "image/*,video/*"; hin.id = "mn-file-hours"; hin.hidden = true;
+    var hb = make("button", "btn", "Pictures for each hour (up to 24)"); hb.type = "button"; hb.addEventListener("click", function () { hin.click(); });
+    var hn = make("span", "", l2.hours ? l2.hours + " saved" : ""); hn.id = "mn-hours-n";
+    var clearHours = function () { var n = 24, jobs = []; for (var k = 0; k < n; k++) { l2Forget("h" + k); jobs.push(l2File("del", "h" + k)["catch"](function () {})); } return Promise.all(jobs); };
+    var hr = make("button", "btn", "Remove"); hr.type = "button";
+    hr.addEventListener("click", function () { clearHours().then(function () { l2.hours = 0; l2Save(); hn.textContent = ""; applyLayer(); toast("Removed"); }); });
+    hin.addEventListener("change", function () {
+      var fs = [].slice.call(hin.files || []).filter(function (f) { return /^(image|video)\//.test(f.type) && f.size <= 80 * 1024 * 1024; }).slice(0, 24);
+      if (!fs.length) { toast("Pick pictures or videos under 80 MB"); return; }
+      clearHours().then(function () { return Promise.all(fs.map(function (f, k) { return l2File("put", "h" + k, f); })); })
+        .then(function () { l2.hours = fs.length; l2Save(); hn.textContent = fs.length + " saved"; applyLayer(); toast(fs.length + " saved on this computer — one for each hour, in turn"); })
+        ["catch"](function () { toast("This browser could not keep the files"); });
+    });
+    hw.appendChild(hb); hw.appendChild(hr); hw.appendChild(hn); hw.appendChild(hin); nodes.push(hw);
+    nodes.push(para("Each hour shows its own theme. With your pictures, hour 0 shows the first, hour 1 the second, and so on (they repeat if you add fewer than 24)."));
+    nodes.push(pick("emblem", "Emblem (your logo)", "image/*"));
+    var lh = make("label", "opt"), cb = make("input"); cb.type = "checkbox"; cb.id = "mn-lockhidden"; cb.checked = l2.lockHidden;
+    cb.addEventListener("change", function () { l2.lockHidden = cb.checked; l2Save(); });
+    lh.appendChild(cb); lh.appendChild(document.createTextNode("Lock when I switch to another tab or window")); nodes.push(lh);
+    var addList = make("button", "btn", "Add my 18+ playlist file"); addList.type = "button";
+    addList.addEventListener("click", function () { closeOverlays(); openMaker(); setTimeout(function () { try { $("mk-import").click(); } catch (e) {} }, 300); });
+    var addLink = make("button", "btn", "Add my 18+ playlist link or account"); addLink.type = "button";
+    addLink.addEventListener("click", function () { closeOverlays(); openAccounts(); });
+    var kv = make("div", "kv"); kv.appendChild(addList); kv.appendChild(addLink); nodes.push(kv);
+    nodes.push(para("Channels come only from your own playlists and accounts; groups named for adults go to the Explicit (18+) category. EYE3 provides and hosts no adult content."));
+    netSection(nodes);
+    var lock = make("button", "btn", "Lock now (Q)"); lock.type = "button"; lock.addEventListener("click", function () { lockExplicit(); closeOverlays(); });
+    nodes.push(lock);
+    rowsHtml($("info-body"), nodes); openOverlay("ov-info");
+  }
+  $("ex-mn").addEventListener("click", function () { closeOverlays(); openMidnight(); });
+  var layerHour = new Date().getHours();
+  setInterval(function () { var h = new Date().getHours(); if (h !== layerHour) { layerHour = h; if (explicitUnlocked) applyLayer(); } }, 30000);   // a new theme every hour
+  // the World of Unknown's own channels: public-domain horror, sci-fi, noir, the unexplained and old-time radio
+  function openUnknown() {
+    if (!explicitUnlocked) return;
+    closeOverlays();
+    if (!unknownChannel(free.genre)) { free.genre = "u:" + UNKNOWN_CHANNELS[0].id; free.items = []; free.total = 0; free.busy = ""; }
+    vod.kind = "free"; openVod();
+  }
+  document.addEventListener("keydown", function (e) {   // Q locks Midnight at once
+    if (!explicitUnlocked || isTyping() || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.key === "q" || e.key === "Q") { e.preventDefault(); e.stopImmediatePropagation(); closeOverlays(); lockExplicit(); focusIndex = 0; paintFocus(); }
+    else if ((e.key === "w" || e.key === "W") && !overlayOpen() && !e.shiftKey) { e.preventDefault(); e.stopImmediatePropagation(); openUnknown(); }
+  }, true);
+  function lockOnLeave() { if (explicitUnlocked && l2.lockHidden) { lockExplicit(true); closeOverlays(); } }
+  document.addEventListener("visibilitychange", function () { if (document.hidden) lockOnLeave(); });
+  window.addEventListener("pagehide", lockOnLeave);   // also lock before the page is frozen into the back/forward cache
   function isBack(e) { return e.key === "Escape" || e.key === "GoBack" || e.keyCode === 10009 || e.keyCode === 461 || e.key === "Backspace" && !isTyping(); }
   function isTyping() { var a = document.activeElement; return a && (a.tagName === "INPUT" || a.tagName === "TEXTAREA"); }
   document.addEventListener("keydown", function (e) {
     if ($("ov-pal").classList.contains("open")) { palKey(e); return; }
+    if ($("geeni-panel").classList.contains("open")) { if (isBack(e) && e.key === "Escape") { e.preventDefault(); geeniPanel(false); } return; }
+    if ($("ov-pin").classList.contains("open")) { if (isBack(e)) { e.preventDefault(); $("pin-cancel").click(); } return; }
+    if ($("ov-grid").classList.contains("open")) { gridKey(e); return; }
+    if ($("ov-multi").classList.contains("open")) { multiKey(e); return; }
     if ((e.ctrlKey || e.metaKey) && (e.key === "k" || e.key === "K")) { e.preventDefault(); openPalette(); return; }
     if (e.key === "?" && !isTyping() && !e.ctrlKey && !e.metaKey) { e.preventDefault(); openShortcuts(); return; }
     if ((e.key === "f" || e.key === "F") && !isTyping()) { toggleFullscreen(); return; }
@@ -2703,6 +3967,12 @@
       }
       else if (e.key === "/") { e.preventDefault(); try { $("tv-search").focus(); } catch (er) {} }
       else if (e.key === "g" || e.key === "G") { e.preventDefault(); openGuide(); }
+      else if (e.key === "u" || e.key === "U") { e.preventDefault(); openCatchup(); }
+      else if (e.key === "d" || e.key === "D") { e.preventDefault(); openGrid(); }
+      else if (e.key === "m" || e.key === "M") { e.preventDefault(); mvAdd(channels[chIndex]); }
+      else if (e.key === "c" || e.key === "C") { e.preventDefault(); castNow(); }
+      else if (e.key === "o" || e.key === "O") { e.preventDefault(); miniWindow(); }
+      else if (e.key === "r" || e.key === "R") { e.preventDefault(); recToggle(); }
       else if (e.key === "v" || e.key === "V") { e.preventDefault(); var vc = channels[chIndex]; if (vc) downloadM3u(vc.name, vc.url); }
       else if (e.key === "x" || e.key === "X") { e.preventDefault(); cycleAspect(); }
       else if (e.key === "a" || e.key === "A") { e.preventDefault(); cycleAudio(); }
@@ -2719,6 +3989,7 @@
       var vrows = function () { return [].slice.call($("vod-list").querySelectorAll(".ch:not(.action)")); };
       if (e.key === "/") { e.preventDefault(); try { $("vod-search").focus(); } catch (er) {} }
       else if (e.key === "ArrowLeft" && vod.mode === "episodes") { e.preventDefault(); vodBack(); }
+      else if ((e.key === "i" || e.key === "I") && !$("vod-meta").hidden) { e.preventDefault(); openMeta(); }
       else if (e.key === "ArrowDown" || e.key === "ArrowUp") {
         var rows = vrows(); if (!rows.length) return;
         var at = rows.indexOf(document.activeElement); e.preventDefault();

@@ -20,15 +20,15 @@ If your computer cannot find a provider's address ("getaddrinfo failed") but ano
 
 Run:   python3 eye3-link.py          (Windows: py eye3-link.py)      Stop: Ctrl+C
 """
-import argparse, base64, gzip, hashlib, ipaddress, json, os, re, secrets, socket, ssl, sys, threading, time
+import argparse, base64, gzip, hashlib, ipaddress, json, os, re, secrets, shutil, socket, ssl, sys, threading, time
 import xml.etree.ElementTree as ET
 import urllib.error as ue
 import urllib.parse as up
 import urllib.request as ur
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.7"
-ALLOWED_ORIGINS = ["https://j-janko420.github.io"]          # more: EYE3_ORIGINS=https://a,https://b
+VERSION = "1.10.1"
+ALLOWED_ORIGINS = ["https://j-janko420.github.io", "https://eye3-vision.netlify.app"]          # more: EYE3_ORIGINS=https://a,https://b
 LOCAL_ORIGIN = re.compile(r"^http://(localhost|127\.0\.0\.1)(:\d+)?$")
 BAD = re.compile(r"adult|xxx|18\+|porn|erotic|\bsex|playboy|hustler|brazzers|dorcel|penthouse|redlight", re.I)
 UA_PLAYER = "VLC/3.0.20 LibVLC/3.0.20"
@@ -43,7 +43,7 @@ class LinkError(Exception):
 
 
 STATE = {"token": secrets.token_urlsafe(24), "port": 0, "insecure": False, "proxy": "", "origins": list(ALLOWED_ORIGINS), "sessions": {}, "hdrs": {}, "events": [], "auto_fix": False, "auto_update": False, "playlists": "", "started": 0.0,
-         "last_stream": 0.0, "update": {}, "update_base": os.environ.get("EYE3_UPDATE_BASE", ""), "conf_path": ""}
+         "last_stream": 0.0, "recordings": "", "rec": {}, "update": {}, "update_base": os.environ.get("EYE3_UPDATE_BASE", ""), "conf_path": ""}
 
 
 def ssl_context():
@@ -103,6 +103,8 @@ def _getaddrinfo(host, port, *args, **kw):
         return _real_getaddrinfo(host, port, *args, **kw)
     except socket.gaierror:
         if not isinstance(host, str) or not host or is_ip(host) or host.lower() == "localhost":
+            raise
+        if STATE.get("strict"):   # strict private connection: never ask a DNS service outside the viewer's proxy
             raise
         if not STATE.get("dns"):
             if not STATE.get("auto_fix"):
@@ -217,7 +219,7 @@ def note_event(kind, text):
     del ev[:-20]
 
 
-CONF_KEYS = {"port": int, "dns": str, "proxy": str, "auto_fix": bool, "auto_update": bool, "playlists": str, "origins": list}
+CONF_KEYS = {"port": int, "dns": str, "proxy": str, "auto_fix": bool, "auto_update": bool, "playlists": str, "recordings": str, "origins": list}
 
 
 def load_conf(path):
@@ -330,7 +332,7 @@ def ver_tuple(v):
 
 
 def update_base():
-    return (STATE.get("update_base") or "https://github.com/j-janko420/EYE3-VISION/releases/download/eye3-link-latest").rstrip("/")
+    return (STATE.get("update_base") or "https://eye3-vision.netlify.app/downloads").rstrip("/")
 
 
 def asset_name():
@@ -484,6 +486,51 @@ def probe_stream(url):
         return {"ok": False, "why": classify(exc), "stage": stage}
 
 
+# ---------------------------------------------------- private connection (the viewer's OWN proxies)
+# Home can switch, at run time, between proxies the viewer already has (a VPN app's HTTP proxy mode, a proxy they pay for).
+# EYE3 includes no VPN and no proxies. Addresses live only in memory here and are never logged or saved.
+PROXY_RX = re.compile(r"^https?://(?:[^\s/@:]+(?::[^\s/@]*)?@)?[A-Za-z0-9.\-]+(?::\d{1,5})?$")
+
+
+def proxy_check(url):
+    url = (url or "").strip()
+    if not PROXY_RX.match(url):
+        raise LinkError("A proxy looks like http://127.0.0.1:8080 or http://user:pass@host:port (HTTP proxies only).")
+    host = up.urlparse(url)
+    if host.hostname in ("127.0.0.1", "localhost") and host.port == STATE.get("port"):
+        raise LinkError("That is EYE3 Link itself, not a proxy.")
+    return url
+
+
+def proxy_view():
+    p = STATE["proxy"]
+    host = up.urlparse(p).hostname or "" if p else ""
+    return {"ok": True, "proxy": bool(p), "host": host, "strict": bool(STATE.get("strict")), "base": bool(STATE.get("base_proxy"))}
+
+
+def proxy_set(url, strict):
+    """Route everything through url ('' or 'base' = back to how Link was started). strict = never connect without it."""
+    STATE["proxy"] = STATE.get("base_proxy", "") if url in ("", "base", "off") else proxy_check(url)
+    STATE["strict"] = bool(strict) and bool(STATE["proxy"])
+    return proxy_view()
+
+
+def proxy_test(url):
+    """Which country does this proxy come out in, and how fast does it answer? (asked only when the viewer presses Test)"""
+    url = proxy_check(url)
+    req = ur.Request(STATE.get("where_url") or "https://ipinfo.io/country", headers={"User-Agent": UA_PLAYER})
+    t0 = time.time()
+    try:
+        opener = ur.build_opener(ur.ProxyHandler({"http": url, "https": url}), ur.HTTPSHandler(context=ssl_context()))
+        with opener.open(req, timeout=10) as r:
+            code = r.read(64).decode("utf-8", "replace").strip().upper()
+    except Exception as exc:
+        return {"ok": False, "why": classify(exc)}
+    if not re.fullmatch(r"[A-Z]{2}", code):
+        return {"ok": False, "why": "no country"}
+    return {"ok": True, "country": code, "ms": int((time.time() - t0) * 1000)}
+
+
 def where_am_i():
     """The country this computer (or its proxy/VPN) appears to be in. Called only when the viewer asks."""
     body, _, _ = fetch(STATE.get("where_url") or "https://ipinfo.io/country", timeout=10, limit=64)
@@ -621,6 +668,9 @@ def channels_from_xtream(server, user, password):
             continue
         prefix = "%s/live/%s/%s/%s" % (base, up.quote(user, safe=""), up.quote(password, safe=""), s["stream_id"])
         ch = {"n": name, "c": cat, "l": str(s.get("stream_icon") or ""), "e": s["stream_id"]}
+        days = archive_days(s)
+        if days:
+            ch["ar"] = days                                   # catch-up: the panel keeps this many days of the channel
         if hls_ok:
             ch["u"], ch["a"] = stream_url(prefix + ".m3u8", base_hid()), stream_url(prefix + ".ts", base_hid())   # HLS first, raw TS as fallback
         else:
@@ -753,6 +803,78 @@ def xtream_epg(server, user, password, stream_id, limit=4):
             out.append({"t": title[:160], "d": b64text(r.get("description")).strip()[:300], "s": start, "e": stop})
     out.sort(key=lambda x: x["s"])
     return {"items": out}
+
+
+# ------------------------------------------------------------------------------- catch-up (replay of past programmes)
+MAX_ARCHIVE_DAYS = 30
+SERVER_TIME = re.compile(r"^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})")
+SHIFT_START = re.compile(r"^\d{4}-\d{2}-\d{2}:\d{2}-\d{2}$")
+
+
+def archive_days(s):
+    """Days of catch-up an Xtream live row offers (tv_archive=1 and tv_archive_duration>0), else 0."""
+    try:
+        if int(s.get("tv_archive") or 0) != 1:
+            return 0
+        return max(0, min(int(s.get("tv_archive_duration") or 0), MAX_ARCHIVE_DAYS))
+    except (TypeError, ValueError):
+        return 0
+
+
+def shift_start(row, start):
+    """The programme start in the panel's own clock, as timeshift wants it ('2026-11-02:20-30').
+    Panels send 'start' in their time zone next to the UTC timestamp; use it when present, else UTC."""
+    m = SERVER_TIME.match(str(row.get("start") or ""))
+    if m:
+        return "%s-%s-%s:%s-%s" % m.groups()
+    return time.strftime("%Y-%m-%d:%H-%M", time.gmtime(start))
+
+
+def xtream_catchup(server, user, password, stream_id, days):
+    """Past programmes of one channel that the panel can replay (Xtream get_simple_data_table), newest first."""
+    base, api = xtream_api(server, user, password)
+    if not str(stream_id).isdigit():
+        raise LinkError("That channel has no valid id.")
+    data = vod_json(api + "&action=get_simple_data_table&stream_id=%s" % stream_id)
+    rows = data.get("epg_listings") if isinstance(data, dict) else []
+    now = time.time()
+    oldest = now - max(1, min(days or 7, MAX_ARCHIVE_DAYS)) * 86400
+    out = []
+    for r in rows or []:
+        if not isinstance(r, dict):
+            continue
+        try:
+            start, stop = int(r.get("start_timestamp")), int(r.get("stop_timestamp"))
+        except (TypeError, ValueError):
+            continue
+        if str(r.get("has_archive", "1")) in ("0", "False", "false") or stop <= start or start < oldest or start > now - 60:
+            continue                                          # not kept by the panel, broken, too old, or not started yet
+        title = b64text(r.get("title")).strip()
+        if title:
+            out.append({"t": title[:160], "d": b64text(r.get("description")).strip()[:300], "s": start, "e": min(stop, int(now)),
+                        "st": shift_start(r, start), "on": stop > now})
+    out.sort(key=lambda x: -x["s"])
+    return {"items": out[:400]}
+
+
+def catchup_play_url(server, user, password, stream_id, start, minutes):
+    """A replay link for one programme (timeshift), wrapped by /stream like any other stream."""
+    base = xtream_base(server)
+    if not str(stream_id).isdigit():
+        raise LinkError("That channel has no valid id.")
+    if not SHIFT_START.match(start or ""):
+        raise LinkError("That programme has no valid start time.")
+    try:
+        minutes = int(minutes)
+    except (TypeError, ValueError):
+        minutes = 0
+    if not 1 <= minutes <= 720:
+        raise LinkError("A replay must last between 1 minute and 12 hours.")
+    u, p = up.quote(user, safe=""), up.quote(password, safe="")
+    path = "%s/timeshift/%s/%s/%d/%s/%s.ts" % (base, u, p, minutes, start, stream_id)
+    php = "%s/streaming/timeshift.php?username=%s&password=%s&stream=%s&start=%s&duration=%d" % (base, u, p, stream_id, start, minutes)
+    hid = base_hid()
+    return {"url": stream_url(path, hid), "alt": stream_url(php, hid)}   # two spellings: panels support one or the other
 
 
 # ------------------------------------------------------------------------------- XMLTV guide
@@ -1016,8 +1138,8 @@ class Handler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
 
     def log_message(self, fmt, *args):
-        if STATE.get("verbose"):
-            sys.stderr.write("%s - %s\n" % (self.address_string(), fmt % args))
+        if STATE.get("verbose"):   # addresses can hold logins: never written out
+            sys.stderr.write("%s - %s\n" % (self.address_string(), re.sub(r"([?&](?:u|url|pass|user|server|portal|mac)=)[^&\s\"]*", r"\1…", fmt % args)))
 
     # -- helpers
     def origin(self):
@@ -1128,10 +1250,27 @@ class Handler(BaseHTTPRequestHandler):
             return
         if path == "/api/local":
             return self.send_json(200, local_playlists())
+        if path == "/api/record/start":
+            r = rec_start(one("u"), one("name"), int(one("minutes")) if one("minutes").isdigit() else 0, one("h"))
+            return self.send_json(200, rec_view(r))
+        if path == "/api/record/stop":
+            r = STATE["rec"].get(one("id"))
+            if not r:
+                raise LinkError("That recording is not known.")
+            r["stop"] = True
+            return self.send_json(200, rec_view(r))
+        if path == "/api/record/list":
+            return self.send_json(200, {"dir": rec_dir(), "items": [rec_view(r) for r in sorted(STATE["rec"].values(), key=lambda x: -x["started"])]})
         if path == "/api/probe":
             return self.send_json(200, probe_stream(one("u")))
         if path == "/api/where":
             return self.send_json(200, where_am_i())
+        if path == "/api/proxy":
+            return self.send_json(200, proxy_view())
+        if path == "/api/proxy/set":
+            return self.send_json(200, proxy_set(one("u"), one("strict") == "1"))
+        if path == "/api/proxy/test":
+            return self.send_json(200, proxy_test(one("u")))
         if path == "/api/m3u":
             return self.send_json(200, channels_from_m3u(one("url")))
         if path == "/api/xtream":
@@ -1146,6 +1285,13 @@ class Handler(BaseHTTPRequestHandler):
             if not (one("server") and one("user") and one("pass")):
                 raise LinkError("Enter the server, username and password.")
             return self.send_json(200, xtream_epg(one("server"), one("user"), one("pass"), one("id"), min(int(one("n")), 24) if one("n").isdigit() and int(one("n")) > 0 else 4))
+        if path in ("/api/catchup", "/api/catchup/play"):
+            if not (one("server") and one("user") and one("pass")):
+                raise LinkError("Enter the server, username and password.")
+            creds = (one("server"), one("user"), one("pass"))
+            if path == "/api/catchup":
+                return self.send_json(200, xtream_catchup(*creds, stream_id=one("id"), days=int(one("days")) if one("days").isdigit() else 7))
+            return self.send_json(200, catchup_play_url(*creds, stream_id=one("id"), start=one("start"), minutes=one("minutes")))
         if path in ("/api/vod", "/api/vod/series", "/api/vod/play"):
             if not (one("server") and one("user") and one("pass")):
                 raise LinkError("Enter the server, username and password.")
@@ -1235,6 +1381,156 @@ def rewrite_playlist(text, base, hid=""):
     return "\n".join(out) + "\n"
 
 
+# --- recording: save a stream from the viewer's own account or list to a file on this computer ------------------
+REC_MAX_BYTES = 8 * 1024 ** 3           # one recording
+REC_MAX_MINUTES = 360
+REC_ACTIVE = 3                          # recordings running at once
+_rec_lock = threading.Lock()
+
+
+def rec_dir():
+    d = STATE.get("recordings") or ""
+    if not d:
+        base = exe_dir() if getattr(sys, "frozen", False) else os.path.dirname(os.path.abspath(__file__))
+        d = os.path.join(base, "recordings")
+    return d
+
+
+def rec_path(name):
+    clean = re.sub(r"[^\w\- ]+", "", name or "", flags=re.UNICODE).strip()[:50] or "recording"
+    base = "%s %s" % (clean, time.strftime("%Y-%m-%d %H-%M"))
+    d, n, path = rec_dir(), 1, ""
+    while True:
+        path = os.path.join(d, base + ("" if n == 1 else " (%d)" % n) + ".ts")
+        if not os.path.exists(path):
+            return path
+        n += 1
+
+
+def _rec_pick_variant(text, base):
+    best, pick = -1, ""
+    lines = text.splitlines()
+    for i, line in enumerate(lines):
+        if line.startswith("#EXT-X-STREAM-INF"):
+            m = re.search(r"BANDWIDTH=(\d+)", line)
+            bw = int(m.group(1)) if m else 0
+            for nxt in lines[i + 1:]:
+                if nxt.strip() and not nxt.startswith("#"):
+                    if bw > best:
+                        best, pick = bw, up.urljoin(base, nxt.strip())
+                    break
+    return pick
+
+
+def _rec_hls(r, out, body, url, hdr, end):
+    seen, hops = set(), 0
+    while True:
+        text = body.decode("utf-8", "replace")
+        if "#EXT-X-STREAM-INF" in text:                      # a master playlist: follow the best variant
+            url = _rec_pick_variant(text, url)
+            hops += 1
+            if not url or hops > 3:
+                raise LinkError("The stream playlist has no usable video.")
+            body, _, _ = fetch(url, hdr, 25, MAX_PLAYLIST)
+            continue
+        if re.search(r"#EXT-X-KEY:(?!.*METHOD=NONE)", text):
+            raise LinkError("This stream is encrypted, so it cannot be recorded.")
+        segs = [up.urljoin(url, l.strip()) for l in text.splitlines() if l.strip() and not l.startswith("#")]
+        for seg in [x for x in segs if x not in seen]:
+            if r["stop"] or time.time() >= end or r["bytes"] >= REC_MAX_BYTES:
+                return
+            data, _, _ = fetch(seg, hdr, 25, 64 * 1024 * 1024)
+            out.write(data)
+            r["bytes"] += len(data)
+            seen.add(seg)
+        if "#EXT-X-ENDLIST" in text:
+            return
+        m = re.search(r"#EXT-X-TARGETDURATION:(\d+)", text)
+        wait = min(max(int(m.group(1)) / 2.0 if m else 2.0, 1.0), 6.0)
+        t0 = time.time()
+        while time.time() - t0 < wait:
+            if r["stop"] or time.time() >= end:
+                return
+            time.sleep(0.2)
+        body, _, _ = fetch(url, hdr, 25, MAX_PLAYLIST)
+        if len(seen) > 5000:
+            seen = set(list(seen)[-2000:])
+
+
+def rec_worker(r):
+    end = r["started"] + r["minutes"] * 60
+    try:
+        hdr = {"User-Agent": UA_PLAYER}
+        hdr.update(r["hdr"])
+        with open(r["path"], "wb") as out:
+            with open_url(ur.Request(r["url"], headers=hdr), 25) as resp:
+                ctype = (resp.headers.get("Content-Type") or "").lower()
+                final = resp.geturl()
+                if "mpegurl" in ctype or up.urlparse(final).path.lower().endswith(".m3u8"):
+                    body = resp.read(MAX_PLAYLIST)
+                    if body.lstrip()[:7] != b"#EXTM3U":
+                        raise LinkError("The address did not return a stream.")
+                    _rec_hls(r, out, body, final, hdr, end)
+                else:
+                    while not r["stop"] and time.time() < end and r["bytes"] < REC_MAX_BYTES:
+                        chunk = resp.read(65536)
+                        if not chunk:
+                            break
+                        out.write(chunk)
+                        r["bytes"] += len(chunk)
+        r["state"] = "stopped" if r["stop"] else "done"
+    except LinkError as e:
+        r["state"], r["error"] = "failed", str(e)
+    except ue.HTTPError as e:
+        r["state"], r["error"] = "failed", "The stream server answered HTTP %d." % e.code
+    except OSError as e:
+        r["state"], r["error"] = "failed", ("Could not write the file: %s" % e.strerror) if getattr(e, "filename", None) else reach_error(e).replace("the server", "the stream", 1)
+    except Exception as e:
+        r["state"], r["error"] = "failed", "Recording stopped: %s" % e
+    r["ended"] = time.time()
+    if r["state"] == "failed" and r["bytes"] == 0:
+        try:
+            os.remove(r["path"])
+        except OSError:
+            pass
+
+
+def rec_start(target, name, minutes, hid=""):
+    if not re.match(r"^https?://", target or "", re.I):
+        raise LinkError("Only http:// and https:// streams can be recorded.")
+    if up.urlparse(target).netloc in ("127.0.0.1:%d" % STATE["port"], "localhost:%d" % STATE["port"]):
+        raise LinkError("A stream cannot point back to EYE3 Link.")
+    minutes = min(max(minutes or 120, 1), REC_MAX_MINUTES)
+    with _rec_lock:
+        recs = STATE.setdefault("rec", {})
+        for r in recs.values():
+            if r["state"] == "recording" and r["url"] == target:
+                return r
+        if sum(1 for r in recs.values() if r["state"] == "recording") >= REC_ACTIVE:
+            raise LinkError("%d recordings are already running. Stop one first." % REC_ACTIVE)
+        d = rec_dir()
+        try:
+            os.makedirs(d, exist_ok=True)
+            if shutil.disk_usage(d).free < 1024 ** 3:
+                raise LinkError("Less than 1 GB of free disk space is left, so recording was not started.")
+        except OSError as e:
+            raise LinkError("Could not use the recordings folder: %s" % (e.strerror or e))
+        r = {"id": secrets.token_hex(4), "url": target, "name": name or "recording", "path": rec_path(name), "minutes": minutes,
+             "started": time.time(), "ended": 0.0, "bytes": 0, "state": "recording", "error": "", "stop": False,
+             "hdr": STATE["hdrs"].get(hid, {}) if re.fullmatch(r"[0-9a-f]{12}", hid or "") else {}}
+        recs[r["id"]] = r
+        for old in sorted([x for x in recs.values() if x["state"] != "recording"], key=lambda x: x["started"])[:-20]:
+            recs.pop(old["id"], None)
+        threading.Thread(target=rec_worker, args=(r,), daemon=True).start()
+        return r
+
+
+def rec_view(r):
+    sec = int((r["ended"] or time.time()) - r["started"])
+    return {"id": r["id"], "name": r["name"], "file": os.path.basename(r["path"]), "bytes": r["bytes"], "seconds": sec,
+            "state": r["state"], "error": r["error"]}
+
+
 def main():
     ap = argparse.ArgumentParser(description="EYE3 Link: helper for EYE3 Home (runs on this computer only).")
     ap.add_argument("--port", type=int, default=8765)
@@ -1245,6 +1541,7 @@ def main():
     ap.add_argument("--origin", action="append", default=[], help="also allow this web page origin (for your own copy of EYE3)")
     ap.add_argument("--config", default="", help="a JSON settings file (default: eye3-link.conf next to the program, if it exists)")
     ap.add_argument("--playlists", default="", help="a folder with your own .m3u/.m3u8/.txt playlists (default: 'playlists' next to the program, if it exists)")
+    ap.add_argument("--recordings", default="", help="the folder where recordings are saved (default: 'recordings' next to the program)")
     ap.add_argument("--auto-fix", action="store_true", help="the agent fixes problems by itself while running (for example secure DNS when an address cannot be found)")
     ap.add_argument("--auto-update", action="store_true", help="the agent downloads and installs new versions by itself (programs only; checked with SHA-256)")
     a = ap.parse_args()
@@ -1258,6 +1555,7 @@ def main():
     a.auto_fix = a.auto_fix or bool(conf.get("auto_fix"))
     a.auto_update = a.auto_update or bool(conf.get("auto_update"))
     a.origin = list(a.origin) + [o for o in conf.get("origins", []) if isinstance(o, str)]
+    rec_folder = a.recordings or conf.get("recordings") or ""
     play_dir = a.playlists or conf.get("playlists") or os.path.join(base_dir, "playlists")
     if getattr(sys, "frozen", False) and apply_staged_update():
         print("EYE3 Link was updated. Starting the new version…")
@@ -1274,8 +1572,8 @@ def main():
     if a.dns and a.dns not in DOH and not re.match(r"^https://[^/\s]+/\S*$", a.dns):
         print("--dns must be cloudflare, google or an https:// DNS-over-HTTPS address.")
         return 1
-    STATE.update(port=a.port, insecure=a.insecure, verbose=a.verbose, proxy=a.proxy, auto_fix=a.auto_fix, auto_update=a.auto_update,
-                 playlists=play_dir if os.path.isdir(play_dir) else "", started=time.time(), conf_path=conf_path if os.path.exists(conf_path) else "")
+    STATE.update(port=a.port, insecure=a.insecure, verbose=a.verbose, proxy=a.proxy, base_proxy=a.proxy, strict=False, auto_fix=a.auto_fix, auto_update=a.auto_update,
+                 playlists=play_dir if os.path.isdir(play_dir) else "", recordings=rec_folder, started=time.time(), conf_path=conf_path if os.path.exists(conf_path) else "")
     if a.dns:
         install_dns(a.dns)
     STATE["where_url"] = os.environ.get("EYE3_WHERE_URL", "")  # for tests only

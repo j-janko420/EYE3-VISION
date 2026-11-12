@@ -8,8 +8,9 @@ function check(name, cond, detail) {
   console.log('  FAIL ' + name + (detail !== undefined ? '   -> ' + JSON.stringify(detail) : ''));
 }
 async function suite(title, fn) {
+  if (process.env.ONLY && title.indexOf(process.env.ONLY) === -1) return;   // ONLY="pro pack" runs one suite while developing
   console.log('\n# ' + title);
-  try { await fn(); } catch (e) { fail++; failures.push(title + ': ' + e.message); console.log('  FAIL (exception) ' + e.message.split('\n')[0]); }
+  try { await fn(); } catch (e) { fail++; failures.push(title + ': ' + e.message); console.log('  FAIL (exception) ' + e.message.split('\n')[0] + (process.env.ONLY ? '\n' + (e.stack || '').split('\n').filter((l) => /home\.js/.test(l)).slice(0, 2).join('\n') : '')); }
 }
 function done() {
   console.log('\n' + pass + ' passed, ' + fail + ' failed');
@@ -26,7 +27,8 @@ async function open(browser, seed, extra) {
   await page.addInitScript((s) => {
     if (localStorage.getItem('__seeded')) return;
     localStorage.setItem('__seeded', '1');
-    Object.keys(s || {}).forEach((k) => localStorage.setItem(k, typeof s[k] === 'string' ? s[k] : JSON.stringify(s[k])));
+    const v = Object.assign({ 'eye3.home.setup': '1' }, s || {});
+    Object.keys(v).forEach((k) => localStorage.setItem(k, typeof v[k] === 'string' ? v[k] : JSON.stringify(v[k])));
   }, seed || {});
   if (extra && extra.init) await page.addInitScript(extra.init);   // a script that runs before the page's own (for stand-ins of CDN libraries)
   await page.goto((extra && extra.url) || HOME, { waitUntil: 'domcontentloaded' });

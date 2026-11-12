@@ -17,7 +17,7 @@ EYE3 Home runs in your browser. IPTV providers (Xtream Codes, MAG/Stalker portal
 
 ### No Python? Use the ready-to-run program
 GitHub builds ready-to-run programs automatically from `eye3-link.py` and publishes them at
-https://github.com/j-janko420/EYE3-VISION/releases/tag/eye3-link-latest (Windows `.exe`, Mac with Apple chip, Linux). Download the one for your system and open it; leave its window open. Check the file against `SHA256SUMS.txt` if you like. They are **not code-signed**, so Windows SmartScreen or macOS Gatekeeper may warn you (Windows: More info, Run anyway; Mac: right-click, Open), and some antivirus tools flag this kind of program. If you prefer, run the Python script instead; it is the reference build.
+https://eye3-vision.netlify.app/downloads/ (Windows `.exe`, Mac with Apple chip, Linux). Download the one for your system and open it; leave its window open. Check the file against `SHA256SUMS.txt` if you like. They are **not code-signed**, so Windows SmartScreen or macOS Gatekeeper may warn you (Windows: More info, Run anyway; Mac: right-click, Open), and some antivirus tools flag this kind of program. If you prefer, run the Python script instead; it is the reference build.
 
 ## Add your account (EYE3 Home → Live TV → IPTV accounts)
 | Type | What to enter |
@@ -53,6 +53,18 @@ Import the file in **Playlist maker → Import an M3U file**. A big file is save
 - Live TV keys: **P** previous channel, **X** picture shape, **A** audio track, **T** subtitles, **L** favourite, **/** search (accents and word order do not matter). A frozen stream reconnects by itself.
 - Settings → Help → **Copy support report** makes a text you can paste in the chat. It leaves out logins, passwords and MAC addresses. If a file is too big to attach, see `home/send-files.html` (zip it first; split it into parts under 25 MB if still too big).
 
+### Film info and subtitles
+While a movie, an episode or a free movie plays, press **Info & subtitles** (or **I**): EYE3 shows the poster, year, rating and plot from Stremio's free Cinemeta service and lists subtitle languages from OpenSubtitles. Pick one and press **Show subtitles**; **Off** removes them. Only the title you are watching is sent to those services, and only when you press the button.
+
+### TV guide in the wrong time zone?
+Settings → **Guide time shift** moves the whole guide by whole hours until the programmes match.
+
+### Catch-up TV: replay past programmes (EYE3 Link 1.9)
+Channels of an Xtream Codes account whose provider keeps an archive show **⟲** in the list. Play one and press **U** (or the **Replay** button): you get its past programmes by day, newest first. Pick one to watch it from the start. Press Enter on any channel to go back to live TV. How many days you can go back depends on your provider (shown in the title). Needs EYE3 Link 1.9 or newer.
+
+### Geeni (your floating helper)
+Click the eye logo **three times** (or press **H** on the home screen). The eye spins and turns into Geeni, a small red helper that floats on the screen. Click Geeni and type or say what you want: “play BBC News”, “channel 5”, “next channel”, “replay”, “record”, “movies”, “radio”, “louder”, “pause”, “fullscreen”, “sleep”, or ask a question such as “how do I add my Xtream account?” or “why won't it play?”. “Bye” (or three more clicks) sends Geeni away. Geeni works inside the page and sends nothing anywhere; voice uses your browser's speech service (in Chrome and Edge, Google or Microsoft turns your words into text), and only when you press 🎤.
+
 ### Quick search, guide, VLC and more (EYE3 Link 1.6)
 - **Ctrl (or ⌘) + K** opens quick search: type part of a channel name (your own lists come first) or an action. **?** lists every key.
 - **G** shows the programme list of the channel you are watching. Xtream accounts bring their own guide. For other playlists, add a guide (XMLTV) link under IPTV accounts → **More options**, or in Settings → **TV guide link**; a playlist that names its guide in its first line is used automatically.
@@ -63,11 +75,11 @@ Import the file in **Playlist maker → Import an M3U file**. A big file is save
 
 ### Direct links
 Open these on the laptop to jump straight to the right form (nothing is filled in or saved from the link):
-- M3U link: `https://j-janko420.github.io/EYE3-VISION/home/?add=m3u`
-- Xtream Codes login: `https://j-janko420.github.io/EYE3-VISION/home/?add=xtream`
-- MAG / Stalker portal (address + MAC): `https://j-janko420.github.io/EYE3-VISION/home/?add=mag`
-- Movies & series on demand (needs an Xtream account added first): `https://j-janko420.github.io/EYE3-VISION/home/?add=movies`
-- Playlist maker (your own channels, M3U import/export): `https://j-janko420.github.io/EYE3-VISION/home/?add=playlist`
+- M3U link: `https://eye3-vision.netlify.app/home/?add=m3u`
+- Xtream Codes login: `https://eye3-vision.netlify.app/home/?add=xtream`
+- MAG / Stalker portal (address + MAC): `https://eye3-vision.netlify.app/home/?add=mag`
+- Movies & series on demand (needs an Xtream account added first): `https://eye3-vision.netlify.app/home/?add=movies`
+- Playlist maker (your own channels, M3U import/export): `https://eye3-vision.netlify.app/home/?add=playlist`
 
 Adult groups in your own accounts show only after you unlock the hidden section (see below).
 
@@ -105,6 +117,12 @@ EYE3 Link can look after itself. All switches are off by default when you start 
 
 EYE3 Home shows an **Agent** chip when Link runs; it reconnects by itself when Link restarts. The one-time install for the computer behind your TV (USB stick or download) is in `box/README.txt`.
 
+## Recording (EYE3 Link 1.8)
+
+Play a channel in EYE3 Home and press **R** (or the **Record** button). EYE3 Link saves it as a `.ts` file in the `recordings` folder next to the program (change it with `--recordings FOLDER`). Press **R** again to stop; it also stops by itself after 3 hours. Settings → **Recordings** lists the files and shows the folder. Play them with VLC or any player that opens `.ts` files.
+
+Limits: your own links, lists and accounts only; encrypted streams cannot be recorded; adult channels are never recorded; up to 3 recordings at once; recording does not start if less than 1 GB of disk space is free.
+
 ## Problems
 - "EYE3 Link is not running": start it (above), then press **Check again**.
 - "The server rejected this username or password": check them with your provider.
@@ -113,3 +131,8 @@ EYE3 Home shows an **Agent** chip when Link runs; it reconnects by itself when L
 - Port busy: `python3 eye3-link.py --port 8766` (EYE3 Home looks for 8765, so keep the default if you can).
 - Using your own copy of EYE3 Home on another address: `python3 eye3-link.py --origin https://your.address`.
 - Tests: `python3 tools/test_eye3_link.py`.
+
+
+## Private connection for the World of Unknown (EYE3 Link 1.10)
+
+In the hidden World of Unknown, Settings → Private connection lets you list proxies you already have (for example a VPN app's "HTTP proxy" mode at `http://127.0.0.1:PORT`, or a proxy you pay for). EYE3 Link tests each one (country and speed), can pick the fastest, and switches to it while the World is open; locking switches back. **Strict** means nothing plays unless it goes through that connection. **Leave no trace** keeps the World's titles out of Recently watched and Continue watching. EYE3 does not include a VPN or any proxies; use a service you trust and follow its terms and your local laws.

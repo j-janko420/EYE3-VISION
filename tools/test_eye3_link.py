@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Offline tests for eye3-link.py: mock IPTV servers (M3U, Xtream, Stalker, HLS) on localhost. Run: python3 tools/test_eye3_link.py"""
-import http.client, importlib.util, json, os, threading, unittest
+import http.client, importlib.util, json, os, socket, threading, time, unittest
 import urllib.parse as up
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
@@ -45,8 +45,22 @@ class Mock(BaseHTTPRequestHandler):
             if act == "get_live_categories":
                 return self.reply([{"category_id": "1", "category_name": "News"}, {"category_id": "2", "category_name": "XXX Adult"}])
             if act == "get_live_streams":
-                return self.reply([{"name": "Xtream One", "stream_id": 11, "category_id": "1", "stream_icon": "i.png"},
-                                   {"name": "Hidden", "stream_id": 12, "category_id": "2"}])
+                return self.reply([{"name": "Xtream One", "stream_id": 11, "category_id": "1", "stream_icon": "i.png", "tv_archive": 1, "tv_archive_duration": "3"},
+                                   {"name": "Hidden", "stream_id": 12, "category_id": "2", "tv_archive": "0", "tv_archive_duration": "7"}])
+            if act == "get_simple_data_table":
+                import base64 as _b
+                enc = lambda t: _b.b64encode(t.encode()).decode()
+                now = int(time.time())
+                if q.get("stream_id") != "11":
+                    return self.reply({"epg_listings": []})
+                return self.reply({"epg_listings": [
+                    {"title": enc("Morning Show"), "description": enc("Coffee"), "start": "2026-01-02 08:00:00", "start_timestamp": str(now - 7200), "stop_timestamp": str(now - 3600), "has_archive": 1},
+                    {"title": enc("Noon News"), "start_timestamp": str(now - 3600), "stop_timestamp": str(now - 1800), "has_archive": 1},
+                    {"title": enc("Not Kept"), "start_timestamp": str(now - 1800), "stop_timestamp": str(now - 900), "has_archive": 0},
+                    {"title": enc("Too Old"), "start_timestamp": str(now - 9 * 86400), "stop_timestamp": str(now - 9 * 86400 + 1800), "has_archive": 1},
+                    {"title": enc("On Now"), "start_timestamp": str(now - 900), "stop_timestamp": str(now + 900), "has_archive": 1},
+                    {"title": enc("Later"), "start_timestamp": str(now + 900), "stop_timestamp": str(now + 2700), "has_archive": 1},
+                    {"title": enc("Bad"), "start_timestamp": "x", "stop_timestamp": "y"}]})
             if act == "get_short_epg":
                 import base64 as _b
                 enc = lambda t: _b.b64encode(t.encode()).decode()
@@ -133,6 +147,35 @@ class Mock(BaseHTTPRequestHandler):
             return self.reply("AE\n", "text/plain")
         if u.path == "/forbidden/index.m3u8":
             return self.reply("denied", "text/plain", 403)
+        if u.path.startswith("/rec/"):
+            if u.path == "/rec/media.m3u8":
+                return self.reply("#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:2\n#EXTINF:2,\ns0.ts\n#EXTINF:2,\ns1.ts\n#EXTINF:2,\ns2.ts\n#EXT-X-ENDLIST\n", "application/vnd.apple.mpegurl")
+            if u.path in ("/rec/s0.ts", "/rec/s1.ts", "/rec/s2.ts", "/rec/hi0.ts"):
+                return self.reply((b"\x47" + u.path.rsplit("/", 1)[1][:-3].encode() * 93) * 2, "video/mp2t")
+            if u.path == "/rec/master.m3u8":
+                return self.reply("#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=300000\nlow.m3u8\n#EXT-X-STREAM-INF:BANDWIDTH=3000000\nhi.m3u8\n", "application/vnd.apple.mpegurl")
+            if u.path == "/rec/low.m3u8":
+                return self.reply("#EXTM3U\n#EXT-X-TARGETDURATION:2\n#EXTINF:2,\ns0.ts\n#EXT-X-ENDLIST\n", "application/vnd.apple.mpegurl")
+            if u.path == "/rec/hi.m3u8":
+                return self.reply("#EXTM3U\n#EXT-X-TARGETDURATION:2\n#EXTINF:2,\nhi0.ts\n#EXT-X-ENDLIST\n", "application/vnd.apple.mpegurl")
+            if u.path == "/rec/enc.m3u8":
+                return self.reply('#EXTM3U\n#EXT-X-KEY:METHOD=AES-128,URI="k.bin"\n#EXT-X-TARGETDURATION:2\n#EXTINF:2,\ns0.ts\n#EXT-X-ENDLIST\n', "application/vnd.apple.mpegurl")
+            if u.path == "/rec/raw.ts":
+                return self.reply(b"\x47" + b"r" * 100000, "video/mp2t")
+            if u.path == "/rec/endless.ts":
+                self.send_response(200)
+                self.send_header("Content-Type", "video/mp2t")
+                self.send_header("Connection", "close")
+                self.end_headers()
+                self.close_connection = True
+                try:
+                    while True:
+                        self.wfile.write(b"\x47" + bytes(4095))
+                        self.wfile.flush()
+                        import time as _t
+                        _t.sleep(0.02)
+                except (BrokenPipeError, ConnectionResetError, OSError):
+                    return
         if u.path == "/hls/index.m3u8":
             return self.reply('#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-KEY:METHOD=AES-128,URI="key.bin"\n#EXT-X-TARGETDURATION:4\n#EXTINF:4,\nseg1.ts\n#EXTINF:4,\n%s/abs/seg2.ts\n' % host, "application/vnd.apple.mpegurl")
         if u.path in ("/hls/seg1.ts", "/abs/seg2.ts"):
@@ -452,6 +495,97 @@ class LinkTests(unittest.TestCase):
             link.install_dns("")
             doh.shutdown()
 
+
+    # --- recording (EYE3 Link 1.8)
+    def rec_start(self, path, **kw):
+        code, _, body = self.api("/api/record/start", u=self.up_url + path, **kw)
+        return code, json.loads(body)
+
+    def rec_list(self):
+        return json.loads(self.api("/api/record/list")[2])
+
+    def rec_wait(self, rid, timeout=8):
+        import time as _t
+        end = _t.time() + timeout
+        while _t.time() < end:
+            it = [i for i in self.rec_list()["items"] if i["id"] == rid][0]
+            if it["state"] != "recording":
+                return it
+            _t.sleep(0.1)
+        self.fail("the recording did not finish")
+
+    def with_rec_dir(self):
+        import tempfile
+        d = tempfile.mkdtemp()
+        old = link.STATE["recordings"]
+        link.STATE["recordings"] = d
+        self.addCleanup(lambda: link.STATE.__setitem__("recordings", old))
+        return d
+
+    def test_record_hls_saves_every_segment_and_stops_at_the_end_of_the_list(self):
+        d = self.with_rec_dir()
+        code, r = self.rec_start("/rec/media.m3u8", name="Evening News")
+        self.assertEqual(code, 200)
+        it = self.rec_wait(r["id"])
+        self.assertEqual((it["state"], it["error"]), ("done", ""))
+        with open(os.path.join(d, it["file"]), "rb") as fh:
+            data = fh.read()
+        self.assertEqual(len(data), 374 * 3)                                              # three segments, in order
+        self.assertTrue(data[1:3] == b"s0" and data[375:377] == b"s1" and data[749:751] == b"s2")
+        self.assertTrue(it["file"].startswith("Evening News ") and it["file"].endswith(".ts"))
+        self.assertNotIn("u=", json.dumps(self.rec_list()))                              # the stream address (it can hold a login) is never listed
+
+    def test_record_a_master_playlist_takes_the_best_variant(self):
+        d = self.with_rec_dir()
+        it = self.rec_wait(self.rec_start("/rec/master.m3u8", name="Best")[1]["id"])
+        self.assertEqual(it["state"], "done")
+        self.assertEqual(open(os.path.join(d, it["file"]), "rb").read()[1:4], b"hi0")
+
+    def test_record_a_plain_stream_and_encrypted_streams_are_refused(self):
+        d = self.with_rec_dir()
+        it = self.rec_wait(self.rec_start("/rec/raw.ts", name="Raw")[1]["id"])
+        self.assertEqual((it["state"], it["bytes"]), ("done", 100001))
+        bad = self.rec_wait(self.rec_start("/rec/enc.m3u8", name="Locked")[1]["id"])
+        self.assertEqual(bad["state"], "failed")
+        self.assertIn("encrypted", bad["error"])                                          # no help with protected streams
+        self.assertEqual([f for f in os.listdir(d) if f.startswith("Locked")], [])        # and no empty file is left behind
+
+    def test_record_stop_ends_a_running_recording_and_the_file_stays(self):
+        d = self.with_rec_dir()
+        import time as _t
+        r = self.rec_start("/rec/endless.ts", name="Live")[1]
+        _t.sleep(0.5)
+        self.assertEqual(self.api("/api/record/stop", id=r["id"])[0], 200)
+        it = self.rec_wait(r["id"])
+        self.assertEqual(it["state"], "stopped")
+        self.assertGreater(os.path.getsize(os.path.join(d, it["file"])), 1000)
+
+    def test_record_names_cannot_leave_the_folder_and_the_limits_hold(self):
+        d = self.with_rec_dir()
+        import time as _t
+        ids = []
+        for i in range(3):
+            c, r = self.rec_start("/rec/endless.ts?n=%d" % i, name="../../evil/%d" % i)
+            self.assertEqual(c, 200)
+            self.assertNotIn("/", r["file"])
+            ids.append(r["id"])
+        c, r = self.rec_start("/rec/endless.ts?n=9", name="four")
+        self.assertEqual(c, 502)
+        self.assertIn("3 recordings are already running", r["error"])
+        again = self.rec_start("/rec/endless.ts?n=0", name="again")[1]
+        self.assertEqual(again["id"], ids[0])                                             # the same stream is not recorded twice
+        for i in ids:
+            self.api("/api/record/stop", id=i)
+            self.rec_wait(i)
+        self.assertTrue(all(os.path.dirname(os.path.join(d, f)) == d for f in os.listdir(d)))
+        _t.sleep(0.1)
+
+    def test_record_refuses_non_http_and_Links_own_address(self):
+        self.with_rec_dir()
+        self.assertEqual(self.api("/api/record/start", u="file:///etc/passwd", name="x")[0], 502)
+        self.assertEqual(self.api("/api/record/start", u="http://127.0.0.1:%d/stream?u=http://a/b&t=x" % self.port, name="x")[0], 502)
+        self.assertEqual(get(self.port, "/api/record/start?u=" + up.quote(self.up_url + "/rec/raw.ts"))[0], 403)   # a page that is not allowed cannot start one
+
     # --- XMLTV guide, custom User-Agent
     def xmltv(self, path="/epg/guide.xml", **kw):
         return self.api("/api/xmltv", url=self.up_url + path, **kw)
@@ -503,6 +637,35 @@ class LinkTests(unittest.TestCase):
         code, _, body = self.api("/api/xtream", server=self.up_url, user="u", **{"pass": "p"})
         self.assertEqual(json.loads(body)["channels"][0]["e"], 11)           # live rows carry their stream id
 
+    # --- catch-up (replay of past programmes)
+    def test_catchup_days_are_reported_on_live_channels(self):
+        chans = {c["n"]: c for c in json.loads(self.api("/api/xtream", server=self.up_url, user="u", **{"pass": "p"})[2])["channels"]}
+        self.assertEqual(chans["Xtream One"]["ar"], 3)
+        self.assertNotIn("ar", chans["Hidden"])                             # tv_archive 0: no catch-up
+
+    def test_catchup_lists_only_kept_past_programmes_newest_first(self):
+        code, _, body = self.vod("/api/catchup", id="11", days="3")
+        self.assertEqual(code, 200)
+        items = json.loads(body)["items"]
+        self.assertEqual([i["t"] for i in items], ["On Now", "Noon News", "Morning Show"])
+        self.assertTrue(items[0]["on"])
+        self.assertEqual(items[2]["st"], "2026-01-02:08-00")              # the panel's own clock is used for timeshift
+        self.assertEqual(items[2]["d"], "Coffee")
+        self.assertRegex(items[1]["st"], r"^\d{4}-\d{2}-\d{2}:\d{2}-\d{2}$")
+        self.assertEqual(json.loads(self.vod("/api/catchup", id="99")[2])["items"], [])
+        self.assertEqual(self.vod("/api/catchup", id="11;x")[0], 502)
+
+    def test_catchup_play_builds_both_timeshift_links_behind_the_token(self):
+        d = json.loads(self.vod("/api/catchup/play", id="11", start="2026-01-02:08-00", minutes="60")[2])
+        for key, needle in (("url", "/timeshift/u/p/60/2026-01-02:08-00/11.ts"), ("alt", "timeshift.php?username=u&password=p&stream=11&start=2026-01-02:08-00&duration=60")):
+            self.assertIn("/stream?", d[key])
+            self.assertIn("t=" + self.tok, d[key])
+            self.assertIn(up.quote(needle, safe=""), d[key].replace("%2F", "%2F"))
+        self.assertEqual(self.vod("/api/catchup/play", id="11", start="2026-01-02 08:00/../x", minutes="60")[0], 502)
+        self.assertEqual(self.vod("/api/catchup/play", id="11", start="2026-01-02:08-00", minutes="0")[0], 502)
+        self.assertEqual(self.vod("/api/catchup/play", id="11", start="2026-01-02:08-00", minutes="9999")[0], 502)
+        self.assertEqual(self.vod("/api/catchup/play", id="../11", start="2026-01-02:08-00", minutes="30")[0], 502)
+
     # --- --dns: DNS-over-HTTPS only when the normal lookup fails
     def test_dns_off_gives_a_hint_and_on_resolves_through_doh(self):
         server = "http://panel.eye3test.invalid:%d" % self.up_port
@@ -536,6 +699,8 @@ class LinkTests(unittest.TestCase):
         self.assertEqual(get(self.port, "/api/hello", {"Origin": "https://evil.example"})[0], 403)
         self.assertEqual(get(self.port, "/api/hello")[0], 403)
         self.assertEqual(get(self.port, "/api/hello", {"Origin": "http://localhost:8080"})[0], 200)
+        self.assertEqual(get(self.port, "/api/hello", {"Origin": "https://eye3-vision.netlify.app"})[0], 200)   # the free Netlify copy
+        self.assertEqual(get(self.port, "/api/hello", {"Origin": "https://other-site.netlify.app"})[0], 403)  # but not any Netlify site
 
     def test_api_and_stream_refuse_strangers(self):
         self.assertEqual(get(self.port, "/api/m3u?url=" + up.quote(self.up_url + "/pl.m3u"), {"Origin": "https://evil.example"})[0], 403)
@@ -742,6 +907,56 @@ class ProxyTests(unittest.TestCase):
             link.STATE["proxy"] = ""
             mock.shutdown()
             proxy.shutdown()
+
+    def test_home_can_switch_test_and_drop_the_viewers_own_proxy_at_run_time(self):
+        mock = serve(Mock)
+        proxy = serve(ProxyHandler)
+        ProxyHandler.target_port = mock.server_port
+        ProxyHandler.hits.clear()
+        srv = serve(link.Handler)
+        link.STATE.update(port=srv.server_port, proxy="", base_proxy="", strict=False, where_url="http://where.test:%d/where" % mock.server_port)
+        o = {"Origin": "https://j-janko420.github.io"}
+        call = lambda path, **q: get(srv.server_port, path + "?" + up.urlencode(q), o)
+        purl = "http://user:secret@127.0.0.1:%d" % proxy.server_port
+        try:
+            # test a proxy without switching to it: country and speed, through that proxy only
+            code, _, body = call("/api/proxy/test", u=purl)
+            t = json.loads(body)
+            self.assertEqual((code, t["ok"], t["country"]), (200, True, "AE"))
+            self.assertGreaterEqual(t["ms"], 0)
+            self.assertEqual(len(ProxyHandler.hits), 1)
+            self.assertEqual(link.STATE["proxy"], "")
+            # a dead proxy says why, and nothing changes
+            self.assertFalse(json.loads(call("/api/proxy/test", u="http://127.0.0.1:9")[2])["ok"])
+            # switch to it in strict mode: everything now goes through it, and the view never shows the login
+            v = json.loads(call("/api/proxy/set", u=purl, strict="1")[2])
+            self.assertEqual(v, {"ok": True, "proxy": True, "host": "127.0.0.1", "strict": True, "base": False})
+            self.assertNotIn(b"secret", call("/api/proxy")[2])
+            link.fetch("http://provider.test:%d/pl.m3u" % mock.server_port)
+            self.assertEqual(len(ProxyHandler.hits), 2)
+            # back to how Link was started
+            v = json.loads(call("/api/proxy/set", u="base")[2])
+            self.assertEqual((v["proxy"], v["strict"]), (False, False))
+            # bad addresses, SOCKS and Link itself are refused; other sites cannot switch it
+            for bad in ("socks5://127.0.0.1:1080", "http://a b:1", "http://127.0.0.1:%d" % srv.server_port, "ftp://x"):
+                self.assertIn(call("/api/proxy/set", u=bad)[0], (400, 502), bad)
+                self.assertEqual(link.STATE["proxy"], "")
+            self.assertEqual(get(srv.server_port, "/api/proxy/set?u=" + up.quote(purl), {"Origin": "https://evil.example"})[0], 403)
+            self.assertEqual(link.STATE["proxy"], "")
+        finally:
+            link.STATE.update(proxy="", base_proxy="", strict=False, where_url="")
+            srv.shutdown()
+            mock.shutdown()
+            proxy.shutdown()
+
+    def test_strict_mode_never_asks_an_outside_dns_service(self):
+        link.STATE.update(strict=True, dns="", auto_fix=True)
+        try:
+            with self.assertRaises(socket.gaierror):
+                link._getaddrinfo("no-such-host.invalid", 80)
+            self.assertEqual(link.STATE["dns"], "")
+        finally:
+            link.STATE.update(strict=False, auto_fix=False, dns="")
 
     def test_without_a_proxy_nothing_is_routed_and_ping_says_so(self):
         link.STATE["proxy"] = ""

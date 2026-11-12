@@ -2,7 +2,7 @@
 rem Opens EYE3 Home fullscreen (kiosk) in Chrome or Edge; any other browser just opens the page.
 cd /d "%~dp0"
 timeout /t 6 /nobreak >nul
-set "URL=https://j-janko420.github.io/EYE3-VISION/home/?splash=0&box=1"
+set "URL=https://eye3-vision.netlify.app/home/?splash=0&box=1"
 set "BR="
 if exist "%ProgramFiles%\Google\Chrome\Application\chrome.exe" set "BR=%ProgramFiles%\Google\Chrome\Application\chrome.exe"
 if exist "%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe" set "BR=%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe"

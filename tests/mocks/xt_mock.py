@@ -1,4 +1,4 @@
-# A stand-in for an Xtream panel (live channels, a short guide, one series), an XMLTV file and an M3U list. Port 9191.
+# A stand-in for an Xtream panel (live channels, a short guide, catch-up, one series), an XMLTV file and an M3U list. Port 9191.
 import json, time, base64
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import urllib.parse as up
@@ -17,6 +17,10 @@ class H(BaseHTTPRequestHandler):
                     '<programme start="%s" stop="%s" channel="news.one"><title>Evening Bulletin</title><desc>All the news</desc></programme>'
                     '<programme start="%s" stop="%s" channel="news.one"><title>Late Talk</title></programme></tv>') % (f(n - 600), f(n + 1500), f(n + 1500), f(n + 4500))
             body = body.encode(); self.send_response(200); self.send_header("Content-Type", "text/xml"); self.send_header("Content-Length", str(len(body))); self.end_headers(); self.wfile.write(body); return
+        if u.path.startswith("/timeshift/u/p/"):
+            body = b"\x47" + b"r" * 2000; self.send_response(200); self.send_header("Content-Type", "video/mp2t"); self.send_header("Content-Length", str(len(body))); self.end_headers(); self.wfile.write(body); return
+        if u.path == "/live/u/p/rec.ts":
+            body = b"\x47" + b"t" * 60000; self.send_response(200); self.send_header("Content-Type", "video/mp2t"); self.send_header("Content-Length", str(len(body))); self.end_headers(); self.wfile.write(body); return
         if u.path == "/ua/list.m3u":
             open("/tmp/eye3_ua_seen.txt", "a").write((self.headers.get("User-Agent") or "") + "\n")
             body = ('#EXTM3U x-tvg-url="http://127.0.0.1:9191/epg/guide.xml"\n#EXTINF:-1 tvg-id="news.one" group-title="N",News One\nhttp://127.0.0.1:9191/live/x/y/1.ts\n').encode()
@@ -31,7 +35,12 @@ class H(BaseHTTPRequestHandler):
         if act == "get_series_info": return self.reply({"info": {"name": "Long Show"}, "episodes": {"1": [
             {"id": "411", "episode_num": 1, "title": "Pilot", "container_extension": "mp4", "season": 1},
             {"id": "412", "episode_num": 2, "title": "Second", "container_extension": "mp4", "season": 1}]}})
-        if act == "get_live_streams": return self.reply([{"name": "Xtream One", "stream_id": 11, "category_id": "1"}, {"name": "Xtream Two", "stream_id": 12, "category_id": "1"}])
+        if act == "get_live_streams": return self.reply([{"name": "Xtream One", "stream_id": 11, "category_id": "1", "tv_archive": 1, "tv_archive_duration": 2}, {"name": "Xtream Two", "stream_id": 12, "category_id": "1"}])
+        if act == "get_simple_data_table":
+            if q.get("stream_id") != "11": return self.reply({"epg_listings": []})
+            return self.reply({"epg_listings": [
+                {"title": b64("Morning Show"), "description": b64("Coffee"), "start_timestamp": str(now - 7200), "stop_timestamp": str(now - 3600), "has_archive": 1},
+                {"title": b64("Noon News"), "description": b64(""), "start_timestamp": str(now - 3600), "stop_timestamp": str(now - 1800), "has_archive": 1}]})
         if act == "get_short_epg":
             if q.get("stream_id") != "11": return self.reply({"epg_listings": []})
             return self.reply({"epg_listings": [

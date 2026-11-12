@@ -11,7 +11,7 @@
 set -u
 HERE=$(cd "$(dirname "$0")" && pwd)
 DEST="${EYE3_DIR:-$HOME/EYE3}"
-REL="https://github.com/j-janko420/EYE3-VISION/releases/download/eye3-link-latest"
+REL="https://eye3-vision.netlify.app/downloads"
 DRY=0; UNINSTALL=0; KIOSK=0
 for a in "$@"; do
   case "$a" in
@@ -126,5 +126,5 @@ fi
 
 say ""
 say "Done. EYE3 Link runs by itself at every start and updates itself."
-say "Open EYE3 Home in your normal browser: https://j-janko420.github.io/EYE3-VISION/home/?splash=0&box=1"
+say "Open EYE3 Home in your normal browser: https://eye3-vision.netlify.app/home/?splash=0&box=1"
 say "Your own playlists go into: $DEST/playlists"

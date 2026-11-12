@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EYE3 Vision · Downloads</title>
+<style>
+  :root { --bg: #050101; --accent: #ff263f; --soft: #ff7a8a; --ink: #fff5f6; --muted: #b9a9ac; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 system-ui, sans-serif; }
+  main { max-width: 720px; margin: 0 auto; padding: 32px 16px; }
+  h1 { margin: 0 0 4px; font-size: 26px; } h1 b { color: var(--accent); }
+  p { color: var(--muted); } h2 { font-size: 17px; margin: 28px 0 8px; }
+  a.dl { display: flex; justify-content: space-between; gap: 12px; padding: 12px 14px; margin: 8px 0; border: 1px solid rgba(255, 38, 63, .45); border-radius: 6px; color: var(--ink); text-decoration: none; }
+  a.dl:hover, a.dl:focus { background: rgba(255, 38, 63, .12); outline: none; }
+  a.dl span { color: var(--muted); } a { color: var(--soft); }
+</style>
+</head>
+<body>
+<main>
+  <h1><b>EYE3</b> VISION · Downloads</h1>
+  <p>EYE3 Link, the small helper for your own IPTV accounts, and the one-time install kits for the computer behind your TV. Not code-signed, so your system may warn; check the SHA-256 in <a href="SHA256SUMS.txt">SHA256SUMS.txt</a>. Version: <span id="ver">see eye3-link-version.txt</span>.</p>
+  <h2>EYE3 Link (open it and leave its window running)</h2>
+  <a class="dl" href="eye3-link-windows.exe" download>Windows <span>eye3-link-windows.exe</span></a>
+  <a class="dl" href="eye3-link-macos" download>Mac with Apple chip <span>eye3-link-macos</span></a>
+  <a class="dl" href="eye3-link-linux" download>Linux <span>eye3-link-linux</span></a>
+  <h2>EYE3 Box install kits (USB stick or download)</h2>
+  <a class="dl" href="EYE3-Box-Windows.zip" download>Windows kit <span>EYE3-Box-Windows.zip</span></a>
+  <a class="dl" href="EYE3-Box-Mac.zip" download>Mac kit <span>EYE3-Box-Mac.zip</span></a>
+  <a class="dl" href="EYE3-Box-Linux.zip" download>Linux and Raspberry Pi kit <span>EYE3-Box-Linux.zip</span></a>
+  <p><a href="../home/">← EYE3 Home</a></p>
+</main>
+<script>
+  fetch("eye3-link-version.txt").then(function (r) { return r.ok ? r.text() : ""; }).then(function (t) { if (/^\d+\.\d+/.test(t)) document.getElementById("ver").textContent = t.trim(); }).catch(function () {});
+</script>
+</body>
+</html>

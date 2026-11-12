@@ -34,13 +34,13 @@
   <p><a class="back" href="./">← Back to EYE3 Home</a></p>
   <div class="top"><div class="badge"><b>i3</b><span>DESIGN</span></div><h1>Make an always-on EYE3 box</h1></div>
   <p class="lead">A screen can't run software by itself — a small device plugged into the TV's HDMI does. Set one up once with EYE3 Home as an app, leave it behind the TV, and the TV turns on straight into EYE3, online, with no laptop needed each time. Pick what you have.</p>
-  <p class="muted">EYE3 Home: <span class="url">https://j-janko420.github.io/EYE3-VISION/home/</span></p>
+  <p class="muted">EYE3 Home: <span class="url">https://eye3-vision.netlify.app/home/</span></p>
 
   <div class="card">
     <h2>One-time install kit <span class="tag best">PC, mini-PC, Raspberry Pi, Mac</span></h2>
     <p class="muted">Install once, from a USB stick or by download. After that the computer behind the TV starts EYE3 by itself, keeps EYE3 Link running, fixes connection problems and updates itself. The TV itself (for example a Philips Saphi) cannot install software from a USB stick, so this goes on the box plugged into its HDMI port.</p>
     <ol>
-      <li>Download the kit for your system from the <a class="back" href="https://github.com/j-janko420/EYE3-VISION/releases/tag/eye3-link-latest" target="_blank" rel="noopener noreferrer">release page</a>: <code>EYE3-Box-Windows.zip</code>, <code>EYE3-Box-Linux.zip</code> or <code>EYE3-Box-Mac.zip</code>. Unzip it onto a USB stick (or anywhere).</li>
+      <li>Download the kit for your system from the <a class="back" href="https://eye3-vision.netlify.app/downloads/" target="_blank" rel="noopener noreferrer">release page</a>: <code>EYE3-Box-Windows.zip</code>, <code>EYE3-Box-Linux.zip</code> or <code>EYE3-Box-Mac.zip</code>. Unzip it onto a USB stick (or anywhere).</li>
       <li>Put <b>your own</b> playlists (<code>.m3u</code>, <code>.m3u8</code>, <code>.txt</code>) into the <code>playlists</code> folder first, if you like. They show up in Live TV by themselves; adult groups only inside the hidden Explicit section.</li>
       <li><b>Windows:</b> double-click <code>install.bat</code>. <b>Linux, Raspberry Pi, Mac:</b> open a terminal in the folder and run <code>sh install.sh</code>.</li>
       <li>EYE3 Link now starts at every sign-in. Open EYE3 Home from the <b>EYE3 Home</b> link on the Desktop; it opens in your normal browser, so your saved lists and settings stay. The <b>Agent</b> chip on the top bar shows what the agent did. For the box behind a TV, install with <code>-Kiosk</code> (Windows: <code>install.bat -Kiosk</code>, others: <code>sh install.sh --kiosk</code>) and EYE3 Home also opens fullscreen at every start.</li>
@@ -53,7 +53,7 @@
     <p class="muted">If the projector shows its own Android home screen (apps, a store, a remote with arrows), it already is the box. EYE3 Home runs in its browser; there is no separate EYE3 Android app yet.</p>
     <ol>
       <li>On the projector open its app store (Google Play, Aptoide TV or the projector's own store) and install a browser: <b>Chrome</b> if offered, otherwise <b>TV Bro</b> or <b>Puffin TV</b> (free).</li>
-      <li>Open <span class="url">https://j-janko420.github.io/EYE3-VISION/home/</span>. The remote's arrows move, OK selects, Back goes back. Press <b>F</b> or use Settings → Go fullscreen.</li>
+      <li>Open <span class="url">https://eye3-vision.netlify.app/home/</span>. The remote's arrows move, OK selects, Back goes back. Press <b>F</b> or use Settings → Go fullscreen.</li>
       <li><b>Chrome:</b> menu (⋮) → <b>Install app</b>. EYE3 Home then opens from the projector's app list as a fullscreen app with the i3 icon, with no address bar. <b>TV Bro / Puffin:</b> bookmark it and set it as the start page.</li>
       <li>Free channels, Radio, Free movies, the Playlist maker and your own M3U files work straight away. Your own Xtream, MAG or private M3U account needs EYE3 Link, which is a small Python program: on a projector that runs only apps, add those accounts from a laptop and use <b>Sync phone and laptop</b> for the channel lists, or use the HDMI box kit above.</li>
     </ol>
@@ -85,7 +85,7 @@ Type=Application
 Name=EYE3 Home
 Exec=chromium-browser --kiosk --noerrdialogs --disable-infobars \
   --autoplay-policy=no-user-gesture-required \
-  https://j-janko420.github.io/EYE3-VISION/home/?app=1
+  https://eye3-vision.netlify.app/home/?app=1
 X-GNOME-Autostart-enabled=true</pre>
     <p class="muted">Then disable screen blanking (<code>Preferences → Raspberry Pi Configuration → Display</code>, Screen Blanking Off) and reboot. The Pi now powers on into EYE3 Home.</p>
   </div>
@@ -94,7 +94,7 @@ X-GNOME-Autostart-enabled=true</pre>
     <h2>Old laptop or mini-PC <span class="tag ok">reuse what you have</span></h2>
     <p class="muted">Any old laptop or a cheap mini-PC left behind the TV, connected by HDMI. Set it to open EYE3 Home fullscreen on start.</p>
     <ol>
-      <li><b>Windows:</b> make a shortcut with target<br><code>chrome.exe --kiosk --app=https://j-janko420.github.io/EYE3-VISION/home/?app=1</code><br>and put it in the Startup folder (<code>Win+R</code> → <code>shell:startup</code>).</li>
+      <li><b>Windows:</b> make a shortcut with target<br><code>chrome.exe --kiosk --app=https://eye3-vision.netlify.app/home/?app=1</code><br>and put it in the Startup folder (<code>Win+R</code> → <code>shell:startup</code>).</li>
       <li><b>Mac:</b> open the EYE3 Home link in Chrome, ⋮ → <b>Cast, save and share → Install page as app</b>, then add that app to <b>System Settings → General → Login Items</b>.</li>
       <li><b>Linux:</b> use the same Chromium kiosk command as the Raspberry Pi above in your autostart.</li>
       <li>Set the laptop to <b>never sleep</b> while plugged in, and to <b>turn on the screen / resume</b> on power. Close the lid only if "do nothing on lid close" is set.</li>

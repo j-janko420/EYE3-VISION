@@ -10,6 +10,7 @@ const ch = (n, u, i) => ({ n, u, g: '', l: '', i: i || '' });
 const rows = (p, sel) => p.evaluate((s) => [...document.querySelectorAll(s || '#chlist .ch:not(.action)')].map((r) => r.textContent), sel);
 const openTv = async (p) => { await p.evaluate(() => document.querySelector('.tile').click()); await p.waitForTimeout(1500); };
 const pickCat = async (p, prefix) => { await p.selectOption('#tv-cat', { label: await p.evaluate((x) => [...document.querySelectorAll('#tv-cat option')].map((o) => o.textContent).find((t) => t.startsWith(x)), prefix) }); await p.waitForTimeout(400); };
+const geeniReady = (p) => p.waitForFunction(() => { const g = document.getElementById('geeni'), r = g.getBoundingClientRect(); return g.classList.contains('on') && !g.classList.contains('arriving') && r.width > 20 && r.top >= 0 && r.bottom <= innerHeight && !g.getAnimations().some((a) => a.animationName === 'geeniPop' && a.playState === 'running'); }, null, { timeout: 5000 }).catch(() => {});   // Geeni pops in for 0.6 s after the spin: click only once it is full size
 const toast = (p) => p.evaluate(() => [...document.querySelectorAll('.toast')].map((t) => t.textContent).pop());
 
 (async () => {
@@ -35,7 +36,7 @@ const toast = (p) => p.evaluate(() => [...document.querySelectorAll('.toast')].m
   });
 
   await suite('the colours stay red and black on every page (no blue left over)', async () => {
-    const files = ['index.html', 'home/index.html', 'home/setup.html', 'home/send-files.html', 'remote/index.html', 'portal/c/index.html', 'portal/check/index.html', 'bridge/index.html'];
+    const files = ['index.html', 'home/index.html', 'home/setup.html', 'home/send-files.html', 'home/guide.html', 'remote/index.html', 'portal/c/index.html', 'portal/check/index.html', 'bridge/index.html'];
     const hsl = (r, g, b) => { r /= 255; g /= 255; b /= 255; const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, d = mx - mn; if (!d) return [0, 0, l]; const s = d / (1 - Math.abs(2 * l - 1)); let h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; h = (h * 60 + 360) % 360; return [h, s, l]; };
     for (const f of files) {
       const text = fs.readFileSync(require('path').join(__dirname, '..', '..', f), 'utf8');
@@ -247,7 +248,7 @@ const toast = (p) => p.evaluate(() => [...document.querySelectorAll('.toast')].m
     if (!process.env.EYE3_HTTPS) { console.log('  skip (no https test server)'); return; }
     const ctx = await browser.newContext({ ignoreHTTPSErrors: true }); const p = await ctx.newPage(); const sent = [];
     p.on('request', (r) => { if (r.url().startsWith('http://127.0.0.1:8765/stream')) sent.push(r.url()); });
-    await p.addInitScript(() => { if (!localStorage.getItem('s')) { localStorage.setItem('s', '1'); localStorage.setItem('eye3.home.mychannels', JSON.stringify([{ n: 'Plain Http Channel', u: 'http://example.test/live/a.m3u8', g: '', l: '', i: '' }])); } });
+    await p.addInitScript(() => { if (!localStorage.getItem('s')) { localStorage.setItem('s', '1'); localStorage.setItem('eye3.home.setup', '1'); localStorage.setItem('eye3.home.mychannels', JSON.stringify([{ n: 'Plain Http Channel', u: 'http://example.test/live/a.m3u8', g: '', l: '', i: '' }])); } });
     await p.goto('https://localhost:8443/home/?splash=0', { waitUntil: 'domcontentloaded' }); await p.waitForTimeout(800);
     await openTv(p); await pickCat(p, 'My channels');
     await p.click('#chlist .ch >> text=Plain Http Channel'); await p.waitForTimeout(2000);
@@ -257,6 +258,7 @@ const toast = (p) => p.evaluate(() => [...document.querySelectorAll('.toast')].m
 
   await suite('EYE3 agent: chip, playlists folder, Explicit gating, reconnect after a restart', async () => {
     const quiet = await browser.newContext(); const q = await quiet.newPage(); const touched = [];
+    await q.addInitScript(() => localStorage.setItem('eye3.home.setup', '1'));
     q.on('request', (r) => { if (r.url().indexOf('127.0.0.1:8765') > -1) touched.push(r.url()); });
     await q.goto(HOME, { waitUntil: 'domcontentloaded' }); await q.waitForTimeout(2800);
     check('a viewer who never used EYE3 Link is not contacted at all', touched.length === 0, touched);
@@ -276,7 +278,7 @@ const toast = (p) => p.evaluate(() => [...document.querySelectorAll('.toast')].m
     check('the agent chip shows that Link is on (the test Link runs with the agent switches)', /Agent on/.test(chip), chip);
     await p.click('#agentchip'); await p.waitForTimeout(600);
     const dlg = await p.evaluate(() => ({ title: document.getElementById('info-title').textContent, text: document.getElementById('info-body').textContent }));
-    check('the chip opens the agent screen with version, switches and updates', dlg.title === 'EYE3 agent' && /EYE3 Link 1\.\d+ is running/.test(dlg.text) && /Fix connection problems by itself: on/.test(dlg.text) && /Updates/.test(dlg.text), dlg);
+    check('the chip opens the agent screen with version, switches and updates', dlg.title === 'EYE3 agent' && /EYE3 Link 1\.\d+(\.\d+)? is running/.test(dlg.text) && /Fix connection problems by itself: on/.test(dlg.text) && /Updates/.test(dlg.text), dlg);
     check('the playlists folder shows the file with its visible channel count only', /folder-test \(1\)/.test(dlg.text) && !/Hidden/.test(dlg.text) && !/XXX/.test(dlg.text), dlg.text.slice(0, 400));
     await p.click('text=Update by itself: off').catch(() => {});
     const flip = await p.evaluate(async () => { const h = await (await fetch('http://127.0.0.1:8765/api/health')).json().catch(() => null); return h && h.auto_update; });
@@ -334,6 +336,427 @@ const toast = (p) => p.evaluate(() => [...document.querySelectorAll('.toast')].m
       const q = await open(browser, {}, { url: HOME.replace('/home/?splash=0', '/' + f) });
       check(f + ' selection is crimson too', await q.evaluate(() => getComputedStyle(document.body, '::selection').backgroundColor) === 'rgb(255, 38, 63)');
     }
+  });
+
+  await suite('pro pack: welcome, profiles and parent PIN, guide grid, multi-view, cast, TV tools', async () => {
+    // first-run welcome: once, never for someone who already has something
+    let p = await open(browser, { 'eye3.home.setup': '' });
+    await p.waitForFunction(() => document.getElementById('info-title').textContent === 'Welcome to EYE3' && document.getElementById('ov-info').classList.contains('open'), null, { timeout: 5000 }).catch(() => {});
+    const w = await p.evaluate(() => ({ title: document.getElementById('info-title').textContent, btns: [...document.querySelectorAll('#info-body .btn.big')].map((b) => b.textContent) }));
+    check('a new viewer sees the welcome with four ways to start', w.title === 'Welcome to EYE3' && w.btns.length === 4 && /free channels/.test(w.btns[0]) && /IPTV account/.test(w.btns[1]), w);
+    await p.click('#info-body .btn.big >> nth=0'); await p.waitForTimeout(1500);
+    check('"Watch free channels" opens Live TV', await p.evaluate(() => document.getElementById('ov-tv').classList.contains('open')));
+    await p.reload({ waitUntil: 'domcontentloaded' }); await p.waitForTimeout(1800);
+    check('the welcome is shown only once', !(await p.evaluate(() => document.getElementById('info-title').textContent === 'Welcome to EYE3' && document.getElementById('ov-info').classList.contains('open'))));
+    p = await open(browser, { 'eye3.home.setup': '', 'eye3.home.accts': [XT] }); await p.waitForTimeout(1500);
+    check('someone with an account never sees it', !(await p.evaluate(() => document.getElementById('ov-info').classList.contains('open'))));
+
+    // profiles and the parent PIN
+    p = await open(browser, { 'eye3.home.mychannels': [ch('News Alpha', 'https://example.test/a.m3u8'), ch('Cartoon Beta', 'https://example.test/b.m3u8'), ch('Hidden Adult', 'https://example.test/c.m3u8')] });
+    await openTv(p); const allCats = await p.evaluate(() => [...document.querySelectorAll('#tv-cat option')].map((o) => o.textContent));
+    await p.keyboard.press('Escape'); await p.waitForTimeout(300);
+    await p.evaluate(() => document.querySelector('.tile[data-key="settings"], .tile:last-child').click()).catch(() => {});
+    await p.keyboard.press('Escape'); await p.waitForTimeout(200);
+    await p.keyboard.press('Control+k'); await p.waitForTimeout(300); await p.keyboard.type('profiles'); await p.waitForTimeout(300); await p.keyboard.press('Enter'); await p.waitForTimeout(500);
+    check('Profiles opens from quick search', await p.evaluate(() => document.getElementById('info-title').textContent === 'Profiles'));
+    await p.click('text=Add a profile'); await p.waitForTimeout(400);
+    await p.fill('#info-body input[type=text]', 'Kids');
+    await p.check('#info-body label:has-text("Kids profile") input'); 
+    await p.check('#info-body label:has-text("My channels") input');
+    await p.click('#info-body >> text=Save'); await p.waitForTimeout(500);
+    check('a kids profile asks for a parent PIN first', await p.evaluate(() => document.getElementById('ov-pin').classList.contains('open') && /Choose a parent PIN/.test(document.getElementById('pin-title').textContent)));
+    await p.fill('#pin-input', '12'); await p.press('#pin-input', 'Enter'); await p.waitForTimeout(200);
+    check('a short PIN is refused', /4 to 8 digits/.test(await p.evaluate(() => document.getElementById('pin-msg').textContent)));
+    await p.fill('#pin-input', '4321'); await p.press('#pin-input', 'Enter'); await p.waitForTimeout(700);
+    const stored = await p.evaluate(() => localStorage.getItem('eye3.home.parentpin') + localStorage.getItem('eye3.home.profiles'));
+    check('the parent PIN is stored salted and hashed, never as digits', /"h":"[0-9a-f]{64}"/.test(stored) && stored.indexOf('4321') === -1);
+    check('the profile chip appears', await p.evaluate(() => !document.getElementById('profchip').hidden));
+    await p.click('#info-body .acct-row:has-text("Kids") >> text=Use'); await p.waitForTimeout(700);
+    check('the kids profile is in use', await p.evaluate(() => /Kids/.test(document.getElementById('profchip').textContent)));
+    await openTv(p);
+    const kidCats = await p.evaluate(() => [...document.querySelectorAll('#tv-cat option')].map((o) => o.textContent));
+    check('the hidden category is gone in the kids profile', allCats.some((x) => /^My channels/.test(x)) && !kidCats.some((x) => /^My channels/.test(x)), { allCats, kidCats });
+    await p.keyboard.press('Escape'); await p.waitForTimeout(300);
+    await p.keyboard.press('Shift+X'); await p.waitForTimeout(400);
+    check('the Explicit section will not open in a kids profile', !(await p.evaluate(() => document.getElementById('ov-explicit').classList.contains('open'))) && /kids profile/.test(await toast(p)), await toast(p));
+    await p.click('#profchip'); await p.waitForTimeout(400);
+    await p.click('#info-body .acct-row:has-text("Main") >> text=Use'); await p.waitForTimeout(400);
+    check('leaving the kids profile asks for the parent PIN', await p.evaluate(() => document.getElementById('ov-pin').classList.contains('open')));
+    await p.fill('#pin-input', '9999'); await p.press('#pin-input', 'Enter'); await p.waitForTimeout(600);
+    check('a wrong PIN keeps the kids profile', await p.evaluate(() => /Kids/.test(document.getElementById('profchip').textContent)));
+    await p.click('#info-body .acct-row:has-text("Main") >> text=Use'); await p.waitForTimeout(400);
+    await p.fill('#pin-input', '4321'); await p.press('#pin-input', 'Enter'); await p.waitForTimeout(700);
+    check('the right PIN switches back to Main', await p.evaluate(() => /Main/.test(document.getElementById('profchip').textContent)));
+    check('no page errors in profiles', p.errs.length === 0, p.errs);
+
+    // guide grid
+    p = await open(browser, { 'eye3.home.accts': [XT] }); await openTv(p); await pickCat(p, 'Mock TV');
+    await p.keyboard.press('d'); await p.waitForFunction(() => document.querySelectorAll('#grid-wrap .gr-prog').length > 0 && document.querySelectorAll('#grid-wrap .gr-none').length > 0, null, { timeout: 8000 }).catch(() => {});
+    const g = await p.evaluate(() => ({ open: document.getElementById('ov-grid').classList.contains('open'), rows: document.querySelectorAll('#grid-wrap .gr-row').length, progs: [...document.querySelectorAll('#grid-wrap .gr-prog')].map((b) => b.textContent), none: [...document.querySelectorAll('#grid-wrap .gr-none')].map((b) => b.textContent), ticks: document.querySelectorAll('.gr-scale span').length, now: document.querySelectorAll('.gr-now').length }));
+    check('the grid lists the channels with time ticks and a now-line', g.open && g.rows === 2 && g.ticks === 6 && g.now === 2, g);
+    check('programmes are placed from the guide (now and next)', g.progs.includes('Evening News') && g.progs.includes('Late Show'), g);
+    check('a channel without a guide says so', g.none.length >= 1, g);
+    await p.keyboard.press('ArrowRight'); await p.waitForTimeout(150);
+    check('the arrows reach a programme and show its details', /Evening News/.test(await p.evaluate(() => document.getElementById('grid-detail').textContent)));
+    await p.keyboard.press('Escape'); await p.waitForTimeout(300);
+    check('Back closes the grid but keeps Live TV open', await p.evaluate(() => !document.getElementById('ov-grid').classList.contains('open') && document.getElementById('ov-tv').classList.contains('open')));
+
+    // multi-view
+    p = await open(browser, { 'eye3.home.mychannels': [ch('One', 'https://example.test/1.m3u8'), ch('Two', 'https://example.test/2.m3u8'), ch('Three', 'https://example.test/3.m3u8'), ch('Four', 'https://example.test/4.m3u8'), ch('Five', 'https://example.test/5.m3u8')] });
+    await openTv(p); await pickCat(p, 'My channels');
+    for (let i = 0; i < 5; i++) { await p.keyboard.press('m'); await p.waitForTimeout(250); await p.keyboard.press('Escape'); await p.waitForTimeout(150); await p.evaluate(() => document.getElementById('ov-tv').classList.add('open')); await p.keyboard.press('ArrowDown'); await p.waitForTimeout(100); }
+    await p.keyboard.press('m'); await p.waitForTimeout(400);
+    const mvs = await p.evaluate(() => ({ open: document.getElementById('ov-multi').classList.contains('open'), tiles: document.querySelectorAll('.mv-tile').length, audio: document.querySelectorAll('.mv-tile.audio').length }));
+    check('multi-view holds 4 channels with one sound', mvs.open && mvs.tiles === 4 && mvs.audio === 1, mvs);
+    await p.keyboard.press('3'); await p.waitForTimeout(150);
+    check('the 3 key moves the sound to the third picture', await p.evaluate(() => [...document.querySelectorAll('.mv-tile')].map((t) => t.classList.contains('audio')).join()) === 'false,false,true,false');
+    await p.click('.mv-tile >> nth=1 >> button'); await p.waitForTimeout(200);
+    check('a picture can be removed', await p.evaluate(() => document.querySelectorAll('.mv-tile').length) === 3);
+    await p.click('#mv-clear'); await p.waitForTimeout(200);
+    check('Clear empties it and explains how to add', await p.evaluate(() => document.querySelectorAll('.mv-tile').length === 0 && /press M/.test(document.querySelector('.mv-empty').textContent)));
+    check('no page errors in multi-view', p.errs.length === 0, p.errs);
+
+    // cast, mini window, TV tools
+    p = await open(browser, {}, { init: "Object.defineProperty(HTMLVideoElement.prototype,'remote',{value:{prompt:()=>{window.__cast=(window.__cast||0)+1;return Promise.resolve();}},configurable:true});" });
+    await openTv(p); await p.keyboard.press('c'); await p.waitForTimeout(300);
+    check('Cast asks to play a channel first', /Play a channel first/.test(await toast(p)), await toast(p));
+    await p.evaluate(() => { document.getElementById('video').src = location.href; });
+    await p.keyboard.press('c'); await p.waitForTimeout(300);
+    check('with a picture, Cast opens the browser cast list', await p.evaluate(() => window.__cast === 1));
+    await p.keyboard.press('Escape'); await p.waitForTimeout(200);
+    await p.keyboard.press('Control+k'); await p.waitForTimeout(300); await p.keyboard.type('smart tv'); await p.waitForTimeout(300); await p.keyboard.press('Enter');
+    await p.waitForFunction(() => document.getElementById('info-title').textContent === 'Smart TV tools' && /Test my connection/.test(document.getElementById('info-body').textContent), null, { timeout: 8000 }).catch(() => {});
+    const tl = await p.evaluate(() => ({ title: document.getElementById('info-title').textContent, text: document.getElementById('info-body').textContent }));
+    check('Smart TV tools lists codecs, screen and the speed test', tl.title === 'Smart TV tools' && /H\.264/.test(tl.text) && /HEVC/.test(tl.text) && /Test my connection/.test(tl.text) && /HLS/.test(tl.text), tl.text.slice(0, 200));
+    check('no page errors in the tools', p.errs.length === 0, p.errs);
+  });
+
+  await suite('recording: R saves the playing channel through EYE3 Link', async () => {
+    const REC = (process.env.TMPDIR || '/tmp') + '/eye3-test-rec';
+    try { fs.rmSync(REC, { recursive: true, force: true }); } catch (e) {}
+    const p = await open(browser, { 'eye3.home.link': '1', 'eye3.home.mychannels': [ch('Record Me', 'http://127.0.0.1:9191/live/u/p/rec.ts'), Object.assign(ch('Adult One', 'http://127.0.0.1:9191/live/u/p/rec.ts'), { g: 'XXX' })] }, { init: MPEGTS_STUB });
+    await openTv(p); await pickCat(p, 'My channels');
+    await p.keyboard.press('r'); await p.waitForTimeout(300);
+    check('R with nothing playing says what to do', /Play a channel first/.test(await toast(p)), await toast(p));
+    await p.keyboard.press('Enter'); await p.waitForTimeout(800);
+    await p.keyboard.press('r');
+    await p.waitForFunction(() => [...document.querySelectorAll('.toast')].some((t) => /Saved: Record Me/.test(t.textContent)), null, { timeout: 9000 }).catch(() => {});
+    const msg = await toast(p);
+    check('the recording finishes and the toast names the file', /Saved: Record Me .*\.ts \(0\.1 MB\)/.test(msg), msg);
+    const files = fs.existsSync(REC) ? fs.readdirSync(REC) : [];
+    check('the file is in the recordings folder with the stream bytes', files.length === 1 && fs.statSync(REC + '/' + files[0]).size === 60001, files);
+    await p.keyboard.press('Escape'); await p.waitForTimeout(200);
+    await p.keyboard.press('Control+k'); await p.waitForTimeout(300); await p.keyboard.type('recordings'); await p.waitForTimeout(300); await p.keyboard.press('Enter'); await p.waitForFunction(() => /Saved in:/.test(document.getElementById('info-body').textContent), null, { timeout: 6000 }).catch(() => {});
+    const rs = await p.evaluate(() => ({ title: document.getElementById('info-title').textContent, text: document.getElementById('info-body').textContent }));
+    check('the Recordings screen lists it with the folder', rs.title === 'Recordings' && /Record Me .*\.ts/.test(rs.text) && /Saved in:/.test(rs.text), rs.text.slice(0, 300));
+    check('no page errors in recording', p.errs.length === 0, p.errs);
+  });
+
+  await suite('catch-up TV: replay a past programme of an Xtream channel (key U)', async () => {
+    const p = await open(browser, { 'eye3.home.accts': [XT] }, { init: MPEGTS_STUB });
+    await openTv(p);
+    await p.waitForFunction(() => [...document.querySelectorAll('#tv-cat option')].some((o) => /^Mock TV/.test(o.textContent)), null, { timeout: 20000 }).catch(() => {});
+    await pickCat(p, 'Mock TV');
+    check('channels with catch-up carry the ⟲ mark', (await rows(p)).some((r) => /Xtream One.*⟲/.test(r)) && !(await rows(p)).some((r) => /Xtream Two.*⟲/.test(r)), await rows(p));
+    await p.click('#chlist .ch >> text=Xtream One'); await p.waitForTimeout(800);
+    await p.keyboard.press('u'); await p.waitForTimeout(1500);
+    check('U opens Catch-up TV with the past programmes, newest first', await p.evaluate(() => document.getElementById('info-title').textContent === 'Catch-up TV' && [...document.querySelectorAll('#info-body .cu-row')].map((b) => b.textContent).join('|').replace(/\d\d:\d\d–\d\d:\d\d\s+/g, '') === 'Noon News|Morning Show'), await p.textContent('#info-body'));
+    await p.evaluate(() => { window.__tsCalls = []; });
+    await p.click('#info-body .cu-row >> text=Morning Show'); await p.waitForTimeout(1500);
+    const calls = await p.evaluate(() => window.__tsCalls || []);
+    check('the replay plays through EYE3 Link as a timeshift stream', calls.some((u) => /127\.0\.0\.1:8765\/stream\?/.test(u) && /\/timeshift\/u\/p\/\d+\/\d{4}-\d\d-\d\d:\d\d-\d\d\/11\.ts/.test(decodeURIComponent(u))), calls);
+    check('the label says it is a replay', /⟲ Xtream One · Morning Show/.test(await p.textContent('#chlabel')), await p.textContent('#chlabel'));
+    await p.click('#chlist .ch >> text=Xtream Two'); await p.waitForTimeout(400);
+    await p.keyboard.press('u'); await p.waitForTimeout(400);
+    check('a channel without an archive says so', /has no catch-up/.test(await p.textContent('#info-body')));
+    check('no page errors', p.errs.length === 0, p.errs);
+    await p.close();
+  });
+
+  await suite('Geeni: three clicks on the eye, answers, channel search; the hidden section stays hidden', async () => {
+    const lastBot = (p) => p.evaluate(() => { const m = [...document.querySelectorAll('#geeni-log .g-msg.bot')].pop(); return m ? m.textContent : ''; });
+    const ask = async (p, q) => { await p.fill('#geeni-in', q); await p.press('#geeni-in', 'Enter'); await p.waitForTimeout(500); };
+    const p = await open(browser, { 'eye3.home.link': '1', 'eye3.home.mychannels': [ch('Zeta Test News', 'https://example.test/g.m3u8')] });
+    check('Geeni is not there at first', await p.evaluate(() => !document.getElementById('geeni').classList.contains('on')));
+    await p.click('#brand', { clickCount: 3, delay: 30 }); await p.waitForTimeout(400);
+    check('the eye spins in 3D first', await p.evaluate(() => !document.getElementById('geeni-summon').hidden && getComputedStyle(document.querySelector('.gs-eye')).animationName === 'geeniSpin'));
+    await p.waitForTimeout(1800);
+    check('three clicks on the eye bring Geeni, floating', await p.evaluate(() => { const g = document.getElementById('geeni'); return g.classList.contains('on') && !g.classList.contains('arriving') && document.getElementById('geeni-summon').hidden && getComputedStyle(g).position === 'fixed' && /geeniFloat/.test(getComputedStyle(g).animationName); }));
+    check('it is a small creature with the red eye on its forehead, in the theme colours', await p.evaluate(() => { const g = document.getElementById('geeni'); return !!g.querySelector('svg .g-eye') && g.innerHTML.indexOf('#ff263f') > 0; }));
+    check('and the hidden section did not open', !(await p.evaluate(() => document.getElementById('ov-explicit').classList.contains('open'))));
+    await geeniReady(p); await p.click('#geeni', { force: true }); await p.waitForTimeout(300);
+    const hello = await p.evaluate(() => ({ text: document.getElementById('geeni-log').textContent, chips: document.querySelectorAll('#geeni-chips .chip').length }));
+    check('the panel greets and offers quick questions', /I am Geeni/.test(hello.text) && hello.chips === 5, hello);
+    await ask(p, 'how do I add my xtream account');
+    check('it explains accounts and offers the button', /IPTV accounts/.test(await lastBot(p)) && await p.evaluate(() => !!document.querySelector('#geeni-log .g-acts .btn')));
+    await p.click('#geeni-log .g-acts .btn >> nth=-1'); await p.waitForTimeout(500);
+    check('the button opens that screen and tucks the panel away', await p.evaluate(() => document.getElementById('ov-acct').classList.contains('open') && !document.getElementById('geeni-panel').classList.contains('open')));
+    await p.keyboard.press('Escape'); await p.waitForTimeout(300);
+    await geeniReady(p); await p.click('#geeni', { force: true }); await p.waitForTimeout(200);
+    await ask(p, 'show me adult channels');
+    const adult = await lastBot(p);
+    check('it never opens or explains how to reach the hidden section', /cannot open that section/.test(adult) && !/double|logo|shift|click/i.test(adult) && await p.evaluate(() => ![...document.querySelectorAll('#geeni-log .g-msg.bot')].pop().querySelector('.btn')), adult);
+    await ask(p, 'why will it not play');
+    check('it checks EYE3 Link when something does not play', /EYE3 Link is running/.test(await lastBot(p)), await lastBot(p));
+    await ask(p, 'hey geeni, play zeta test news please');
+    await p.waitForFunction(() => /Playing Zeta Test News/.test(document.getElementById('geeni-log').textContent), null, { timeout: 8000 }).catch(() => {});
+    check('"play" finds the channel by name and starts it at once', /Playing Zeta Test News/.test(await lastBot(p)), await lastBot(p));
+    await p.waitForTimeout(1500);
+    check('the result opens Live TV and starts that channel', await p.evaluate(() => document.getElementById('ov-tv').classList.contains('open') && /Zeta Test News/.test(document.getElementById('chlabel').textContent)), await p.evaluate(() => document.getElementById('chlabel').textContent));
+    await geeniReady(p); await p.click('#geeni', { force: true }); await p.waitForTimeout(200);
+    await ask(p, 'louder');
+    check('short orders are carried out ("louder")', /Louder/.test(await lastBot(p)) && /Volume/.test(await toast(p)), await lastBot(p));
+    await ask(p, 'how do I record a channel');
+    check('questions still get the explanation, not the order', /press R to record/.test(await lastBot(p)), await lastBot(p));
+    await p.keyboard.press('Escape'); await p.waitForTimeout(200);
+    check('nothing the viewer asked is stored', await p.evaluate(() => !JSON.stringify(localStorage).includes('xtream account') && !JSON.stringify(localStorage).includes('zeta test')));
+    await p.keyboard.press('Escape'); await p.waitForTimeout(300);
+    await geeniReady(p); await p.click('#geeni', { force: true }); await p.waitForTimeout(200); await p.keyboard.press('Escape'); await p.waitForTimeout(200);
+    check('Esc closes the panel', await p.evaluate(() => !document.getElementById('geeni-panel').classList.contains('open')));
+    await p.reload({ waitUntil: 'domcontentloaded' }); await p.waitForTimeout(900);
+    check('Geeni stays for this tab after a reload', await p.evaluate(() => document.getElementById('geeni').classList.contains('on')));
+    await geeniReady(p); await p.click('#geeni', { force: true }); await p.waitForTimeout(200);
+    await ask(p, 'bye'); await p.waitForTimeout(1200);
+    check('"bye" sends Geeni away', await p.evaluate(() => !document.getElementById('geeni').classList.contains('on')));
+    await p.keyboard.press('h'); await p.waitForTimeout(2300);
+    check('H calls Geeni back with the panel open', await p.evaluate(() => document.getElementById('geeni').classList.contains('on') && document.getElementById('geeni-panel').classList.contains('open')));
+    await p.keyboard.press('Escape'); await p.waitForTimeout(200);
+    await p.click('#brand', { clickCount: 3, delay: 30 }); await p.waitForTimeout(800);
+    check('three more clicks send Geeni away', await p.evaluate(() => !document.getElementById('geeni').classList.contains('on')));
+    await p.click('#brand', { clickCount: 2, delay: 30 }); await p.waitForTimeout(900);
+    check('a double-click still opens the hidden section (after a short wait)', await p.evaluate(() => document.getElementById('ov-explicit').classList.contains('open')));
+    check('no page errors with Geeni', p.errs.length === 0, p.errs);
+  });
+
+  await suite('EYE3 Guide: sections, search, starred picks, lights, phone layout', async () => {
+    const G = HOME.replace(/home\/.*$/, 'home/guide.html');
+    const p = await open(browser, {}, { url: G });
+    const m = await p.evaluate(() => ({ cats: document.querySelectorAll('section.cat').length, items: document.querySelectorAll('.item').length, side: document.querySelectorAll('nav.side a').length, ext: [...document.querySelectorAll('.item')].filter((a) => /^http/.test(a.getAttribute('href'))).map((a) => a.getAttribute('href')), lights: getComputedStyle(document.querySelector('.lights i')).animationName }));
+    check('it has its sections in the sidebar and dozens of entries', m.cats >= 8 && m.side === m.cats && m.items >= 50, m);
+    check('every outside link is https and opens in a new tab safely', m.ext.every((h) => /^https:\/\//.test(h)) && await p.evaluate(() => [...document.querySelectorAll('.item[target="_blank"]')].every((a) => /noopener/.test(a.rel))));
+    check('the lights drift behind the page', /drift1/.test(m.lights), m.lights);
+    await p.fill('#q', 'vlc player'); await p.waitForTimeout(200);
+    const vis = await p.evaluate(() => [...document.querySelectorAll('.item')].filter((i) => !i.hidden && i.offsetParent).map((i) => i.querySelector('.t').textContent));
+    check('search narrows the list (VLC)', vis.length >= 1 && vis.length < 5 && vis.some((t) => /VLC/.test(t)), vis);
+    await p.fill('#q', 'zzzz nothing'); await p.waitForTimeout(200);
+    check('no match says so', await p.evaluate(() => !document.getElementById('empty').hidden));
+    await p.fill('#q', ''); await p.check('#staronly'); await p.waitForTimeout(200);
+    check('starred only shows the ⭐ picks', await p.evaluate(() => { const v = [...document.querySelectorAll('.item')].filter((i) => !i.hidden); return v.length > 5 && v.every((i) => i.dataset.star === '1'); }));
+    check('it lists no pirate or adult sources', await p.evaluate(() => !/torrent|crack|warez|repack|pirat|xxx|porn/i.test(document.querySelector('main').textContent + [...document.querySelectorAll('.item')].map((i) => i.href).join(' '))));
+    check('no page errors on the guide', p.errs.length === 0, p.errs);
+    await p.close();
+    const q = await open(browser, {}, { url: G, ctx: { viewport: { width: 390, height: 844 } } });
+    check('on a phone it does not scroll sideways', await q.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+    await q.close();
+    const h = await open(browser);
+    await h.evaluate(() => [...document.querySelectorAll('.tile')].pop().click()); await h.waitForTimeout(500);
+    check('Settings on EYE3 Home links to the guide', await h.evaluate(() => !!document.getElementById('set-guide')));
+    await h.keyboard.press('Escape'); await h.waitForTimeout(200);
+    await h.click('#brand', { clickCount: 3, delay: 30 }); await h.waitForTimeout(2200); await geeniReady(h); await h.click('#geeni', { force: true }); await h.waitForTimeout(300);
+    await h.fill('#geeni-in', 'where can I watch free movies legally'); await h.press('#geeni-in', 'Enter'); await h.waitForTimeout(500);
+    check('Geeni points to the guide', await h.evaluate(() => [...document.querySelectorAll('#geeni-log .g-msg.bot .btn')].some((b) => /EYE3 Guide/.test(b.textContent))));
+    await h.close();
+  });
+
+  await suite('Movies & series: info and subtitles from Cinemeta and OpenSubtitles (button and I)', async () => {
+    const p = await open(browser, { 'eye3.home.accts': [XT] });
+    const asked = [];
+    await p.route('https://v3-cinemeta.strem.io/**', (r) => { const u = r.request().url(); asked.push(u);
+      if (/\/catalog\/series\/top\/search=Long%20Show\.json$/.test(u)) return r.fulfill({ json: { metas: [{ id: 'tt7654321', type: 'series', name: 'Long Show', releaseInfo: '2021-' }] }, headers: { 'access-control-allow-origin': '*' } });
+      if (/\/meta\/series\/tt7654321\.json$/.test(u)) return r.fulfill({ json: { meta: { id: 'tt7654321', name: 'Long Show', description: 'A long story about <b>testing</b>.', imdbRating: '8.1', releaseInfo: '2021-', genres: ['Drama'], poster: 'https://img.example/p.jpg' } }, headers: { 'access-control-allow-origin': '*' } });
+      return r.fulfill({ status: 404, body: '' }); });
+    await p.route('https://opensubtitles-v3.strem.io/**', (r) => { asked.push(r.request().url());
+      return r.fulfill({ json: { subtitles: [{ id: '1', url: 'https://subs.example/en.srt', lang: 'eng' }, { id: '2', url: 'https://subs.example/es.srt', lang: 'spa' }, { id: '3', url: 'https://subs.example/en2.srt', lang: 'eng' }] }, headers: { 'access-control-allow-origin': '*' } }); });
+    await p.route('https://subs.example/**', (r) => r.fulfill({ body: '1\n00:00:01,000 --> 00:00:03,500\nHello there\n', headers: { 'access-control-allow-origin': '*', 'content-type': 'text/plain' } }));
+    await p.route('https://img.example/**', (r) => r.fulfill({ status: 404, body: '' }));
+    await p.evaluate(() => document.querySelector('.tile').click()); await p.waitForTimeout(500);
+    check('the button is hidden before anything plays', await p.evaluate(() => { document.getElementById('tv-vod').click(); return document.getElementById('vod-meta').hidden; }));
+    await p.waitForTimeout(500); await p.click('#vod-series'); await p.waitForTimeout(1500);
+    await p.click('#vod-list .ch >> text=Long Show'); await p.waitForTimeout(1200);
+    await p.click('#vod-list .ch >> text=Second'); await p.waitForTimeout(1200);
+    check('nothing is asked from strem.io until the viewer presses the button', asked.length === 0, asked);
+    check('the Info & subtitles button appears once a title plays', await p.evaluate(() => !document.getElementById('vod-meta').hidden));
+    await p.evaluate(() => document.getElementById('vod-list').blur()); await p.keyboard.press('i');
+    await p.waitForFunction(() => /languages/.test(document.getElementById('vod-info').textContent), null, { timeout: 6000 }).catch(() => {});
+    const info = await p.evaluate(() => ({ text: document.getElementById('vod-info').textContent, html: document.getElementById('vod-info').innerHTML, langs: [...document.querySelectorAll('#vod-info select option')].map((o) => o.textContent) }));
+    check('I shows the title, year, rating, genre and plot', /Long Show/.test(info.text) && /2021/.test(info.text) && /★ 8\.1/.test(info.text) && /Drama/.test(info.text) && /long story/.test(info.text), info.text);
+    check('the plot is shown as text, never as HTML', info.html.indexOf('<b>testing</b>') === -1 && /&lt;b&gt;testing/.test(info.html));
+    check('the episode is looked up by series id, season and episode', asked.some((u) => /\/subtitles\/series\/tt7654321%3A1%3A2\.json$/.test(u)), asked);
+    check('one entry per language, English first', JSON.stringify(info.langs) === JSON.stringify(['eng', 'spa']), info.langs);
+    await p.click('#vod-info button >> text=Show subtitles'); await p.waitForTimeout(800);
+    const tr = await p.evaluate(() => { const t = document.querySelector('#vod-video track[data-eye3]'); return t ? { label: t.label, src: t.src.slice(0, 5) } : null; });
+    check('the subtitles are added to the video as a track', tr && tr.label === 'eng' && tr.src === 'blob:', tr);
+    check('the message confirms it', /Subtitles on \(eng\)/.test(await p.textContent('#vod-info')));
+    await p.click('#vod-info button >> text=Off'); await p.waitForTimeout(200);
+    check('Off removes them', await p.evaluate(() => !document.querySelector('#vod-video track[data-eye3]')));
+    check('no page errors', p.errs.length === 0, p.errs);
+    await p.close();
+  });
+
+  await suite('settings: guide time shift and playlist links with player options', async () => {
+    const p = await open(browser, { 'eye3.home.mychannels': [ch('Piped One', 'https://x.example/p.m3u8|User-Agent=Foo&Referer=https://r.example')] });
+    await p.evaluate(() => [...document.querySelectorAll('.tile')].pop().click()); await p.waitForTimeout(400);
+    await p.click('#set-epgshift'); await p.waitForTimeout(100); await p.click('#set-epgshift'); await p.waitForTimeout(100);
+    check('the guide shift steps by hours and is remembered', /\+2 h/.test(await p.textContent('#set-epgshift')) && await p.evaluate(() => localStorage.getItem('eye3.home.epgshift') === '2'));
+    await p.keyboard.press('Escape'); await p.waitForTimeout(200);
+    fs.writeFileSync('/tmp/eye3_piped.m3u', '﻿#EXTM3U\n#EXTINF:-1 group-title="T",Pipe Channel\n# a comment between\nhttps://x.example/pipe.m3u8|User-Agent=Foo\n');
+    await p.goto(H('&add=playlist'), { waitUntil: 'domcontentloaded' }); await p.waitForTimeout(700);
+    await p.setInputFiles('#mk-import', '/tmp/eye3_piped.m3u'); await p.waitForTimeout(500);
+    const mine = await p.evaluate(() => JSON.parse(localStorage.getItem('eye3.home.mychannels') || '[]').map((c) => c.u));
+    check('an imported link keeps only the address, without the |player options, even after a BOM and a comment', mine.includes('https://x.example/pipe.m3u8'), mine);
+    check('no page errors', p.errs.length === 0, p.errs);
+    await p.close();
+  });
+
+  await suite('World of Unknown: unlocking the hidden section switches the whole app to its second layer', async () => {
+    const p = await open(browser);
+    const look = () => p.evaluate(() => { const cs = getComputedStyle(document.documentElement), m = document.querySelector('.brand .mark'); return { mid: document.documentElement.classList.contains('midnight'), accent: cs.getPropertyValue('--accent').trim(), logo: getComputedStyle(m).color, h1: document.querySelector('.hero h1').textContent, haze: !document.getElementById('mn-haze').hidden }; });
+    const before = await look();
+    check('normal EYE3 look while locked', !before.mid && before.accent === '#ff263f' && before.h1 === 'See beyond' && !before.haze, before);
+    await p.keyboard.press('Shift+X'); await p.waitForTimeout(300); await p.check('#ex-age'); await p.click('#ex-unlock'); await p.waitForTimeout(500);
+    const on = await look();
+    check('unlocking opens the World of Unknown: its own colours, haze and title, and no visible entry button', on.mid && ['#ff263f', '#c8102e', '#ff3b1f'].includes(on.accent) && on.h1 === 'World of Unknown' && on.haze && await p.evaluate(() => !document.getElementById('mn-enter')), on);
+    const hour = await p.evaluate(() => ({ t: document.documentElement.getAttribute('data-mn-theme'), h: String(new Date().getHours()), scene: document.getElementById('mn-scene').className, n: document.getElementById('mn-scene').children.length, kick: document.querySelector('.kicker span:last-child').textContent }));
+    check('the theme follows the hour and draws its own scene (no pictures shipped)', hour.t === hour.h && /sc-\w+/.test(hour.scene) && hour.n > 0 && /The Unknown · .+ · double-click the eye to enter · Q locks/.test(hour.kick), hour);
+    check('the EYE3 logo keeps its crimson look', on.logo === 'rgb(255, 38, 63)', on.logo);
+    await p.keyboard.press('Shift+X'); await p.waitForTimeout(300);
+    check('the hidden dialog offers World of Unknown settings once unlocked', await p.evaluate(() => !document.getElementById('ex-mn').hidden));
+    await p.click('#ex-mn'); await p.waitForTimeout(400);
+    check('World of Unknown settings open', await p.evaluate(() => document.getElementById('info-title').textContent === 'World of Unknown settings'));
+    check('24 themes plus the hourly change are offered', await p.evaluate(() => document.querySelectorAll('#mn-pal option').length === 25 && document.getElementById('mn-pal').value === 'auto'));
+    await p.selectOption('#mn-pal', '9'); await p.waitForTimeout(150);
+    check('a fixed theme changes the accent and the scene', (await look()).accent === '#c8102e' && await p.evaluate(() => document.documentElement.getAttribute('data-mn-theme') === '9' && document.getElementById('mn-scene').className.includes('sc-koi')));
+    await p.fill('#mn-title', 'After Dark'); await p.press('#mn-title', 'Tab'); await p.waitForTimeout(150);
+    check('the home title can be renamed', (await look()).h1 === 'After Dark');
+    const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
+    await p.setInputFiles('#mn-file-bg', { name: 'bg.png', mimeType: 'image/png', buffer: png }); await p.waitForTimeout(700);
+    await p.setInputFiles('#mn-file-emblem', { name: 'logo.png', mimeType: 'image/png', buffer: png }); await p.waitForTimeout(700);
+    const assets = await p.evaluate(() => ({ bg: !document.getElementById('mn-bgimg').hidden && /blob:/.test(document.getElementById('mn-bgimg').style.backgroundImage), emb: !document.getElementById('mn-emblem').hidden && /^blob:/.test(document.getElementById('mn-emblem').src) }));
+    check('your own background and emblem are shown from this browser (blob, not uploaded)', assets.bg && assets.emb, assets);
+    await p.setInputFiles('#mn-file-hours', [{ name: 'a.png', mimeType: 'image/png', buffer: png }, { name: 'b.png', mimeType: 'image/png', buffer: png }]); await p.waitForTimeout(900);
+    check('pictures for each hour are kept in this browser and one is shown', await p.evaluate(() => JSON.parse(localStorage.getItem('eye3.home.layer2')).hours === 2 && /blob:/.test(document.getElementById('mn-bgimg').style.backgroundImage) && document.getElementById('mn-hours-n').textContent === '2 saved'));
+    await p.keyboard.press('Escape'); await p.waitForTimeout(200);
+    await p.keyboard.press('q'); await p.waitForTimeout(400);
+    const off = await look();
+    check('Q locks at once and brings the normal world back', await p.evaluate(() => document.getElementById('mn-scene').hidden && !document.documentElement.hasAttribute('data-mn-theme')) && !off.mid && off.accent === '#ff263f' && off.h1 === 'See beyond' && !off.haze &&  await p.evaluate(() => document.getElementById('mn-bgimg').hidden && document.getElementById('mn-emblem').hidden), off);
+    check('settings are kept for next time (look only, no content)', await p.evaluate(() => { const v = JSON.parse(localStorage.getItem('eye3.home.layer2')); return v.theme === '9' && v.title === 'After Dark'; }));
+    await p.keyboard.press('Shift+X'); await p.waitForTimeout(300); await p.check('#ex-age'); await p.click('#ex-unlock'); await p.waitForTimeout(800);
+    check('unlocking again brings back the saved look and files', await p.evaluate(() => document.querySelector('.hero h1').textContent === 'After Dark' && !document.getElementById('mn-bgimg').hidden));
+    await p.reload({ waitUntil: 'domcontentloaded' }); await p.waitForTimeout(900);
+    check('a reload always starts locked, in the normal look', (await look()).mid === false);
+    check('no page errors', p.errs.length === 0, p.errs);
+    await p.close();
+  });
+
+  await suite('World of Unknown: the PIN lockout survives a reload, and leaving the page locks', async () => {
+    const p = await open(browser);
+    const mid = () => p.evaluate(() => document.documentElement.classList.contains('midnight'));
+    // set a PIN while unlocking
+    await p.keyboard.press('Shift+X'); await p.waitForTimeout(300);
+    await p.check('#ex-age'); await p.fill('#ex-pin', '1234'); await p.click('#ex-unlock'); await p.waitForTimeout(500);
+    check('a PIN can be set while unlocking', await mid());
+    await p.keyboard.press('q'); await p.waitForTimeout(300);
+    check('Q locks it again', !(await mid()));
+    // five wrong tries set a lockout (the dialog stays open, so keep clicking Unlock)
+    await p.keyboard.press('Shift+X'); await p.waitForTimeout(300); await p.check('#ex-age');
+    for (let i = 0; i < 5; i++) { await p.fill('#ex-pin', '0000'); await p.click('#ex-unlock'); await p.waitForTimeout(250); }
+    check('five wrong PINs save a lockout', await p.evaluate(() => { try { return JSON.parse(localStorage.getItem('eye3.home.pinlock')).u > Date.now(); } catch (e) { return false; } }));
+    // the lockout is still in force after a reload, so even the right PIN is refused
+    await p.reload({ waitUntil: 'domcontentloaded' }); await p.waitForTimeout(800);
+    await p.keyboard.press('Shift+X'); await p.waitForTimeout(300); await p.check('#ex-age'); await p.fill('#ex-pin', '1234'); await p.click('#ex-unlock'); await p.waitForTimeout(400);
+    check('after a reload the lockout still blocks the correct PIN', !(await mid()) && /wrong tries/i.test(await p.textContent('#ex-msg')));
+    await p.close();
+
+    // leaving the page (pagehide) locks an open World, so the back/forward cache cannot restore it unlocked
+    const q = await open(browser);
+    await q.keyboard.press('Shift+X'); await q.waitForTimeout(300); await q.check('#ex-age'); await q.click('#ex-unlock'); await q.waitForTimeout(500);
+    check('it is unlocked', await q.evaluate(() => document.documentElement.classList.contains('midnight')));
+    await q.evaluate(() => window.dispatchEvent(new Event('pagehide'))); await q.waitForTimeout(300);
+    check('pagehide locks it', !(await q.evaluate(() => document.documentElement.classList.contains('midnight'))));
+    check('no page errors', q.errs.length === 0, q.errs);
+    await q.close();
+  });
+
+  await suite('World of Unknown: private connection through the viewer\'s own proxies, strict mode and no trace', async () => {
+    const p = await open(browser);
+    const calls = [];
+    await p.route((u) => /^http:\/\/127\.0\.0\.1:8765\/(api\/proxy|api\/where|stream)/.test(u.href), (r) => {
+      const u = new URL(r.request().url()), h = { 'access-control-allow-origin': '*' }; calls.push(u.pathname + '?' + u.searchParams.toString());
+      const j = (o) => r.fulfill({ status: 200, headers: h, contentType: 'application/json', body: JSON.stringify(o) });
+      if (u.pathname === '/api/proxy/test') return j(u.searchParams.get('u').includes(':1111') ? { ok: true, country: 'DE', ms: 240 } : u.searchParams.get('u').includes(':2222') ? { ok: true, country: 'NL', ms: 90 } : { ok: false, why: 'refused' });
+      if (u.pathname === '/api/where') return j({ country: 'AE', viaProxy: false });
+      if (u.pathname === '/api/proxy/set') return j({ ok: true, proxy: u.searchParams.get('u') !== 'base', host: '127.0.0.1', strict: u.searchParams.get('strict') === '1', base: false });
+      const t = u.searchParams.get('u') || '';
+      if (t.includes('advancedsearch')) return j({ response: { numFound: 1, docs: [{ identifier: 'night-a', title: 'Night of Terror', year: '1933' }] } });
+      if (t.includes('/metadata/')) return j({ files: [{ name: 'film.mp4', format: 'h.264', size: '1000' }] });
+      return r.fulfill({ status: 200, headers: h, contentType: 'video/mp4', body: '' });
+    });
+    await p.keyboard.press('Shift+X'); await p.waitForTimeout(300); await p.check('#ex-age'); await p.click('#ex-unlock'); await p.waitForTimeout(500);
+    await p.keyboard.press('Shift+X'); await p.waitForTimeout(300); await p.click('#ex-mn'); await p.waitForTimeout(400);
+    await p.click('#mn-net-where'); await p.waitForTimeout(600);
+    check('Where do I appear? asks EYE3 Link for the country (for a whole-computer VPN app)', /You appear in AE/.test(await p.evaluate(() => document.getElementById('mn-net-where-r').textContent)));
+    check('the World settings offer a private connection, direct by default', await p.evaluate(() => !!document.getElementById('mn-net-add') && document.getElementById('mn-net-direct').classList.contains('primary')));
+    await p.fill('#mn-net-url', 'not a proxy'); await p.click('#mn-net-add'); await p.waitForTimeout(200);
+    check('a wrong address is refused', await p.evaluate(() => !document.getElementById('mn-net-0')));
+    for (const [n, u] of [['Slow', 'http://127.0.0.1:1111'], ['Fast', 'http://user:pw@127.0.0.1:2222'], ['Dead', 'http://127.0.0.1:3333']]) { await p.fill('#mn-net-name', n); await p.fill('#mn-net-url', u); await p.click('#mn-net-add'); await p.waitForTimeout(150); }
+    await p.click('#mn-net-best'); await p.waitForTimeout(900);
+    const st = await p.evaluate(() => ({ rows: [...document.querySelectorAll('[id^=mn-net-]')].filter((e) => /^mn-net-\d$/.test(e.id)).map((e) => e.textContent), kick: document.querySelector('.kicker span:last-child').textContent, saved: JSON.parse(localStorage.getItem('eye3.home.l2net')) }));
+    check('Use the fastest tests every proxy and picks the quickest that answers', st.saved.pick === 1 && /In use/.test(st.rows[1]) && /NL · 90 ms/.test(st.rows[1]) && /DE · 240 ms/.test(st.rows[0]) && /✗/.test(st.rows[2]), st.rows);
+    check('EYE3 Link was told to switch, in strict mode, and the home screen says private', calls.some((c) => c.startsWith('/api/proxy/set?u=http%3A%2F%2Fuser%3Apw%40127.0.0.1%3A2222&strict=1')) && /🔒 private/.test(st.kick), [calls, st.kick]);
+    check('the proxy login is not shown on screen', !st.rows.join(' ').includes('pw@'));
+    await p.keyboard.press('Escape'); await p.waitForTimeout(200);
+    await p.dblclick('#brand'); await p.waitForTimeout(1100);
+    await p.click('#u-tune'); await p.waitForTimeout(800);
+    const src = await p.evaluate(() => document.getElementById('vod-video').getAttribute('src') || '');
+    check('strict: the Unknown channels are searched and played through EYE3 Link, never directly', /^http:\/\/127\.0\.0\.1:8765\/stream\?u=https%3A%2F%2Farchive\.org%2Fdownload%2Fnight-a/.test(src) && calls.some((c) => c.includes('advancedsearch')), src);
+    check('leave no trace: nothing goes into Continue watching or Recently watched', await p.evaluate(() => { document.getElementById('vod-video').dispatchEvent(new Event('timeupdate')); const r = localStorage.getItem('eye3.home.resume'); return !r || !r.includes('night-a'); }));
+    await p.keyboard.press('Escape'); await p.waitForTimeout(200); await p.keyboard.press('q'); await p.waitForTimeout(600);
+    check('locking switches EYE3 Link back to how it was started', calls[calls.length - 1].startsWith('/api/proxy/set?u=base'), calls.slice(-2));
+    check('no page errors', p.errs.length === 0, p.errs);
+    await p.close();
+  });
+
+  await suite('World of Unknown: its own channels of public-domain films and old-time radio', async () => {
+    const p = await open(browser);
+    const queries = [];
+    await p.route('https://archive.org/**', (r) => {
+      const u = r.request().url(), h = { 'access-control-allow-origin': '*' };
+      if (u.includes('/advancedsearch.php')) {
+        const q = new URL(u).searchParams.get('q'); queries.push(q);
+        const docs = q.includes('oldtimeradio') ? [{ identifier: 'otr-suspense', title: 'Suspense' }] : [{ identifier: 'night-a', title: 'Night of Terror', year: '1933' }, { identifier: 'night-b', title: 'Strange Visitor', year: '1950' }, { identifier: 'bad', title: 'Adult Nights' }];
+        return r.fulfill({ status: 200, headers: h, contentType: 'application/json', body: JSON.stringify({ response: { numFound: docs.length, docs } }) });
+      }
+      if (u.includes('/metadata/otr-suspense')) return r.fulfill({ status: 200, headers: h, contentType: 'application/json', body: JSON.stringify({ files: [{ name: 'Suspense_49-01-06_The_Wrong_Way.mp3', format: 'VBR MP3' }] }) });
+      if (u.includes('/metadata/')) return r.fulfill({ status: 200, headers: h, contentType: 'application/json', body: JSON.stringify({ files: [{ name: 'film.mp4', format: 'h.264', size: '1000' }] }) });
+      return r.fulfill({ status: 404, headers: h, body: '' });
+    });
+    check('no visible way into the Unknown exists', await p.evaluate(() => !document.getElementById('mn-enter')));
+    await p.keyboard.press('Shift+X'); await p.waitForTimeout(300); await p.check('#ex-age'); await p.click('#ex-unlock'); await p.waitForTimeout(500);
+    await p.dblclick('#brand'); await p.waitForTimeout(1100);
+    const st = await p.evaluate(() => ({ open: document.getElementById('ov-vod').classList.contains('open'), val: document.getElementById('vod-cat').value, grp: [...document.querySelectorAll('#vod-cat optgroup option')].map((o) => o.textContent), rows: [...document.querySelectorAll('#vod-list .ch')].map((r) => r.textContent), count: document.getElementById('vod-count').textContent }));
+    check('once unlocked, double-clicking the eye opens the World\'s first channel, Shock Theater, with its settings one row away', st.open && st.val === 'u:shock' && /Shock Theater/.test(st.count) && st.rows.some((r) => /World of Unknown settings/.test(r)), st);
+    check('five Unknown channels are offered (no NASA)', st.grp.length === 5 && !st.grp.some((g) => /nasa/i.test(g)) && st.grp.some((g) => /OTR Theater/.test(g)), st.grp);
+    check('adult titles never appear on a channel', !st.rows.some((r) => /Adult/.test(r)) && st.rows.some((r) => /Night of Terror/.test(r)), st.rows);
+    const q0 = queries[queries.length - 1];
+    check('the query needs a theme subject and drops adult, news and podcast items', /subject:\(horror OR/.test(q0) && /-subject:\(adult OR/.test(q0) && /sexploitation/.test(q0) && /podcast/.test(q0), q0);
+    await p.click('#u-tune'); await p.waitForTimeout(600);
+    const src1 = await p.evaluate(() => document.getElementById('vod-video').getAttribute('src') || '');
+    check('Tune in plays a film from archive.org', /^https:\/\/archive\.org\/download\/night-[ab]\/film\.mp4$/.test(src1), src1);
+    await p.evaluate(() => { const v = document.getElementById('vod-video'); v.onended && v.onended(); }); await p.waitForTimeout(600);
+    const src2 = await p.evaluate(() => document.getElementById('vod-video').getAttribute('src') || '');
+    check('the channel plays on to the next title when one ends', src2 && src2 !== src1, [src1, src2]);
+    await p.selectOption('#vod-cat', 'u:otr'); await p.waitForTimeout(800);
+    check('OTR Theater asks for audio from the oldtimeradio collection', /collection:\(oldtimeradio\) AND mediatype:\(audio\)/.test(queries[queries.length - 1]), queries[queries.length - 1]);
+    await p.click('#u-tune'); await p.waitForTimeout(600);
+    check('an old-time radio episode plays', /Suspense_49-01-06_The_Wrong_Way\.mp3$/.test(await p.evaluate(() => document.getElementById('vod-video').getAttribute('src') || '')));
+    await p.keyboard.press('Escape'); await p.waitForTimeout(200); await p.keyboard.press('q'); await p.waitForTimeout(400);
+    await p.dblclick('#brand'); await p.waitForTimeout(1100);
+    check('locked again, double-clicking the eye asks for 18+ instead of opening the channels', await p.evaluate(() => document.getElementById('ov-explicit').classList.contains('open') && !document.getElementById('ov-vod').classList.contains('open')));
+    await p.keyboard.press('Escape'); await p.waitForTimeout(300);
+    await p.keyboard.press('w'); await p.waitForTimeout(300);
+    check('W does nothing while locked', await p.evaluate(() => !document.getElementById('ov-vod').classList.contains('open')));
+    check('no page errors', p.errs.length === 0, p.errs);
+    await p.close();
   });
 
   await browser.close();
